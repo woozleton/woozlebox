@@ -1,0 +1,103 @@
+# SearXNG settings for Dave-in-a-Box
+# Privacy-first configuration: no logging, no tracking, JSON output enabled
+
+general:
+  debug: false
+  instance_name: "Dave-in-a-Box Search"
+  privacypolicy_url: false
+  donation_url: false
+  contact_url: false
+  enable_metrics: false
+
+brand:
+  new_issue_url: false
+  docs_url: false
+  public_instances: false
+  wiki_url: false
+  issue_url: false
+
+search:
+  safe_search: 0
+  autocomplete: ""
+  default_lang: "en"
+  formats:
+    - html
+    - json
+
+server:
+  secret_key: "dave-in-a-box-searxng-secret-change-me"
+  limiter: false
+  image_proxy: false
+  http_protocol_version: "1.0"
+  method: "POST"
+
+ui:
+  static_use_hash: true
+  default_locale: "en"
+  query_in_title: false
+  infinite_scroll: false
+  center_alignment: false
+  default_theme: simple
+  theme_args:
+    simple_style: dark
+
+# Enabled search engines — meta-search across multiple providers
+engines:
+  - name: google
+    engine: google
+    shortcut: g
+    disabled: false
+
+  - name: bing
+    engine: bing
+    shortcut: b
+    disabled: false
+
+  - name: duckduckgo
+    engine: duckduckgo
+    shortcut: d
+    disabled: false
+
+  - name: brave
+    engine: brave
+    shortcut: br
+    disabled: false
+
+  - name: wikipedia
+    engine: wikipedia
+    shortcut: wp
+    disabled: false
+
+# Disable all engines not needed
+  - name: google images
+    engine: google_images
+    shortcut: gim
+    disabled: true
+
+  - name: google news
+    engine: google_news
+    shortcut: gn
+    disabled: true
+
+  - name: google videos
+    engine: google_videos
+    shortcut: gv
+    disabled: true
+
+  - name: bing images
+    engine: bing_images
+    shortcut: bim
+    disabled: true
+
+  - name: bing news
+    engine: bing_news
+    shortcut: bn
+    disabled: true
+
+outgoing:
+  request_timeout: 10.0
+  max_request_timeout: 15.0
+  useragent_suffix: ""
+  pool_connections: 100
+  pool_maxsize: 20
+  enable_http2: true

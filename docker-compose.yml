@@ -25,6 +25,7 @@ services:
       - "${RAG_API_PORT:-8000}:8000"
     volumes:
       - ./files:/vault:ro
+      - rag_data:/app/data
     environment:
       - VAULT_PATH=${VAULT_PATH:-/vault}
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
@@ -33,11 +34,24 @@ services:
       - SIMILARITY_THRESHOLD=${SIMILARITY_THRESHOLD:-0.6}
       - CHROMA_HOST=chromadb
       - CHROMA_PORT_INTERNAL=8000
+      - SEARXNG_URL=http://searxng:8080
+      - DB_DIR=/app/data
     depends_on:
       chromadb:
         condition: service_healthy
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  searxng:
+    image: searxng/searxng:latest
+    container_name: dave-searxng
+    ports:
+      - "${SEARXNG_PORT:-8888}:8080"
+    volumes:
+      - ./searxng:/etc/searxng:rw
+    environment:
+      - SEARXNG_BASE_URL=http://localhost:${SEARXNG_PORT:-8888}
     restart: unless-stopped
 
   web:
@@ -51,3 +65,4 @@ services:
 
 volumes:
   chroma_data:
+  rag_data:
