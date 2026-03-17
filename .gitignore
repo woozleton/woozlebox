@@ -1,0 +1,6 @@
+files/
+.env
+__pycache__/
+*.pyc
+chroma_data/
+.claude/

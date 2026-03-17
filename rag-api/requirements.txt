@@ -1,0 +1,8 @@
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+chromadb==1.5.5
+ollama==0.2.1
+pypdf==4.2.0
+python-multipart==0.0.9
+python-dotenv==1.0.1
+langchain-text-splitters==0.2.0

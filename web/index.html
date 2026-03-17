@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dave's AI</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f13;
+      --surface: #1a1a24;
+      --surface2: #22222f;
+      --border: #2e2e3e;
+      --accent: #7c6af7;
+      --accent-dim: #4a3fa8;
+      --text: #e8e8f0;
+      --text-dim: #8888aa;
+      --user-bubble: #2a2060;
+      --ai-bubble: #1a1a24;
+      --danger: #f97316;
+      --success: #22c55e;
+      --radius: 12px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .logo {
+      width: 30px; height: 30px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; font-weight: 700; color: #fff;
+      flex-shrink: 0;
+    }
+    header h1 { font-size: 1.05rem; font-weight: 600; }
+    .header-actions {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .header-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      border-radius: 8px;
+      padding: 5px 10px;
+      font-size: 0.72rem;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+    .header-btn:hover { border-color: var(--accent); color: var(--text); }
+    .header-btn.active { border-color: var(--accent); color: var(--accent); }
+
+    #model-select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 5px 10px;
+      font-size: 0.72rem;
+      cursor: pointer;
+      outline: none;
+      max-width: 220px;
+      transition: border-color 0.15s;
+    }
+    #model-select:hover, #model-select:focus { border-color: var(--accent); }
+    #model-label {
+      font-size: 0.68rem;
+      color: var(--text-dim);
+      white-space: nowrap;
+    }
+
+    /* Status bar */
+    #status-bar {
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      padding: 6px 20px;
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+    #status-bar .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+    #status-bar .dot.green { background: var(--success); }
+    #status-bar .dot.orange { background: var(--danger); }
+    #status-text { flex: 1; }
+    #reindex-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 0.68rem;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    #reindex-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+    #reindex-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Chat window */
+    #chat-window {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      scroll-behavior: smooth;
+    }
+
+    .welcome {
+      margin: auto;
+      text-align: center;
+      color: var(--text-dim);
+    }
+    .welcome .big-icon { font-size: 2.8rem; margin-bottom: 12px; }
+    .welcome h2 { font-size: 1.15rem; color: var(--text); margin-bottom: 8px; }
+    .welcome p { font-size: 0.86rem; }
+
+    /* Message bubbles */
+    .message-row {
+      display: flex;
+      flex-direction: column;
+      max-width: 760px;
+      width: 100%;
+    }
+    .message-row.user { align-self: flex-end; align-items: flex-end; }
+    .message-row.ai   { align-self: flex-start; align-items: flex-start; }
+
+    .bubble {
+      padding: 11px 15px;
+      border-radius: var(--radius);
+      line-height: 1.65;
+      font-size: 0.93rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .message-row.user .bubble {
+      background: var(--user-bubble);
+      border: 1px solid var(--accent-dim);
+      border-bottom-right-radius: 3px;
+    }
+    .message-row.ai .bubble {
+      background: var(--ai-bubble);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 3px;
+    }
+
+    .timestamp {
+      font-size: 0.67rem;
+      color: var(--text-dim);
+      margin-top: 4px;
+      padding: 0 4px;
+    }
+
+    /* Sources */
+    .sources-wrap { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+
+    .no-vault-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: #2a1a0a;
+      border: 1px solid var(--danger);
+      color: var(--danger);
+      padding: 2px 9px;
+      border-radius: 20px;
+      font-size: 0.71rem;
+      font-weight: 500;
+    }
+
+    details.sources {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    details.sources summary {
+      padding: 5px 11px;
+      cursor: pointer;
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      user-select: none;
+      list-style: none;
+      display: flex; align-items: center; gap: 5px;
+    }
+    details.sources summary::-webkit-details-marker { display: none; }
+    details.sources summary::before {
+      content: "▶";
+      font-size: 0.52rem;
+      transition: transform 0.15s;
+    }
+    details.sources[open] summary::before { transform: rotate(90deg); }
+    details.sources ul {
+      list-style: none;
+      padding: 3px 11px 8px 18px;
+    }
+    details.sources ul li {
+      font-size: 0.76rem;
+      color: var(--accent);
+      padding: 2px 0;
+      display: flex; align-items: center; gap: 5px;
+    }
+    details.sources ul li::before { content: "📄"; font-size: 0.68rem; }
+
+    /* Debug info pill */
+    .debug-pill {
+      display: none;
+      font-size: 0.68rem;
+      color: var(--text-dim);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-family: monospace;
+    }
+    body.debug-on .debug-pill { display: inline-block; }
+
+    /* Spinner */
+    .thinking-row {
+      display: flex; align-items: center; gap: 10px;
+      align-self: flex-start;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      padding: 6px 4px;
+    }
+    .spinner {
+      width: 17px; height: 17px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Input area */
+    #input-area {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 12px 18px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      flex-shrink: 0;
+    }
+    #message-input {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 0.93rem;
+      padding: 10px 14px;
+      resize: none;
+      min-height: 44px;
+      max-height: 180px;
+      line-height: 1.5;
+      outline: none;
+      transition: border-color 0.2s;
+      font-family: inherit;
+    }
+    #message-input:focus { border-color: var(--accent); }
+    #message-input::placeholder { color: var(--text-dim); }
+
+    #send-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      width: 44px; height: 44px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+      transition: background 0.15s, transform 0.1s;
+    }
+    #send-btn:hover:not(:disabled) { background: var(--accent-dim); }
+    #send-btn:active:not(:disabled) { transform: scale(0.95); }
+    #send-btn:disabled { background: var(--border); cursor: not-allowed; }
+
+    /* Error toast */
+    #error-toast {
+      display: none;
+      position: fixed;
+      bottom: 85px; left: 50%; transform: translateX(-50%);
+      background: #3a1a1a;
+      border: 1px solid #e53e3e;
+      color: #fc8181;
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-size: 0.83rem;
+      z-index: 100;
+      max-width: 90vw;
+    }
+
+    #chat-window::-webkit-scrollbar { width: 5px; }
+    #chat-window::-webkit-scrollbar-track { background: transparent; }
+    #chat-window::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">D</div>
+  <h1>Dave's AI</h1>
+  <div class="header-actions">
+    <span class="header-label" id="model-label">Model:</span>
+    <select id="model-select" title="Select LLM model">
+      <option value="">Loading…</option>
+    </select>
+    <button class="header-btn" id="debug-toggle" title="Show raw API scores on each response">Debug</button>
+  </div>
+</header>
+
+<div id="status-bar">
+  <span class="dot" id="status-dot"></span>
+  <span id="status-text">Checking API…</span>
+  <button id="reindex-btn" disabled>Re-index</button>
+</div>
+
+<div id="chat-window">
+  <div class="welcome" id="welcome-msg">
+    <div class="big-icon">🧠</div>
+    <h2>Ask me anything about your vault</h2>
+    <p>I only know what's in your files — no internet, no hallucination.</p>
+  </div>
+</div>
+
+<div id="input-area">
+  <textarea
+    id="message-input"
+    placeholder="Ask something about your files…"
+    rows="1"
+    autocomplete="off"
+  ></textarea>
+  <button id="send-btn" title="Send (Enter)">&#9654;</button>
+</div>
+
+<div id="error-toast"></div>
+
+<script>
+  const API_BASE = "http://localhost:8000";
+
+  const chatWindow   = document.getElementById("chat-window");
+  const input        = document.getElementById("message-input");
+  const sendBtn      = document.getElementById("send-btn");
+  const welcome      = document.getElementById("welcome-msg");
+  const errorToast   = document.getElementById("error-toast");
+  const statusDot    = document.getElementById("status-dot");
+  const statusText   = document.getElementById("status-text");
+  const reindexBtn   = document.getElementById("reindex-btn");
+  const debugToggle  = document.getElementById("debug-toggle");
+  const modelSelect  = document.getElementById("model-select");
+
+  let isLoading = false;
+  let debugMode = false;
+  let selectedModel = null;  // null = use server default
+
+  // ── Debug toggle ──
+  debugToggle.addEventListener("click", () => {
+    debugMode = !debugMode;
+    document.body.classList.toggle("debug-on", debugMode);
+    debugToggle.classList.toggle("active", debugMode);
+  });
+
+  // ── Model selector ──
+  async function loadModels() {
+    try {
+      const res = await fetch(`${API_BASE}/models`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      modelSelect.innerHTML = "";
+      data.models.forEach(m => {
+        const opt = document.createElement("option");
+        opt.value = m;
+        opt.textContent = m;
+        if (m === data.default) opt.selected = true;
+        modelSelect.appendChild(opt);
+      });
+      selectedModel = data.default;
+    } catch (e) {
+      modelSelect.innerHTML = `<option value="">Unavailable</option>`;
+    }
+  }
+  modelSelect.addEventListener("change", () => {
+    selectedModel = modelSelect.value || null;
+  });
+  loadModels();
+
+  // ── Status bar: hit /health on load ──
+  async function checkHealth() {
+    try {
+      const res = await fetch(`${API_BASE}/health`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      statusDot.className = "dot green";
+      statusText.textContent = `API ready · model: ${data.llm_model} · vault: ${data.vault}`;
+      reindexBtn.disabled = false;
+    } catch (e) {
+      statusDot.className = "dot orange";
+      statusText.textContent = `API unreachable — is rag-api running? (${e.message})`;
+    }
+  }
+  checkHealth();
+
+  // ── Re-index button ──
+  reindexBtn.addEventListener("click", async () => {
+    reindexBtn.disabled = true;
+    reindexBtn.textContent = "Indexing…";
+    statusDot.className = "dot";
+    statusText.textContent = "Re-indexing vault…";
+    try {
+      const res = await fetch(`${API_BASE}/index`, { method: "POST" });
+      const data = await res.json();
+      statusDot.className = "dot green";
+      if (data.errors && data.errors.length > 0) {
+        statusText.textContent = `Indexed ${data.files_processed} files, ${data.chunks_upserted} chunks — ${data.errors.length} error(s): ${data.errors.join("; ")}`;
+        statusDot.className = "dot orange";
+      } else {
+        statusText.textContent = `Indexed ${data.files_processed} files, ${data.chunks_upserted} chunks`;
+      }
+    } catch (e) {
+      statusDot.className = "dot orange";
+      statusText.textContent = `Re-index failed: ${e.message}`;
+    } finally {
+      reindexBtn.disabled = false;
+      reindexBtn.textContent = "Re-index";
+    }
+  });
+
+  // ── Auto-resize textarea ──
+  input.addEventListener("input", () => {
+    input.style.height = "auto";
+    input.style.height = Math.min(input.scrollHeight, 180) + "px";
+  });
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+  sendBtn.addEventListener("click", sendMessage);
+
+  function ts() {
+    return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
+
+  function showError(msg) {
+    errorToast.textContent = msg;
+    errorToast.style.display = "block";
+    setTimeout(() => { errorToast.style.display = "none"; }, 6000);
+  }
+
+  function setLoading(val) {
+    isLoading = val;
+    sendBtn.disabled = val;
+    input.disabled = val;
+  }
+
+  function scrollBottom() {
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+  }
+
+  function esc(str) {
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function appendUser(text) {
+    if (welcome) welcome.remove();
+    const row = document.createElement("div");
+    row.className = "message-row user";
+    row.innerHTML = `<div class="bubble">${esc(text)}</div><span class="timestamp">${ts()}</span>`;
+    chatWindow.appendChild(row);
+    scrollBottom();
+  }
+
+  function appendThinking() {
+    const row = document.createElement("div");
+    row.className = "thinking-row";
+    row.id = "thinking";
+    row.innerHTML = `<div class="spinner"></div><span>Thinking…</span>`;
+    chatWindow.appendChild(row);
+    scrollBottom();
+    return row;
+  }
+
+  function buildSourcesHtml(data) {
+    let html = '<div class="sources-wrap">';
+
+    if (!data.from_vault) {
+      html += `<span class="no-vault-badge">&#9888; No vault match found</span>`;
+    } else if (data.sources && data.sources.length > 0) {
+      const items = data.sources.map(s => `<li>${esc(s)}</li>`).join("");
+      const label = data.sources.length === 1 ? "1 source used" : `${data.sources.length} sources used`;
+      html += `<details class="sources"><summary>${label}</summary><ul>${items}</ul></details>`;
+    }
+
+    // Debug pill — only visible when debugMode is on (CSS controls visibility)
+    const debugInfo = data.debug
+      ? `from_vault:${data.from_vault} best_dist:${data.debug.best_distance?.toFixed(3) ?? "?"} threshold:${data.debug.threshold ?? "?"} chunks:${data.debug.chunks_retrieved ?? "?"}`
+      : `from_vault:${data.from_vault}`;
+    html += `<span class="debug-pill">${esc(debugInfo)}</span>`;
+
+    html += '</div>';
+    return html;
+  }
+
+  function appendAI(data) {
+    const row = document.createElement("div");
+    row.className = "message-row ai";
+    const modelTag = data.model_used
+      ? `<span style="font-size:0.65rem;color:var(--text-dim);margin-left:6px;font-family:monospace">${esc(data.model_used)}</span>`
+      : "";
+    row.innerHTML = `
+      <div class="bubble">${esc(data.answer)}</div>
+      ${buildSourcesHtml(data)}
+      <span class="timestamp">${ts()}${modelTag}</span>
+    `;
+    chatWindow.appendChild(row);
+    scrollBottom();
+  }
+
+  async function sendMessage() {
+    const text = input.value.trim();
+    if (!text || isLoading) return;
+
+    input.value = "";
+    input.style.height = "auto";
+    appendUser(text);
+    const thinking = appendThinking();
+    setLoading(true);
+
+    try {
+      const res = await fetch(`${API_BASE}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text, model: selectedModel }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      thinking.remove();
+      appendAI(data);
+    } catch (err) {
+      thinking.remove();
+      showError(`Error: ${err.message}`);
+    } finally {
+      setLoading(false);
+      input.focus();
+    }
+  }
+</script>
+</body>
+</html>

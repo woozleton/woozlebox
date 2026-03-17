@@ -1,0 +1,53 @@
+services:
+
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: dave-chromadb
+    ports:
+      - "${CHROMA_PORT:-8001}:8000"
+    volumes:
+      - chroma_data:/data
+    environment:
+      - IS_PERSISTENT=TRUE
+      - ANONYMIZED_TELEMETRY=FALSE
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/8000'"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  rag-api:
+    build: ./rag-api
+    container_name: dave-rag-api
+    ports:
+      - "${RAG_API_PORT:-8000}:8000"
+    volumes:
+      - ./files:/vault:ro
+    environment:
+      - VAULT_PATH=${VAULT_PATH:-/vault}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - EMBED_MODEL=${EMBED_MODEL:-nomic-embed-text}
+      - LLM_MODEL=${LLM_MODEL:-qwen3:30b-a3b}
+      - SIMILARITY_THRESHOLD=${SIMILARITY_THRESHOLD:-0.6}
+      - CHROMA_HOST=chromadb
+      - CHROMA_PORT_INTERNAL=8000
+    depends_on:
+      chromadb:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  web:
+    image: nginx:alpine
+    container_name: dave-web
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    volumes:
+      - ./web:/usr/share/nginx/html:ro
+    restart: unless-stopped
+
+volumes:
+  chroma_data:
