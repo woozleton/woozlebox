@@ -41,9 +41,18 @@ LLM_MODEL         = os.environ.get("LLM_MODEL", "qwen3:30b-a3b")
 SIMILARITY_THRESHOLD = float(os.environ.get("SIMILARITY_THRESHOLD", "0.6"))
 SEARXNG_URL       = os.environ.get("SEARXNG_URL", "http://searxng:8080")
 DB_DIR            = os.environ.get("DB_DIR", "/app/data")
+KOKORO_URL        = os.environ.get("KOKORO_URL", "http://kokoro:8880")
+DEFAULT_VOICE     = os.environ.get("TTS_VOICE", "af_heart")
 DEFAULT_TOP_K     = 30
 NOT_FOUND_MSG     = "I couldn't find that in your vault."
 SUPPORTED_UPLOAD_EXTENSIONS = {".md", ".txt", ".pdf"}
+
+KOKORO_VOICES = [
+    "af_heart", "af_bella", "af_nicole", "af_sarah", "af_sky",
+    "am_adam", "am_michael",
+    "bf_emma", "bf_isabella",
+    "bm_george", "bm_lewis",
+]
 
 
 # --- Lifespan ---
@@ -304,6 +313,42 @@ async def trigger_reindex():
 async def search_proxy(q: str):
     results = await web_search(q)
     return {"results": results}
+
+
+# --- TTS endpoints ---
+
+@app.get("/tts/voices")
+def tts_voices():
+    return {"voices": KOKORO_VOICES, "default": DEFAULT_VOICE}
+
+
+@app.get("/tts")
+async def tts_proxy(text: str, voice: str = DEFAULT_VOICE, format: str = "wav"):
+    if not text.strip():
+        raise HTTPException(status_code=400, detail="text is required")
+    if voice not in KOKORO_VOICES:
+        voice = DEFAULT_VOICE
+
+    payload = {
+        "model": "kokoro",
+        "input": text,
+        "voice": voice,
+        "response_format": format,
+    }
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(f"{KOKORO_URL}/v1/audio/speech", json=payload)
+            resp.raise_for_status()
+            audio_bytes = resp.content
+    except Exception as e:
+        logger.warning(f"TTS synthesis failed: {e}")
+        raise HTTPException(status_code=503, detail=f"TTS unavailable: {e}")
+
+    return StreamingResponse(
+        iter([audio_bytes]),
+        media_type="audio/wav" if format == "wav" else "audio/mpeg",
+        headers={"Cache-Control": "no-cache"},
+    )
 
 
 # --- Conversation endpoints ---

@@ -36,11 +36,18 @@ services:
       - CHROMA_PORT_INTERNAL=8000
       - SEARXNG_URL=http://searxng:8080
       - DB_DIR=/app/data
+      - KOKORO_URL=http://kokoro:8880
+      - TTS_VOICE=${TTS_VOICE:-af_heart}
     depends_on:
       chromadb:
         condition: service_healthy
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  kokoro:
+    image: ghcr.io/remsky/kokoro-fastapi-cpu:latest
+    container_name: dave-kokoro
     restart: unless-stopped
 
   searxng:

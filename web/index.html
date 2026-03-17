@@ -739,6 +739,39 @@
       padding: 6px 10px; margin: 8px 0;
     }
 
+    /* Voice select in settings */
+    #voice-select {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 5px 8px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    #voice-select:hover, #voice-select:focus { border-color: var(--accent); }
+
+    /* TTS play button on AI bubbles */
+    .tts-btn {
+      position: absolute;
+      top: 6px; right: 42px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      border-radius: 6px;
+      padding: 2px 6px;
+      font-size: 0.68rem;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.15s, color 0.15s;
+    }
+    .message-row.ai .bubble:hover .tts-btn { opacity: 1; }
+    .tts-btn:hover { color: var(--text); }
+    .tts-btn.playing { color: var(--accent); border-color: var(--accent); opacity: 1; }
+
     /* Scrollbars */
     #chat-window::-webkit-scrollbar,
     #conv-list::-webkit-scrollbar,
@@ -763,6 +796,7 @@
   <h1>Dave-in-a-Box</h1>
   <div class="h-sep"></div>
   <select id="model-select"><option value="">Loading…</option></select>
+  <button class="hbtn icon-btn" id="tts-btn" title="Toggle text-to-speech">🔊</button>
   <button class="hbtn icon-btn" id="export-btn" title="Export conversation as Markdown">⬇</button>
   <button class="hbtn icon-btn" id="settings-btn" title="Settings">⚙</button>
   <button class="hbtn icon-btn" id="debug-btn" title="Show debug info">🐛</button>
@@ -830,6 +864,12 @@
     <div class="setting-label"><span>Chunks Retrieved (TOP_K)</span><span id="topk-val">30</span></div>
     <input type="range" id="topk-slider" min="5" max="50" step="5" value="30" />
     <div class="setting-desc">How many vault chunks are sent to the LLM per query.</div>
+  </div>
+
+  <div class="setting-group">
+    <div class="setting-label"><span>TTS Voice</span></div>
+    <select id="voice-select"><option value="af_heart">af_heart (loading…)</option></select>
+    <div class="setting-desc">Voice used for text-to-speech playback.</div>
   </div>
 </div>
 
@@ -906,6 +946,8 @@ const vaultFileInput  = document.getElementById("vault-file-input");
 const vaultDropZone   = document.getElementById("vault-drop-zone");
 const vaultSubfolder  = document.getElementById("vault-subfolder");
 const vaultBanner     = document.getElementById("vault-banner");
+const ttsBtn          = document.getElementById("tts-btn");
+const voiceSelect     = document.getElementById("voice-select");
 
 // ── State ──
 let isLoading      = false;
@@ -923,6 +965,7 @@ function loadSettings() {
     if (s.temperature !== undefined) tempSlider.value  = s.temperature;
     if (s.threshold   !== undefined) threshSlider.value= s.threshold;
     if (s.top_k       !== undefined) topkSlider.value  = s.top_k;
+    if (s.voice       !== undefined) voiceSelect.value = s.voice;
   } catch {}
   updateSettingLabels();
 }
@@ -931,6 +974,7 @@ function saveSettings() {
     temperature: parseFloat(tempSlider.value),
     threshold:   parseFloat(threshSlider.value),
     top_k:       parseInt(topkSlider.value),
+    voice:       voiceSelect.value,
   }));
 }
 function updateSettingLabels() {
@@ -941,6 +985,7 @@ function updateSettingLabels() {
 [tempSlider, threshSlider, topkSlider].forEach(s => {
   s.addEventListener("input", () => { updateSettingLabels(); saveSettings(); });
 });
+voiceSelect.addEventListener("change", saveSettings);
 loadSettings();
 
 // ── Sidebar toggle ──
@@ -959,16 +1004,48 @@ sidebarToggle.addEventListener("click", () => {
   if (!sidebarOpen) closeVaultPanel();
 });
 
+// ── TTS toggle ──
+const TTS_KEY = "diab_tts";
+let ttsEnabled = localStorage.getItem(TTS_KEY) !== "false"; // default ON
+function applyTTS(enabled) {
+  ttsBtn.textContent = enabled ? "🔊" : "🔇";
+  ttsBtn.classList.toggle("active", enabled);
+  ttsBtn.title = enabled ? "TTS on — click to mute" : "TTS muted — click to enable";
+}
+applyTTS(ttsEnabled);
+ttsBtn.addEventListener("click", () => {
+  ttsEnabled = !ttsEnabled;
+  localStorage.setItem(TTS_KEY, ttsEnabled);
+  applyTTS(ttsEnabled);
+  if (!ttsEnabled) stopSpeaking();
+});
+
 // ── Settings panel ──
+let voicesLoaded = false;
 function openSettings() {
   closeVaultPanel();
   settingsPanel.classList.add("open");
   overlay.classList.add("show");
+  if (!voicesLoaded) loadVoices();
 }
 function closeSettings() { settingsPanel.classList.remove("open"); overlay.classList.remove("show"); }
 settingsBtn.addEventListener("click", openSettings);
 settingsClose.addEventListener("click", closeSettings);
 overlay.addEventListener("click", () => { closeSettings(); closeVaultPanel(); });
+
+async function loadVoices() {
+  try {
+    const res = await fetch(`${API}/tts/voices`);
+    const data = await res.json();
+    const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}").voice || data.default;
+    voiceSelect.innerHTML = data.voices.map(v =>
+      `<option value="${v}"${v === saved ? " selected" : ""}>${v}</option>`
+    ).join("");
+    voicesLoaded = true;
+  } catch {
+    // Kokoro unavailable — keep placeholder
+  }
+}
 
 // ── Debug toggle ──
 debugBtn.addEventListener("click", () => {
@@ -1197,6 +1274,80 @@ function exportConversation() {
 exportBtn.addEventListener("click", exportConversation);
 exportToolbarBtn.addEventListener("click", exportConversation);
 
+// ── TTS Audio Engine ──
+let audioCtx = null;
+let currentSource = null;
+let ttsAbortController = null;
+let activeTtsBtn = null;
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new AudioContext();
+  if (audioCtx.state === "suspended") audioCtx.resume();
+  return audioCtx;
+}
+
+function getVoice() {
+  return voiceSelect.value || "af_heart";
+}
+
+function splitSentences(text) {
+  const chunks = text.match(/[^.!?\n]+[.!?\n]+\s*/g) || [text];
+  return chunks.map(s => s.trim()).filter(Boolean);
+}
+
+async function fetchTTSChunk(text, voice, signal) {
+  const params = new URLSearchParams({ text, voice });
+  const res = await fetch(`${API}/tts?${params}`, { signal });
+  if (!res.ok) throw new Error(`TTS ${res.status}`);
+  return res.arrayBuffer();
+}
+
+function playSingleBuffer(decoded, signal) {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) return resolve();
+    const ctx = getAudioCtx();
+    const source = ctx.createBufferSource();
+    source.buffer = decoded;
+    source.connect(ctx.destination);
+    currentSource = source;
+    source.onended = resolve;
+    source.start();
+    signal.addEventListener("abort", () => { try { source.stop(); } catch {} resolve(); });
+  });
+}
+
+async function speakText(fullText, voice, playBtn) {
+  stopSpeaking();
+  ttsAbortController = new AbortController();
+  const signal = ttsAbortController.signal;
+
+  if (playBtn) { playBtn.textContent = "⏸"; playBtn.classList.add("playing"); activeTtsBtn = playBtn; }
+
+  try {
+    const sentences = splitSentences(fullText);
+    for (const sentence of sentences) {
+      if (signal.aborted) break;
+      const buf = await fetchTTSChunk(sentence, voice, signal);
+      if (signal.aborted) break;
+      const decoded = await getAudioCtx().decodeAudioData(buf);
+      await playSingleBuffer(decoded, signal);
+    }
+  } catch (e) {
+    if (e.name !== "AbortError") logger.warn?.("TTS error:", e);
+  } finally {
+    if (playBtn && !signal.aborted) { playBtn.textContent = "▶"; playBtn.classList.remove("playing"); }
+    if (activeTtsBtn === playBtn) activeTtsBtn = null;
+    currentSource = null;
+  }
+}
+
+function stopSpeaking() {
+  ttsAbortController?.abort();
+  try { currentSource?.stop(); } catch {}
+  currentSource = null;
+  if (activeTtsBtn) { activeTtsBtn.textContent = "▶"; activeTtsBtn.classList.remove("playing"); activeTtsBtn = null; }
+}
+
 // ── Chat toolbar visibility ──
 function updateChatToolbar() {
   chatToolbar.classList.toggle("visible", !!activeConvId);
@@ -1416,6 +1567,7 @@ function appendAIBubble(text, sources, webSources, modelUsed, debugData, stepRow
 
   row.innerHTML = `
     <div class="bubble">
+      <button class="tts-btn" title="Read aloud">▶</button>
       <button class="copy-btn" title="Copy">📋 Copy</button>
       ${esc(text)}
     </div>
@@ -1434,6 +1586,16 @@ function appendAIBubble(text, sources, webSources, modelUsed, debugData, stepRow
       this.classList.add("copied");
       setTimeout(() => { this.textContent = "📋 Copy"; this.classList.remove("copied"); }, 2000);
     });
+  });
+
+  // TTS play button
+  const playBtn = row.querySelector(".tts-btn");
+  playBtn.addEventListener("click", () => {
+    if (playBtn.classList.contains("playing")) {
+      stopSpeaking();
+    } else {
+      speakText(text, getVoice(), playBtn);
+    }
   });
 
   chatWindow.appendChild(row);
@@ -1500,6 +1662,7 @@ async function sendMessage() {
   input.value = "";
   input.style.height = "auto";
   setLoading(true);
+  stopSpeaking();
   appendUserBubble(text);
 
   const steps = createStatusSteps();
@@ -1566,15 +1729,21 @@ async function sendMessage() {
           activeConvId = convId;
           updateChatToolbar();
           const stepRows = [steps.container];
+          const answerText = event.answer || fullAnswer;
           if (streamBubble) {
             streamBubble.finalize(fullAnswer, event.sources || [], event.web_sources || [], event.model_used, event.debug, stepRows);
           } else {
             // Vault miss — no streaming occurred
             stepRows.forEach(r => r.remove());
-            appendAIBubble(event.answer || fullAnswer, event.sources || [], event.web_sources || [], event.model_used, event.debug, null);
+            appendAIBubble(answerText, event.sources || [], event.web_sources || [], event.model_used, event.debug, null);
           }
           updateActiveSidebar();
           loadConversations();
+          // Auto-play TTS if enabled
+          if (ttsEnabled && answerText) {
+            const lastBubble = chatWindow.querySelector(".message-row.ai:last-child .tts-btn");
+            speakText(answerText, getVoice(), lastBubble || null);
+          }
         } else if (event.type === "error") {
           steps.container.remove();
           showToast(`Error: ${event.text}`);
