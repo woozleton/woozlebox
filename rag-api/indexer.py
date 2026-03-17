@@ -11,8 +11,10 @@ Supported file types: .md, .txt, .pdf
 """
 
 import os
+import json
 import hashlib
 import logging
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -154,8 +156,24 @@ def index_vault(vault_path: str, embed_model: str, ollama_base_url: str) -> dict
     logger.info(
         f"Indexing complete: {files_processed} files, {chunks_upserted} chunks, {len(errors)} errors"
     )
-    return {
+    result = {
         "files_processed": files_processed,
         "chunks_upserted": chunks_upserted,
         "errors": errors,
     }
+
+    # Write sidecar so /vault/files can report last-indexed time and stats
+    db_dir = os.environ.get("DB_DIR", "/app/data")
+    meta_path = Path(db_dir) / "index_meta.json"
+    try:
+        meta_path.parent.mkdir(parents=True, exist_ok=True)
+        meta_path.write_text(json.dumps({
+            "last_indexed": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "files_processed": files_processed,
+            "chunks_upserted": chunks_upserted,
+            "errors": errors,
+        }))
+    except Exception as e:
+        logger.warning(f"Could not write index_meta.json: {e}")
+
+    return result

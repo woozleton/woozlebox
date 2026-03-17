@@ -14,11 +14,14 @@ import os
 import json
 import logging
 import asyncio
+import shutil
 from contextlib import asynccontextmanager
+from datetime import datetime
+from pathlib import Path
 from typing import Optional, AsyncGenerator
 
 import httpx
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -37,8 +40,10 @@ EMBED_MODEL       = os.environ.get("EMBED_MODEL", "nomic-embed-text")
 LLM_MODEL         = os.environ.get("LLM_MODEL", "qwen3:30b-a3b")
 SIMILARITY_THRESHOLD = float(os.environ.get("SIMILARITY_THRESHOLD", "0.6"))
 SEARXNG_URL       = os.environ.get("SEARXNG_URL", "http://searxng:8080")
+DB_DIR            = os.environ.get("DB_DIR", "/app/data")
 DEFAULT_TOP_K     = 30
 NOT_FOUND_MSG     = "I couldn't find that in your vault."
+SUPPORTED_UPLOAD_EXTENSIONS = {".md", ".txt", ".pdf"}
 
 
 # --- Lifespan ---
@@ -77,6 +82,9 @@ class IndexResponse(BaseModel):
 class ModelsResponse(BaseModel):
     models: list[str]
     default: str
+
+class VaultDeleteRequest(BaseModel):
+    path: str  # relative path within vault
 
 
 # --- SSE helpers ---
@@ -328,4 +336,104 @@ def delete_conv(cid: str):
 @app.patch("/conversations/{cid}")
 def rename_conv(cid: str, body: ConversationPatch):
     db.rename_conversation(cid, body.title)
+    return {"ok": True}
+
+
+# --- Vault file management endpoints ---
+
+def _read_index_meta() -> dict:
+    meta_path = Path(DB_DIR) / "index_meta.json"
+    try:
+        return json.loads(meta_path.read_text())
+    except Exception:
+        return {"last_indexed": None, "files_processed": 0, "chunks_upserted": 0, "errors": []}
+
+
+def _get_chunk_counts() -> dict[str, int]:
+    """Return {source_filename: chunk_count} from ChromaDB metadata."""
+    counts: dict[str, int] = {}
+    try:
+        chroma_client = get_chroma_client()
+        collection = chroma_client.get_collection(COLLECTION_NAME)
+        result = collection.get(include=["metadatas"])
+        for meta in result.get("metadatas", []):
+            src = meta.get("source", "")
+            if src:
+                counts[src] = counts.get(src, 0) + 1
+    except Exception as e:
+        logger.warning(f"Could not read chunk counts: {e}")
+    return counts
+
+
+@app.get("/vault/files")
+def list_vault_files():
+    vault = Path(VAULT_PATH)
+    if not vault.exists():
+        raise HTTPException(status_code=503, detail="Vault path not found")
+
+    supported = {".md", ".txt", ".pdf"}
+    chunk_counts = _get_chunk_counts()
+    meta = _read_index_meta()
+
+    files = []
+    for f in sorted(vault.rglob("*")):
+        if f.is_file() and f.suffix.lower() in supported:
+            rel = f.relative_to(vault)
+            stat = f.stat()
+            files.append({
+                "name": f.name,
+                "path": str(rel).replace("\\", "/"),
+                "size_bytes": stat.st_size,
+                "modified_at": datetime.utcfromtimestamp(stat.st_mtime).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "chunk_count": chunk_counts.get(f.name, 0),
+            })
+
+    return {
+        "files": files,
+        "last_indexed": meta.get("last_indexed"),
+        "files_processed": meta.get("files_processed", 0),
+        "chunks_upserted": meta.get("chunks_upserted", 0),
+    }
+
+
+@app.post("/vault/upload")
+async def upload_vault_file(file: UploadFile = File(...), subfolder: str = Form("")):
+    suffix = Path(file.filename).suffix.lower()
+    if suffix not in SUPPORTED_UPLOAD_EXTENSIONS:
+        raise HTTPException(status_code=400, detail=f"Unsupported file type: {suffix}")
+
+    vault = Path(VAULT_PATH)
+    # Sanitize subfolder: strip leading slashes/dots, no parent traversal
+    safe_sub = Path(subfolder.strip("/").strip()) if subfolder.strip() else Path("")
+    for part in safe_sub.parts:
+        if part in (".", ".."):
+            raise HTTPException(status_code=400, detail="Invalid subfolder path")
+
+    dest_dir = vault / safe_sub
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest = dest_dir / file.filename
+
+    with dest.open("wb") as out:
+        shutil.copyfileobj(file.file, out)
+
+    return {"ok": True, "path": str((safe_sub / file.filename)).replace("\\", "/")}
+
+
+@app.delete("/vault/files")
+def delete_vault_file(body: VaultDeleteRequest):
+    vault = Path(VAULT_PATH)
+    # Resolve and ensure path stays within vault
+    target = (vault / body.path).resolve()
+    try:
+        vault_resolved = vault.resolve()
+        target.relative_to(vault_resolved)  # raises ValueError if outside vault
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Path outside vault")
+
+    if not target.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    if not target.is_file():
+        raise HTTPException(status_code=400, detail="Not a file")
+
+    target.unlink()
     return {"ok": True}
