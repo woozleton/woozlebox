@@ -95,6 +95,10 @@ class ModelsResponse(BaseModel):
 class VaultDeleteRequest(BaseModel):
     path: str  # relative path within vault
 
+class VaultRenameRequest(BaseModel):
+    path: str
+    new_name: str
+
 
 # --- SSE helpers ---
 def sse(event: dict) -> str:
@@ -271,8 +275,22 @@ Answer:"""
 # --- Endpoints ---
 
 @app.get("/health")
-def health():
-    return {"status": "ok", "vault": VAULT_PATH, "llm_model": LLM_MODEL, "embed_model": EMBED_MODEL}
+async def health():
+    import httpx
+    services = {}
+    async with httpx.AsyncClient(timeout=2) as client:
+        for name, url in [
+            ("ollama", f"{OLLAMA_BASE_URL}/api/tags"),
+            ("chromadb", f"http://{os.environ.get('CHROMA_HOST','chromadb')}:{os.environ.get('CHROMA_PORT_INTERNAL','8000')}/api/v2/heartbeat"),
+            ("searxng", f"{os.environ.get('SEARXNG_URL','http://searxng:8080')}/healthz"),
+            ("kokoro", f"{os.environ.get('KOKORO_URL','http://kokoro:8880')}/health"),
+        ]:
+            try:
+                r = await client.get(url)
+                services[name] = r.status_code < 400
+            except Exception:
+                services[name] = False
+    return {"status": "ok", "services": services}
 
 
 @app.get("/models", response_model=ModelsResponse)
@@ -491,6 +509,24 @@ def delete_vault_file(body: VaultDeleteRequest):
 
     target.unlink()
     return {"ok": True}
+
+
+@app.post("/vault/rename")
+def rename_vault_file(body: VaultRenameRequest):
+    vault = Path(VAULT_PATH)
+    target = (vault / body.path).resolve()
+    try:
+        target.relative_to(vault.resolve())
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Path outside vault")
+    if not target.is_file():
+        raise HTTPException(status_code=404, detail="File not found")
+    new_name = Path(body.new_name).name  # strip any path components
+    dest = target.parent / new_name
+    if dest.exists():
+        raise HTTPException(status_code=409, detail="File already exists")
+    target.rename(dest)
+    return {"ok": True, "path": str(dest.relative_to(vault.resolve()))}
 
 
 @app.get("/vault/file")

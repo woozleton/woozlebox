@@ -238,7 +238,27 @@
     }
     .welcome .big-icon { font-size: 2.8rem; margin-bottom: 14px; }
     .welcome h2 { font-size: 1.2rem; color: var(--text); margin-bottom: 8px; }
-    .welcome p { font-size: 0.86rem; line-height: 1.6; }
+    .welcome p { font-size: 0.86rem; line-height: 1.6; color: var(--text-dim); }
+    #chat-suggestions { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:20px; max-width:500px; }
+    .suggestion-chip {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 999px; padding: 7px 16px;
+      font-size: 0.82rem; color: var(--text-dim); cursor: pointer;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+    .suggestion-chip:hover { border-color: var(--accent); color: var(--text); background: var(--surface3); }
+
+    .text-size-btn {
+      background: var(--surface3); border: 1px solid var(--border);
+      color: var(--text-dim); border-radius: 8px;
+      padding: 4px 12px; font-size: 0.82rem; cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .text-size-btn:hover, .text-size-btn.active { border-color: var(--accent); color: var(--accent); }
+
+    body.text-small  { font-size: 13px; }
+    body.text-medium { font-size: 15px; }
+    body.text-large  { font-size: 17px; }
 
     /* ── Message rows ── */
     .message-row {
@@ -975,9 +995,10 @@
   <div id="chat-area">
     <div id="chat-window">
       <div class="welcome" id="welcome-msg">
-        <div class="big-icon">🧠</div>
-        <h2>Ask me anything about your vault</h2>
-        <p>I only know what's in your files.<br>Toggle 🌐 to also search the web.</p>
+        <div class="big-icon" id="welcome-icon">🧠</div>
+        <h2 id="welcome-title">Ask me anything</h2>
+        <p>I know what's in your vault.<br>Toggle 🌐 to also search the web.</p>
+        <div id="chat-suggestions"></div>
       </div>
     </div>
 
@@ -1070,11 +1091,23 @@
     <div class="setting-desc">Show distance/threshold/chunk counts on responses.</div>
   </div>
 
-  <div class="setting-group" style="margin-top:auto;padding-top:16px;border-top:1px solid var(--border);">
-    <div style="display:flex;align-items:center;gap:8px;font-size:0.75rem;color:var(--text-dim);">
-      <span class="dot" id="status-dot"></span>
-      <span id="status-text">Connecting…</span>
+  <div class="setting-group">
+    <div class="setting-label"><span>Text Size</span></div>
+    <div style="display:flex;gap:6px;">
+      <button class="text-size-btn" data-size="small">A</button>
+      <button class="text-size-btn" data-size="medium" style="font-size:1rem;">A</button>
+      <button class="text-size-btn" data-size="large" style="font-size:1.2rem;">A</button>
     </div>
+  </div>
+
+  <div class="setting-group">
+    <div class="setting-label"><span>App Name</span></div>
+    <input type="text" id="app-name-input" placeholder="Dave-in-a-Box" style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:5px 10px;font-size:0.82rem;font-family:inherit;outline:none;width:100%;" />
+  </div>
+
+  <div class="setting-group" style="margin-top:auto;padding-top:16px;border-top:1px solid var(--border);">
+    <div style="font-size:0.72rem;font-weight:600;color:var(--text-faint);margin-bottom:8px;">SERVICES</div>
+    <div id="service-status-list" style="display:flex;flex-direction:column;gap:6px;font-size:0.75rem;color:var(--text-dim);"></div>
   </div>
   </div>
 
@@ -1126,8 +1159,6 @@ const input           = document.getElementById("message-input");
 const sendBtn         = document.getElementById("send-btn");
 const webBtn          = document.getElementById("web-btn");
 const modelSelect     = document.getElementById("model-select");
-const statusDot       = document.getElementById("status-dot");
-const statusText      = document.getElementById("status-text");
 const settingsBtn     = document.getElementById("settings-btn");
 const settingsPanel   = document.getElementById("settings-panel");
 const settingsClose   = document.getElementById("settings-close");
@@ -1414,30 +1445,85 @@ async function checkHealth() {
   try {
     const res = await fetch(`${API}/health`);
     const data = await res.json();
-    statusDot.className = "dot green";
-    statusText.textContent = `API ready · ${data.llm_model} · ${data.embed_model}`;
+    const list = document.getElementById("service-status-list");
+    if (list) {
+      const labels = { ollama: "Ollama", chromadb: "ChromaDB", searxng: "SearXNG", kokoro: "Kokoro TTS" };
+      list.innerHTML = Object.entries(data.services || {}).map(([k, ok]) =>
+        `<div style="display:flex;align-items:center;gap:8px;"><span class="dot ${ok ? 'green' : 'orange'}"></span>${labels[k] || k}</div>`
+      ).join("");
+    }
   } catch (e) {
-    statusDot.className = "dot orange";
-    statusText.textContent = `API unreachable (${e.message})`;
+    const list = document.getElementById("service-status-list");
+    if (list) list.innerHTML = `<div style="color:var(--danger)">API unreachable</div>`;
   }
 }
 checkHealth();
 
+// ── Text size ──
+const TEXT_SIZE_KEY = "diab_text_size";
+function applyTextSize(size) {
+  document.body.classList.remove("text-small","text-medium","text-large");
+  document.body.classList.add(`text-${size}`);
+  document.querySelectorAll(".text-size-btn").forEach(b => b.classList.toggle("active", b.dataset.size === size));
+  localStorage.setItem(TEXT_SIZE_KEY, size);
+}
+document.querySelectorAll(".text-size-btn").forEach(b => b.addEventListener("click", () => applyTextSize(b.dataset.size)));
+applyTextSize(localStorage.getItem(TEXT_SIZE_KEY) || "medium");
+
+// ── App name / branding ──
+const BRAND_KEY = "diab_brand";
+function applyBrand() {
+  const saved = JSON.parse(localStorage.getItem(BRAND_KEY) || "{}");
+  if (saved.name) {
+    document.getElementById("sidebar-title").textContent = saved.name;
+    document.title = saved.name;
+  }
+  const inp = document.getElementById("app-name-input");
+  if (inp) inp.value = saved.name || "";
+}
+document.getElementById("app-name-input")?.addEventListener("input", e => {
+  const name = e.target.value.trim() || "Dave-in-a-Box";
+  localStorage.setItem(BRAND_KEY, JSON.stringify({ name }));
+  document.getElementById("sidebar-title").textContent = name;
+  document.title = name;
+});
+applyBrand();
+
+// ── Chat suggestions ──
+const SUGGESTIONS = [
+  "What topics are covered in my vault?",
+  "Summarize the most recent documents",
+  "What are the key themes across my files?",
+  "Find anything related to goals or plans",
+  "What questions can you answer from my vault?",
+];
+function renderSuggestions() {
+  const el = document.getElementById("chat-suggestions");
+  if (!el) return;
+  el.innerHTML = SUGGESTIONS.sort(() => Math.random() - 0.5).slice(0, 4).map(s =>
+    `<button class="suggestion-chip">${s}</button>`
+  ).join("");
+  el.querySelectorAll(".suggestion-chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      input.value = chip.textContent;
+      input.style.height = "44px";
+      input.dispatchEvent(new Event("input"));
+      sendMessage();
+    });
+  });
+}
+renderSuggestions();
+
 // ── Re-index (shared logic) ──
 async function runReindex({ statusBtn, statusBtnLabel } = {}) {
   if (statusBtn) { statusBtn.disabled = true; statusBtn.textContent = "Indexing…"; }
-  statusDot.className = "dot";
-  statusText.textContent = "Re-indexing vault…";
   try {
     const res = await fetch(`${API}/index`, { method: "POST" });
-    const data = await res.json();
-    statusDot.className = data.errors?.length ? "dot orange" : "dot green";
-    statusText.textContent = `Indexed ${data.files_processed} files, ${data.chunks_upserted} chunks` +
-      (data.errors?.length ? ` — ${data.errors.length} error(s)` : "");
-    if (vaultPanel.classList.contains("open")) loadVaultFiles();
+    await res.json();
+    if (vaultPanel.classList.contains("open") || vaultPanel.classList.contains("pinned")) loadVaultFiles();
+    checkHealth();
   } catch (e) {
-    statusDot.className = "dot orange";
-    statusText.textContent = `Re-index failed: ${e.message}`;
+    showToast(`Re-index failed: ${e.message}`);
   } finally {
     if (statusBtn) { statusBtn.disabled = false; statusBtn.textContent = statusBtnLabel || "↺ Re-index"; }
   }
@@ -1795,8 +1881,53 @@ function makeFileItem(f) {
     <span class="vault-chunk-count">${chunkLabel}</span>
     <button class="vault-delete-btn" title="Delete ${esc(f.name)}">🗑</button>
   `;
+  // Single click → preview
+  el.querySelector(".vault-file-name").addEventListener("click", () => previewVaultFile(f));
+  // Double click → rename
+  el.querySelector(".vault-file-name").addEventListener("dblclick", (e) => {
+    e.stopPropagation();
+    startRename(el, f);
+  });
   el.querySelector(".vault-delete-btn").addEventListener("click", () => deleteVaultFile(f));
   return el;
+}
+
+function startRename(el, f) {
+  const nameEl = el.querySelector(".vault-file-name");
+  const orig = f.name;
+  const inp = document.createElement("input");
+  inp.value = orig;
+  inp.style.cssText = "background:var(--surface3);border:1px solid var(--accent);border-radius:4px;color:var(--text);padding:1px 6px;font-size:0.8rem;font-family:inherit;outline:none;flex:1;min-width:0;";
+  nameEl.replaceWith(inp);
+  inp.focus();
+  inp.select();
+  const finish = async (save) => {
+    const newName = inp.value.trim();
+    if (save && newName && newName !== orig) {
+      try {
+        const res = await fetch(`${API}/vault/rename`, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ path: f.path, new_name: newName }) });
+        if (!res.ok) throw new Error(await res.text());
+        loadVaultFiles();
+        return;
+      } catch(e) { showToast(`Rename failed: ${e.message}`); }
+    }
+    inp.replaceWith(nameEl);
+  };
+  inp.addEventListener("keydown", e => { if (e.key === "Enter") finish(true); if (e.key === "Escape") finish(false); });
+  inp.addEventListener("blur", () => finish(true));
+}
+
+async function previewVaultFile(f) {
+  const modal = document.getElementById("file-modal");
+  const title = document.getElementById("file-modal-title");
+  const content = document.getElementById("file-modal-content");
+  title.textContent = f.name;
+  content.textContent = "Loading…";
+  modal.style.display = "flex";
+  try {
+    const res = await fetch(`${API}/vault/file?path=${encodeURIComponent(f.path)}`);
+    content.textContent = await res.text();
+  } catch(e) { content.textContent = `Failed to load: ${e.message}`; }
 }
 
 async function deleteVaultFile(f) {
