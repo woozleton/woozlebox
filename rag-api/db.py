@@ -1,11 +1,13 @@
 """
-db.py — SQLite-backed conversation storage for Dave-in-a-Box.
+db.py — SQLite-backed storage for Dave-in-a-Box.
 
 Database location: /app/data/conversations.db (persisted via Docker volume rag_data).
 
 Schema:
-  conversations(id, title, created_at, updated_at)
+  projects(id, name, system_prompt, created_at)
+  conversations(id, title, project_id, created_at, updated_at)
   messages(id, conversation_id, role, content, sources, web_sources, model_used, created_at)
+  memory(id, fact, created_at)
 
 sources and web_sources are stored as JSON text.
 """
@@ -37,9 +39,17 @@ def init_db():
     os.makedirs(DB_DIR, exist_ok=True)
     with _conn() as conn:
         conn.executescript("""
+            CREATE TABLE IF NOT EXISTS projects (
+                id            TEXT PRIMARY KEY,
+                name          TEXT NOT NULL,
+                system_prompt TEXT,
+                created_at    TEXT NOT NULL
+            );
+
             CREATE TABLE IF NOT EXISTS conversations (
                 id         TEXT PRIMARY KEY,
                 title      TEXT NOT NULL DEFAULT 'New Chat',
+                project_id TEXT REFERENCES projects(id) ON DELETE SET NULL,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             );
@@ -55,18 +65,68 @@ def init_db():
                 created_at      TEXT NOT NULL
             );
 
+            CREATE TABLE IF NOT EXISTS memory (
+                id         TEXT PRIMARY KEY,
+                fact       TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
+
             CREATE INDEX IF NOT EXISTS idx_messages_conversation
                 ON messages(conversation_id, created_at);
         """)
+        # Migrate: add project_id column if it doesn't exist (for existing DBs)
+        try:
+            conn.execute("ALTER TABLE conversations ADD COLUMN project_id TEXT REFERENCES projects(id) ON DELETE SET NULL")
+        except Exception:
+            pass  # Column already exists
 
 
-def create_conversation(title: str = "New Chat") -> str:
+# ── Projects ──
+
+def create_project(name: str, system_prompt: str = None) -> str:
+    pid = str(uuid.uuid4())
+    with _conn() as conn:
+        conn.execute(
+            "INSERT INTO projects(id, name, system_prompt, created_at) VALUES (?,?,?,?)",
+            (pid, name, system_prompt, _now()),
+        )
+    return pid
+
+
+def list_projects() -> list[dict]:
+    with _conn() as conn:
+        rows = conn.execute("SELECT * FROM projects ORDER BY created_at ASC").fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_project(pid: str) -> Optional[dict]:
+    with _conn() as conn:
+        row = conn.execute("SELECT * FROM projects WHERE id = ?", (pid,)).fetchone()
+    return dict(row) if row else None
+
+
+def update_project(pid: str, name: str = None, system_prompt: str = None):
+    with _conn() as conn:
+        if name is not None:
+            conn.execute("UPDATE projects SET name=? WHERE id=?", (name, pid))
+        if system_prompt is not None:
+            conn.execute("UPDATE projects SET system_prompt=? WHERE id=?", (system_prompt, pid))
+
+
+def delete_project(pid: str):
+    with _conn() as conn:
+        conn.execute("DELETE FROM projects WHERE id = ?", (pid,))
+
+
+# ── Conversations ──
+
+def create_conversation(title: str = "New Chat", project_id: str = None) -> str:
     cid = str(uuid.uuid4())
     now = _now()
     with _conn() as conn:
         conn.execute(
-            "INSERT INTO conversations(id, title, created_at, updated_at) VALUES (?,?,?,?)",
-            (cid, title, now, now),
+            "INSERT INTO conversations(id, title, project_id, created_at, updated_at) VALUES (?,?,?,?,?)",
+            (cid, title, project_id, now, now),
         )
     return cid
 
@@ -74,7 +134,7 @@ def create_conversation(title: str = "New Chat") -> str:
 def list_conversations() -> list[dict]:
     with _conn() as conn:
         rows = conn.execute("""
-            SELECT c.id, c.title, c.created_at, c.updated_at,
+            SELECT c.id, c.title, c.project_id, c.created_at, c.updated_at,
                    COUNT(m.id) AS message_count
             FROM conversations c
             LEFT JOIN messages m ON m.conversation_id = c.id
@@ -125,6 +185,14 @@ def rename_conversation(cid: str, title: str):
         )
 
 
+def move_conversation(cid: str, project_id: Optional[str]):
+    with _conn() as conn:
+        conn.execute(
+            "UPDATE conversations SET project_id=?, updated_at=? WHERE id=?",
+            (project_id, _now(), cid),
+        )
+
+
 def add_message(
     conversation_id: str,
     role: str,
@@ -170,7 +238,6 @@ def search_conversations(query: str) -> list[dict]:
             ORDER BY c.updated_at DESC
             LIMIT 50
         """, (q, q)).fetchall()
-    # Deduplicate by conv id, keep best snippet
     seen = {}
     results = []
     for r in rows:
@@ -178,7 +245,6 @@ def search_conversations(query: str) -> list[dict]:
         cid = r["id"]
         if cid not in seen:
             seen[cid] = True
-            # Truncate snippet around match
             content = r["snippet"] or ""
             idx = content.lower().find(query.lower())
             if idx >= 0:
@@ -201,3 +267,26 @@ def auto_title(conversation_id: str, text: str):
             "UPDATE conversations SET title=?, updated_at=? WHERE id=? AND title='New Chat'",
             (title, _now(), conversation_id),
         )
+
+
+# ── Memory ──
+
+def list_memory() -> list[dict]:
+    with _conn() as conn:
+        rows = conn.execute("SELECT * FROM memory ORDER BY created_at ASC").fetchall()
+    return [dict(r) for r in rows]
+
+
+def add_memory_fact(fact: str) -> str:
+    mid = str(uuid.uuid4())
+    with _conn() as conn:
+        conn.execute(
+            "INSERT INTO memory(id, fact, created_at) VALUES (?,?,?)",
+            (mid, fact.strip(), _now()),
+        )
+    return mid
+
+
+def delete_memory_fact(mid: str):
+    with _conn() as conn:
+        conn.execute("DELETE FROM memory WHERE id = ?", (mid,))

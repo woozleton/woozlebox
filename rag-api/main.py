@@ -75,15 +75,28 @@ class ChatRequest(BaseModel):
     message: str
     model: Optional[str] = None
     conversation_id: Optional[str] = None
+    project_id: Optional[str] = None
     temperature: float = 0.2
     threshold: Optional[float] = None
     top_k: int = DEFAULT_TOP_K
     web_search: bool = False
     history_limit: int = 10
     compact_threshold: int = 75  # % of context at which to auto-compact
+    user_context: Optional[str] = None  # profile name/role/preferences
 
 class ConversationPatch(BaseModel):
     title: str
+
+class ProjectCreate(BaseModel):
+    name: str
+    system_prompt: Optional[str] = None
+
+class ProjectPatch(BaseModel):
+    name: Optional[str] = None
+    system_prompt: Optional[str] = None
+
+class MemoryFactCreate(BaseModel):
+    fact: str
 
 class IndexResponse(BaseModel):
     files_processed: int
@@ -223,7 +236,28 @@ async def chat_stream(request: ChatRequest) -> AsyncGenerator[str, None]:
     context_text = "\n\n" + "\n\n".join(context_parts)
     source_instruction = "Use the vault context as your primary source." if relevant and web_sources else ""
 
-    system_prompt = f"""You are Dave's personal AI assistant. Answer the question using ONLY the information in the provided context. Do not use any outside knowledge. If the context does not contain enough information, say so. {source_instruction}
+    # Build system prompt — project override, memory, user profile
+    base_instructions = "You are a personal AI assistant. Answer the question using ONLY the information in the provided context. Do not use any outside knowledge. If the context does not contain enough information, say so."
+
+    # Use project system prompt if provided
+    if request.project_id:
+        project = db.get_project(request.project_id)
+        if project and project.get("system_prompt"):
+            base_instructions = project["system_prompt"]
+
+    # Inject memory facts
+    memory_facts = db.list_memory()
+    memory_section = ""
+    if memory_facts:
+        facts_text = "\n".join(f"- {m['fact']}" for m in memory_facts)
+        memory_section = f"\n\nWhat you know about the user:\n{facts_text}"
+
+    # Inject user profile/preferences
+    user_section = ""
+    if request.user_context:
+        user_section = f"\n\nUser profile:\n{request.user_context}"
+
+    system_prompt = f"""{base_instructions}{memory_section}{user_section} {source_instruction}
 
 Context:
 {context_text}
@@ -509,6 +543,45 @@ async def tts_proxy(text: str, voice: str = DEFAULT_VOICE, format: str = "wav"):
     )
 
 
+# --- Project endpoints ---
+
+@app.get("/projects")
+def list_projects():
+    return db.list_projects()
+
+@app.post("/projects")
+def create_project(body: ProjectCreate):
+    pid = db.create_project(body.name, body.system_prompt)
+    return {"id": pid}
+
+@app.patch("/projects/{pid}")
+def update_project(pid: str, body: ProjectPatch):
+    db.update_project(pid, body.name, body.system_prompt)
+    return {"ok": True}
+
+@app.delete("/projects/{pid}")
+def delete_project(pid: str):
+    db.delete_project(pid)
+    return {"ok": True}
+
+
+# --- Memory endpoints ---
+
+@app.get("/memory")
+def list_memory():
+    return db.list_memory()
+
+@app.post("/memory")
+def add_memory(body: MemoryFactCreate):
+    mid = db.add_memory_fact(body.fact)
+    return {"id": mid}
+
+@app.delete("/memory/{mid}")
+def delete_memory(mid: str):
+    db.delete_memory_fact(mid)
+    return {"ok": True}
+
+
 # --- Conversation endpoints ---
 
 @app.get("/conversations/search")
@@ -524,8 +597,8 @@ def list_convs():
 
 
 @app.post("/conversations")
-def create_conv():
-    cid = db.create_conversation()
+def create_conv(project_id: Optional[str] = None):
+    cid = db.create_conversation(project_id=project_id)
     return {"id": cid}
 
 

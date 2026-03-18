@@ -587,6 +587,65 @@
       font-family: monospace; color: var(--accent); font-size: 0.85rem;
     }
     .setting-desc { font-size: 0.7rem; color: var(--text-faint); line-height: 1.4; }
+    .settings-section-header {
+      font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em;
+      color: var(--text-faint); text-transform: uppercase;
+      padding: 12px 0 4px; border-top: 1px solid var(--border); margin-top: 4px;
+    }
+    .settings-section-header:first-child { border-top: none; padding-top: 0; margin-top: 0; }
+    .setting-input {
+      background: var(--surface3); border: 1px solid var(--border); border-radius: 8px;
+      color: var(--text); padding: 5px 10px; font-size: 0.82rem; font-family: inherit;
+      outline: none; width: 100%; box-sizing: border-box;
+    }
+    .setting-input:focus { border-color: var(--accent); }
+    textarea.setting-input { resize: vertical; min-height: 70px; line-height: 1.5; }
+    .memory-list { display: flex; flex-direction: column; gap: 4px; max-height: 180px; overflow-y: auto; }
+    .memory-fact {
+      display: flex; align-items: flex-start; gap: 6px;
+      background: var(--surface3); border-radius: 6px; padding: 5px 8px;
+      font-size: 0.75rem; color: var(--text-dim);
+    }
+    .memory-fact span { flex: 1; line-height: 1.4; }
+    .memory-fact button { background: none; border: none; color: var(--text-faint); cursor: pointer; padding: 0; font-size: 0.8rem; flex-shrink: 0; line-height: 1; }
+    .memory-fact button:hover { color: var(--danger); }
+    .memory-add-row { display: flex; gap: 6px; }
+    .memory-add-row input { flex: 1; }
+    .memory-add-row button {
+      background: var(--accent-dim); border: none; border-radius: 6px;
+      color: #fff; cursor: pointer; padding: 5px 10px; font-size: 0.78rem; white-space: nowrap;
+    }
+    .memory-add-row button:hover { background: var(--accent); }
+    .project-list { display: flex; flex-direction: column; gap: 4px; }
+    .project-item {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--surface3); border-radius: 6px; padding: 6px 8px;
+      font-size: 0.78rem; color: var(--text-dim); cursor: pointer;
+    }
+    .project-item.active { border: 1px solid var(--accent); color: var(--text); }
+    .project-item span { flex: 1; }
+    .project-item button { background: none; border: none; color: var(--text-faint); cursor: pointer; padding: 0; font-size: 0.8rem; }
+    .project-item button:hover { color: var(--danger); }
+    .project-add-row { display: flex; gap: 6px; margin-top: 4px; }
+    .project-add-row input { flex: 1; }
+    .project-add-row button {
+      background: var(--accent-dim); border: none; border-radius: 6px;
+      color: #fff; cursor: pointer; padding: 5px 10px; font-size: 0.78rem; white-space: nowrap;
+    }
+    .project-add-row button:hover { background: var(--accent); }
+    .color-swatches { display: flex; gap: 6px; flex-wrap: wrap; }
+    .color-swatch {
+      width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+      border: 2px solid transparent; flex-shrink: 0;
+    }
+    .color-swatch.active { border-color: var(--text); }
+    .logo-upload-row { display: flex; gap: 8px; align-items: center; }
+    .logo-upload-row button {
+      background: var(--surface3); border: 1px solid var(--border); border-radius: 6px;
+      color: var(--text-dim); cursor: pointer; padding: 4px 10px; font-size: 0.78rem;
+    }
+    .logo-upload-row button:hover { border-color: var(--accent); color: var(--text); }
+    .logo-preview { width: 28px; height: 28px; border-radius: 6px; object-fit: cover; }
     input[type=range] {
       width: 100%;
       accent-color: var(--accent);
@@ -978,7 +1037,8 @@
   <div id="sidebar">
     <!-- Logo -->
     <div id="sidebar-logo">
-      <div class="logo">D</div>
+      <div class="logo" id="logo-letter">D</div>
+      <img id="logo-img" style="display:none;width:28px;height:28px;border-radius:6px;object-fit:cover;" />
       <span id="sidebar-title">Dave-in-a-Box</span>
     </div>
 
@@ -1088,6 +1148,58 @@
   <div class="panel-resize-handle" id="settings-resize-handle"></div>
   <h2 style="display:flex;align-items:center;justify-content:space-between;"><div style="display:flex;align-items:center;gap:8px;"><button id="settings-pin-btn" class="panel-pin-btn" title="Pin panel"></button>Settings</div><button id="settings-close" class="panel-close-btn">✕</button></h2>
 
+  <!-- ── Profile ── -->
+  <div class="settings-section-header">Profile</div>
+
+  <div class="setting-group">
+    <div class="setting-label"><span>Name</span></div>
+    <input type="text" id="profile-name" class="setting-input" placeholder="Your name" />
+  </div>
+
+  <div class="setting-group">
+    <div class="setting-label"><span>Role</span></div>
+    <input type="text" id="profile-role" class="setting-input" placeholder="e.g. Network Security Engineer" />
+  </div>
+
+  <div class="setting-group">
+    <div class="setting-label"><span>AI Preferences</span></div>
+    <textarea id="profile-prefs" class="setting-input" placeholder="e.g. Be concise. Use bullet points. Assume expert-level knowledge."></textarea>
+    <div class="setting-desc">How you'd like the AI to respond to you.</div>
+  </div>
+
+  <!-- ── Memory ── -->
+  <div class="settings-section-header">Memory</div>
+
+  <div class="setting-group">
+    <div class="setting-desc">Facts the AI knows about you, injected into every conversation.</div>
+    <div id="memory-list" class="memory-list"></div>
+    <div class="memory-add-row">
+      <input type="text" id="memory-input" class="setting-input" placeholder="Add a fact…" />
+      <button id="memory-add-btn">Add</button>
+    </div>
+  </div>
+
+  <!-- ── Projects ── -->
+  <div class="settings-section-header">Projects</div>
+
+  <div class="setting-group">
+    <div class="setting-desc">Group conversations. Active project applies its system prompt to new chats.</div>
+    <div id="project-list" class="project-list"></div>
+    <div class="project-add-row">
+      <input type="text" id="project-name-input" class="setting-input" placeholder="New project name…" />
+      <button id="project-add-btn">Add</button>
+    </div>
+  </div>
+
+  <div class="setting-group" id="project-prompt-group" style="display:none;">
+    <div class="setting-label"><span>System Prompt</span><span id="project-prompt-label" style="font-family:inherit;font-size:0.75rem;color:var(--text-faint);"></span></div>
+    <textarea id="project-prompt-input" class="setting-input" placeholder="Custom instructions for this project…"></textarea>
+    <button id="project-prompt-save" style="background:var(--accent-dim);border:none;border-radius:6px;color:#fff;cursor:pointer;padding:5px 12px;font-size:0.78rem;align-self:flex-start;">Save Prompt</button>
+  </div>
+
+  <!-- ── AI ── -->
+  <div class="settings-section-header">AI</div>
+
   <div class="setting-group">
     <div class="setting-label"><span>Model</span></div>
     <select id="model-select"><option value="">Loading…</option></select>
@@ -1103,7 +1215,7 @@
   <div class="setting-group">
     <div class="setting-label"><span>Similarity Threshold</span><span id="thresh-val">0.60</span></div>
     <input type="range" id="thresh-slider" min="0.1" max="1.0" step="0.05" value="0.6" />
-    <div class="setting-desc">How close a chunk must be to your question to count. Lower = stricter.</div>
+    <div class="setting-desc">How close a chunk must be to your question to count.</div>
   </div>
 
   <div class="setting-group">
@@ -1112,17 +1224,65 @@
     <div class="setting-desc">How many vault chunks are sent to the LLM per query.</div>
   </div>
 
+  <!-- ── Conversation ── -->
+  <div class="settings-section-header">Conversation</div>
+
   <div class="setting-group">
-    <div class="setting-label"><span>Conversation History</span><span id="history-val">10</span></div>
+    <div class="setting-label"><span>History Limit</span><span id="history-val">10</span></div>
     <input type="range" id="history-slider" min="0" max="40" step="2" value="10" />
-    <div class="setting-desc">How many past messages are included for context. 0 = no memory.</div>
+    <div class="setting-desc">Past messages included for context. 0 = no memory.</div>
   </div>
 
   <div class="setting-group">
     <div class="setting-label"><span>Auto-Compact Threshold</span><span id="compact-val">75%</span></div>
     <input type="range" id="compact-slider" min="0" max="95" step="5" value="75" />
-    <div class="setting-desc">Auto-summarize history when context reaches this %. 0 = disabled.</div>
+    <div class="setting-desc">Auto-summarize history at this context %. 0 = disabled.</div>
   </div>
+
+  <!-- ── Appearance ── -->
+  <div class="settings-section-header">Appearance</div>
+
+  <div class="setting-group">
+    <div class="setting-label"><span>Text Size</span></div>
+    <div style="display:flex;gap:6px;">
+      <button class="text-size-btn" data-size="small">A</button>
+      <button class="text-size-btn" data-size="medium" style="font-size:1rem;">A</button>
+      <button class="text-size-btn" data-size="large" style="font-size:1.2rem;">A</button>
+    </div>
+  </div>
+
+  <div class="setting-group">
+    <div class="setting-label"><span>Accent Color</span></div>
+    <div class="color-swatches">
+      <div class="color-swatch" data-color="#7c6af7" style="background:#7c6af7;" title="Purple (default)"></div>
+      <div class="color-swatch" data-color="#3b82f6" style="background:#3b82f6;" title="Blue"></div>
+      <div class="color-swatch" data-color="#10b981" style="background:#10b981;" title="Green"></div>
+      <div class="color-swatch" data-color="#f59e0b" style="background:#f59e0b;" title="Amber"></div>
+      <div class="color-swatch" data-color="#ef4444" style="background:#ef4444;" title="Red"></div>
+      <div class="color-swatch" data-color="#ec4899" style="background:#ec4899;" title="Pink"></div>
+      <input type="color" id="accent-custom" title="Custom color" style="width:28px;height:28px;border-radius:50%;border:2px solid var(--border);cursor:pointer;padding:0;background:none;" />
+    </div>
+    <div class="setting-desc">Accent color used throughout the UI.</div>
+  </div>
+
+  <div class="setting-group">
+    <div class="setting-label"><span>App Name</span></div>
+    <input type="text" id="app-name-input" class="setting-input" placeholder="Dave-in-a-Box" />
+  </div>
+
+  <div class="setting-group">
+    <div class="setting-label"><span>Logo</span></div>
+    <div class="logo-upload-row">
+      <button id="logo-upload-btn">Upload image…</button>
+      <button id="logo-reset-btn" style="display:none;">Reset</button>
+      <img id="logo-preview" class="logo-preview" style="display:none;" />
+    </div>
+    <input type="file" id="logo-file-input" accept="image/*" style="display:none;" />
+    <div class="setting-desc">Replace the logo in the sidebar. PNG, JPG, or SVG.</div>
+  </div>
+
+  <!-- ── Voice ── -->
+  <div class="settings-section-header">Voice</div>
 
   <div class="setting-group">
     <div class="setting-label">
@@ -1141,6 +1301,9 @@
     <div class="setting-desc">Voice used for text-to-speech playback.</div>
   </div>
 
+  <!-- ── Developer ── -->
+  <div class="settings-section-header">Developer</div>
+
   <div class="setting-group">
     <div class="setting-label">
       <span>Debug Info</span>
@@ -1152,24 +1315,12 @@
     <div class="setting-desc">Show distance/threshold/chunk counts on responses.</div>
   </div>
 
+  <!-- ── Services ── -->
+  <div class="settings-section-header" style="margin-top:auto;">Services</div>
   <div class="setting-group">
-    <div class="setting-label"><span>Text Size</span></div>
-    <div style="display:flex;gap:6px;">
-      <button class="text-size-btn" data-size="small">A</button>
-      <button class="text-size-btn" data-size="medium" style="font-size:1rem;">A</button>
-      <button class="text-size-btn" data-size="large" style="font-size:1.2rem;">A</button>
-    </div>
-  </div>
-
-  <div class="setting-group">
-    <div class="setting-label"><span>App Name</span></div>
-    <input type="text" id="app-name-input" placeholder="Dave-in-a-Box" style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:5px 10px;font-size:0.82rem;font-family:inherit;outline:none;width:100%;" />
-  </div>
-
-  <div class="setting-group" style="margin-top:auto;padding-top:16px;border-top:1px solid var(--border);">
-    <div style="font-size:0.72rem;font-weight:600;color:var(--text-faint);margin-bottom:8px;">SERVICES</div>
     <div id="service-status-list" style="display:flex;flex-direction:column;gap:6px;font-size:0.75rem;color:var(--text-dim);"></div>
   </div>
+
   </div>
 
 </div>
@@ -1301,6 +1452,214 @@ function updateSettingLabels() {
 });
 voiceSelect.addEventListener("change", saveSettings);
 loadSettings();
+
+// ── Profile (localStorage) ──
+const PROFILE_KEY = "diab_profile";
+function loadProfile() {
+  try {
+    const p = JSON.parse(localStorage.getItem(PROFILE_KEY) || "{}");
+    if (p.name)  document.getElementById("profile-name").value  = p.name;
+    if (p.role)  document.getElementById("profile-role").value  = p.role;
+    if (p.prefs) document.getElementById("profile-prefs").value = p.prefs;
+  } catch {}
+}
+function saveProfile() {
+  localStorage.setItem(PROFILE_KEY, JSON.stringify({
+    name:  document.getElementById("profile-name").value.trim(),
+    role:  document.getElementById("profile-role").value.trim(),
+    prefs: document.getElementById("profile-prefs").value.trim(),
+  }));
+}
+function getProfileContext() {
+  try {
+    const p = JSON.parse(localStorage.getItem(PROFILE_KEY) || "{}");
+    const parts = [];
+    if (p.name)  parts.push(`Name: ${p.name}`);
+    if (p.role)  parts.push(`Role: ${p.role}`);
+    if (p.prefs) parts.push(`Preferences: ${p.prefs}`);
+    return parts.join("\n") || null;
+  } catch { return null; }
+}
+["profile-name","profile-role","profile-prefs"].forEach(id => {
+  document.getElementById(id).addEventListener("input", saveProfile);
+});
+loadProfile();
+
+// ── Logo customization ──
+const LOGO_KEY = "diab_logo";
+function applyLogo(dataUrl) {
+  const letter = document.getElementById("logo-letter");
+  const img    = document.getElementById("logo-img");
+  const prev   = document.getElementById("logo-preview");
+  const reset  = document.getElementById("logo-reset-btn");
+  if (dataUrl) {
+    letter.style.display = "none";
+    img.src = dataUrl; img.style.display = "";
+    prev.src = dataUrl; prev.style.display = "";
+    reset.style.display = "";
+  } else {
+    letter.style.display = "";
+    img.style.display = "none";
+    prev.style.display = "none";
+    reset.style.display = "none";
+  }
+}
+applyLogo(localStorage.getItem(LOGO_KEY));
+document.getElementById("logo-upload-btn").addEventListener("click", () => {
+  document.getElementById("logo-file-input").click();
+});
+document.getElementById("logo-file-input").addEventListener("change", e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    localStorage.setItem(LOGO_KEY, ev.target.result);
+    applyLogo(ev.target.result);
+  };
+  reader.readAsDataURL(file);
+});
+document.getElementById("logo-reset-btn").addEventListener("click", () => {
+  localStorage.removeItem(LOGO_KEY);
+  applyLogo(null);
+  document.getElementById("logo-file-input").value = "";
+});
+
+// ── Accent color ──
+const ACCENT_KEY = "diab_accent";
+function applyAccent(color) {
+  document.documentElement.style.setProperty("--accent", color);
+  // Darken for accent-dim
+  document.documentElement.style.setProperty("--accent-dim", color + "99");
+  document.querySelectorAll(".color-swatch").forEach(s => {
+    s.classList.toggle("active", s.dataset.color === color);
+  });
+  document.getElementById("accent-custom").value = color;
+}
+const savedAccent = localStorage.getItem(ACCENT_KEY);
+if (savedAccent) applyAccent(savedAccent);
+document.querySelectorAll(".color-swatch[data-color]").forEach(s => {
+  s.addEventListener("click", () => {
+    localStorage.setItem(ACCENT_KEY, s.dataset.color);
+    applyAccent(s.dataset.color);
+  });
+});
+document.getElementById("accent-custom").addEventListener("input", e => {
+  localStorage.setItem(ACCENT_KEY, e.target.value);
+  applyAccent(e.target.value);
+});
+// Mark active swatch on load
+if (savedAccent) {
+  document.querySelectorAll(".color-swatch[data-color]").forEach(s => {
+    s.classList.toggle("active", s.dataset.color === savedAccent);
+  });
+}
+
+// ── Memory ──
+let memoryFacts = [];
+async function loadMemory() {
+  try {
+    memoryFacts = await fetch(`${API}/memory`).then(r => r.json());
+    renderMemory();
+  } catch {}
+}
+function renderMemory() {
+  const list = document.getElementById("memory-list");
+  list.innerHTML = "";
+  if (!memoryFacts.length) {
+    list.innerHTML = `<div style="font-size:0.72rem;color:var(--text-faint);padding:4px 0;">No facts saved yet.</div>`;
+    return;
+  }
+  memoryFacts.forEach(m => {
+    const row = document.createElement("div");
+    row.className = "memory-fact";
+    row.innerHTML = `<span>${esc(m.fact)}</span><button title="Delete" data-id="${m.id}">✕</button>`;
+    row.querySelector("button").addEventListener("click", async () => {
+      await fetch(`${API}/memory/${m.id}`, { method: "DELETE" });
+      loadMemory();
+    });
+    list.appendChild(row);
+  });
+}
+document.getElementById("memory-add-btn").addEventListener("click", async () => {
+  const input = document.getElementById("memory-input");
+  const fact = input.value.trim();
+  if (!fact) return;
+  await fetch(`${API}/memory`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fact }) });
+  input.value = "";
+  loadMemory();
+});
+document.getElementById("memory-input").addEventListener("keydown", e => {
+  if (e.key === "Enter") document.getElementById("memory-add-btn").click();
+});
+
+// ── Projects ──
+let projects = [];
+let activeProjectId = localStorage.getItem("diab_project") || null;
+let editingProjectId = null;
+
+async function loadProjects() {
+  try {
+    projects = await fetch(`${API}/projects`).then(r => r.json());
+    renderProjects();
+  } catch {}
+}
+function renderProjects() {
+  const list = document.getElementById("project-list");
+  list.innerHTML = "";
+  if (!projects.length) {
+    list.innerHTML = `<div style="font-size:0.72rem;color:var(--text-faint);padding:4px 0;">No projects yet. Conversations go to General.</div>`;
+  }
+  projects.forEach(p => {
+    const row = document.createElement("div");
+    row.className = "project-item" + (p.id === activeProjectId ? " active" : "");
+    row.innerHTML = `<span>${esc(p.name)}</span>
+      <button class="proj-edit" title="Edit system prompt" data-id="${p.id}" data-name="${esc(p.name)}" data-prompt="${esc(p.system_prompt||'')}">✎</button>
+      <button class="proj-del" title="Delete" data-id="${p.id}">✕</button>`;
+    row.querySelector("span").addEventListener("click", () => {
+      activeProjectId = p.id;
+      localStorage.setItem("diab_project", p.id);
+      renderProjects();
+    });
+    row.querySelector(".proj-edit").addEventListener("click", e => {
+      e.stopPropagation();
+      editingProjectId = p.id;
+      document.getElementById("project-prompt-label").textContent = p.name;
+      document.getElementById("project-prompt-input").value = p.system_prompt || "";
+      document.getElementById("project-prompt-group").style.display = "";
+    });
+    row.querySelector(".proj-del").addEventListener("click", async e => {
+      e.stopPropagation();
+      await fetch(`${API}/projects/${p.id}`, { method: "DELETE" });
+      if (activeProjectId === p.id) { activeProjectId = null; localStorage.removeItem("diab_project"); }
+      loadProjects();
+    });
+    list.appendChild(row);
+  });
+}
+document.getElementById("project-add-btn").addEventListener("click", async () => {
+  const input = document.getElementById("project-name-input");
+  const name = input.value.trim();
+  if (!name) return;
+  const r = await fetch(`${API}/projects`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) });
+  const data = await r.json();
+  input.value = "";
+  loadProjects();
+});
+document.getElementById("project-name-input").addEventListener("keydown", e => {
+  if (e.key === "Enter") document.getElementById("project-add-btn").click();
+});
+document.getElementById("project-prompt-save").addEventListener("click", async () => {
+  if (!editingProjectId) return;
+  const prompt = document.getElementById("project-prompt-input").value.trim();
+  await fetch(`${API}/projects/${editingProjectId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ system_prompt: prompt || null })
+  });
+  document.getElementById("project-prompt-group").style.display = "none";
+  editingProjectId = null;
+  loadProjects();
+});
 
 // ── Sidebar toggle ──
 const SIDEBAR_KEY = "diab_sidebar_open";
@@ -1451,6 +1810,8 @@ function openSettings() {
   settingsPanel.classList.add("open");
   overlay.classList.add("show");
   if (!voicesLoaded) loadVoices();
+  loadMemory();
+  loadProjects();
 }
 function closeSettings() {
   if (settingsPinned) return;
@@ -1646,6 +2007,7 @@ async function loadModels() {
     const pick = saved && data.models.includes(saved) ? saved : data.default;
     modelSelect.value = pick;
     selectedModel = pick;
+    localStorage.setItem("diab_model", pick);
   } catch { modelSelect.innerHTML = `<option value="">Unavailable</option>`; }
   loadSuggestions();
 }
@@ -1662,8 +2024,12 @@ let allConversations = [];
 
 async function loadConversations() {
   try {
-    const res = await fetch(`${API}/conversations`);
-    allConversations = await res.json();
+    const [convRes, projRes] = await Promise.all([
+      fetch(`${API}/conversations`),
+      fetch(`${API}/projects`),
+    ]);
+    allConversations = await convRes.json();
+    projects = await projRes.json();
     renderSidebar(allConversations, false);
   } catch {}
 }
@@ -1714,15 +2080,43 @@ function renderSidebar(convs, flat = false) {
     convs.forEach(c => convList.appendChild(makeConvItem(c)));
     return;
   }
-  const groups = groupByDate(convs);
-  Object.entries(groups).forEach(([label, items]) => {
-    if (!items.length) return;
-    const gl = document.createElement("div");
-    gl.className = "conv-group-label";
-    gl.textContent = label;
-    convList.appendChild(gl);
-    items.forEach(c => convList.appendChild(makeConvItem(c)));
-  });
+  // Group by project if projects exist, else group by date
+  if (projects.length) {
+    // Build project map
+    const byProject = {};
+    convs.forEach(c => {
+      const pid = c.project_id || "__none__";
+      if (!byProject[pid]) byProject[pid] = [];
+      byProject[pid].push(c);
+    });
+    // Show active project first, then others, then unassigned
+    const orderedIds = [
+      ...(activeProjectId ? [activeProjectId] : []),
+      ...projects.filter(p => p.id !== activeProjectId).map(p => p.id),
+      "__none__"
+    ];
+    orderedIds.forEach(pid => {
+      const items = byProject[pid];
+      if (!items || !items.length) return;
+      const label = pid === "__none__" ? "General" : (projects.find(p => p.id === pid)?.name || "Project");
+      const gl = document.createElement("div");
+      gl.className = "conv-group-label";
+      gl.style.display = "flex"; gl.style.alignItems = "center"; gl.style.gap = "5px";
+      gl.innerHTML = `${esc(label)}` + (pid === activeProjectId ? ` <span style="font-size:0.6rem;background:var(--accent-dim);color:#fff;border-radius:3px;padding:1px 4px;">active</span>` : "");
+      convList.appendChild(gl);
+      items.forEach(c => convList.appendChild(makeConvItem(c)));
+    });
+  } else {
+    const groups = groupByDate(convs);
+    Object.entries(groups).forEach(([label, items]) => {
+      if (!items.length) return;
+      const gl = document.createElement("div");
+      gl.className = "conv-group-label";
+      gl.textContent = label;
+      convList.appendChild(gl);
+      items.forEach(c => convList.appendChild(makeConvItem(c)));
+    });
+  }
 }
 
 async function loadConversation(id) {
@@ -2627,12 +3021,14 @@ async function sendMessage() {
     message: text,
     model: selectedModel,
     conversation_id: convId,
+    project_id: activeProjectId || null,
     temperature: parseFloat(tempSlider.value),
     threshold: parseFloat(threshSlider.value),
     top_k: parseInt(topkSlider.value),
     web_search: webSearch,
     history_limit: parseInt(historySlider.value),
     compact_threshold: parseInt(compactSlider.value),
+    user_context: getProfileContext(),
   };
 
   chatAbortController = new AbortController();
