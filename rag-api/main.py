@@ -131,7 +131,7 @@ async def chat_stream(request: ChatRequest) -> AsyncGenerator[str, None]:
     top_k = max(1, request.top_k)
 
     # Step 1: Embed
-    yield sse({"type": "status", "step": "embed", "text": "Embedding query..."})
+    yield sse({"type": "status", "step": "embed", "text": f"Converting your question to a vector using {EMBED_MODEL}…"})
     try:
         loop = asyncio.get_event_loop()
         query_embedding = await loop.run_in_executor(
@@ -140,9 +140,10 @@ async def chat_stream(request: ChatRequest) -> AsyncGenerator[str, None]:
     except Exception as e:
         yield sse({"type": "error", "text": f"Embedding failed: {e}"})
         return
+    yield sse({"type": "status", "step": "embed", "text": "Question embedded", "done": True})
 
     # Step 2: Vault search
-    yield sse({"type": "status", "step": "vault", "text": "Searching vault..."})
+    yield sse({"type": "status", "step": "vault", "text": f"Scanning vault for relevant content (top {top_k} chunks)…"})
     try:
         chroma_client = get_chroma_client()
         collection = chroma_client.get_collection(COLLECTION_NAME)
@@ -226,7 +227,8 @@ Answer:"""
     logger.info(f"Sending {len(relevant)} vault chunks + {len(web_sources)} web results to LLM ({len(context_text)} chars)")
 
     # Step 6: Stream LLM response
-    yield sse({"type": "status", "step": "llm", "text": "Generating answer..."})
+    ctx_kb = round(len(context_text) / 1024, 1)
+    yield sse({"type": "status", "step": "llm", "text": f"Sending {ctx_kb} KB of context to {model}…"})
 
     full_answer = ""
     try:

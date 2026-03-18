@@ -24,7 +24,7 @@ services:
     ports:
       - "${RAG_API_PORT:-8000}:8000"
     volumes:
-      - ./files:/vault:ro
+      - ./files:/vault:rw
       - rag_data:/app/data
     environment:
       - VAULT_PATH=${VAULT_PATH:-/vault}
