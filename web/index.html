@@ -27,7 +27,6 @@
       --radius: 12px;
       --sidebar-w: 260px;
       --header-h: 52px;
-      --status-h: 32px;
     }
 
     html, body { height: 100%; overflow: hidden; }
@@ -71,11 +70,16 @@
       border: 1px solid var(--border);
       color: var(--text);
       border-radius: 8px;
-      padding: 4px 8px;
-      font-size: 0.72rem;
+      padding: 5px 28px 5px 10px;
+      font-size: 0.8rem;
       cursor: pointer;
       outline: none;
-      max-width: 180px;
+      max-width: 200px;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238888aa' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
       transition: border-color 0.15s;
     }
     #model-select:hover, #model-select:focus { border-color: var(--accent); }
@@ -95,35 +99,9 @@
     .hbtn:hover { border-color: var(--accent); color: var(--text); }
     .hbtn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
 
-    /* ═══════════════════════════════════════
-       STATUS BAR
-    ═══════════════════════════════════════ */
-    #status-bar {
-      height: var(--status-h);
-      background: var(--surface2);
-      border-bottom: 1px solid var(--border);
-      padding: 0 16px 0 calc(var(--sidebar-w) + 16px);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 0.7rem;
-      color: var(--text-dim);
-      flex-shrink: 0;
-      transition: padding-left 0.22s ease;
-    }
-    body.sidebar-collapsed #status-bar { padding-left: 16px; }
     .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
     .dot.green { background: var(--success); }
     .dot.orange { background: var(--danger); }
-    #status-text { flex: 1; }
-    #reindex-btn {
-      background: none; border: 1px solid var(--border);
-      color: var(--text-dim); border-radius: 6px;
-      padding: 1px 7px; font-size: 0.66rem; cursor: pointer;
-      transition: border-color 0.15s, color 0.15s;
-    }
-    #reindex-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
-    #reindex-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
     /* ═══════════════════════════════════════
        MAIN LAYOUT
@@ -265,7 +243,7 @@
     .message-row.ai   { align-self: flex-start; align-items: flex-start; }
 
     .bubble {
-      padding: 11px 15px;
+      padding: 10px 14px;
       border-radius: var(--radius);
       line-height: 1.7;
       font-size: 0.9rem;
@@ -282,6 +260,8 @@
       background: var(--ai-bubble);
       border: 1px solid var(--border);
       border-bottom-left-radius: 3px;
+      white-space: normal;
+      padding-top: 8px;
     }
 
     /* Copy button on AI bubbles */
@@ -292,11 +272,12 @@
       border: 1px solid var(--border);
       color: var(--text-dim);
       border-radius: 6px;
-      padding: 2px 6px;
+      padding: 4px 5px;
       font-size: 0.68rem;
       cursor: pointer;
       opacity: 0;
       transition: opacity 0.15s, color 0.15s;
+      display: flex; align-items: center; justify-content: center;
     }
     .message-row.ai .bubble:hover .copy-btn { opacity: 1; }
     .copy-btn:hover { color: var(--text); }
@@ -560,50 +541,11 @@
       transition: background 0.15s;
     }
     #new-chat-btn:hover { background: var(--accent-dim); }
-    #vault-btn {
-      width: 36px; height: 36px;
-      padding: 0;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      color: var(--text-dim);
-      font-size: 1rem;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: border-color 0.15s, color 0.15s;
-      flex-shrink: 0;
-    }
     #vault-btn:hover, #vault-btn.active { border-color: var(--accent); color: var(--accent); }
 
     /* Sidebar transition */
     #sidebar { transition: width 0.22s ease, border-color 0.22s ease; }
 
-    /* Status bar — adjust padding dynamically via JS class */
-    #status-bar { transition: padding-left 0.22s ease; }
-
-    /* Chat toolbar (export, above input) */
-    #chat-toolbar {
-      display: none;
-      background: var(--surface);
-      border-top: 1px solid var(--border);
-      padding: 4px 16px;
-      justify-content: flex-end;
-      align-items: center;
-      gap: 8px;
-      flex-shrink: 0;
-    }
-    #chat-toolbar.visible { display: flex; }
-    #export-toolbar-btn {
-      background: none;
-      border: 1px solid var(--border);
-      color: var(--text-dim);
-      border-radius: 6px;
-      padding: 2px 9px;
-      font-size: 0.72rem;
-      cursor: pointer;
-      transition: border-color 0.15s, color 0.15s;
-    }
-    #export-toolbar-btn:hover { border-color: var(--accent); color: var(--accent); }
 
     /* ═══════════════════════════════════════
        VAULT PANEL
@@ -715,19 +657,6 @@
     #vault-drop-zone label { color: var(--accent); cursor: pointer; text-decoration: underline; }
     #vault-file-input { display: none; }
 
-    .vault-subfolder-row {
-      display: flex; align-items: center; gap: 8px;
-      font-size: 0.74rem; color: var(--text-dim);
-    }
-    .vault-subfolder-row label { white-space: nowrap; }
-    #vault-subfolder {
-      flex: 1;
-      background: var(--surface2); border: 1px solid var(--border);
-      color: var(--text); border-radius: 6px;
-      padding: 3px 8px; font-size: 0.74rem; outline: none;
-    }
-    #vault-subfolder:focus { border-color: var(--accent); }
-
     #vault-banner {
       padding: 0 16px;
       font-size: 0.76rem;
@@ -757,20 +686,48 @@
     /* TTS play button on AI bubbles */
     .tts-btn {
       position: absolute;
-      top: 6px; right: 42px;
+      top: 6px; right: 40px;
       background: var(--surface2);
       border: 1px solid var(--border);
       color: var(--text-dim);
       border-radius: 6px;
-      padding: 2px 6px;
+      padding: 4px 5px;
       font-size: 0.68rem;
       cursor: pointer;
       opacity: 0;
       transition: opacity 0.15s, color 0.15s;
+      display: flex; align-items: center; justify-content: center;
     }
     .message-row.ai .bubble:hover .tts-btn { opacity: 1; }
     .tts-btn:hover { color: var(--text); }
     .tts-btn.playing { color: var(--accent); border-color: var(--accent); opacity: 1; }
+
+    /* Toggle switch */
+    .toggle-switch { position: relative; display: inline-block; width: 36px; height: 20px; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--surface3); border-radius: 20px;
+      transition: background 0.2s;
+    }
+    .toggle-slider::before {
+      content: ""; position: absolute;
+      height: 14px; width: 14px;
+      left: 3px; bottom: 3px;
+      background: var(--text-dim); border-radius: 50%;
+      transition: transform 0.2s, background 0.2s;
+    }
+    .toggle-switch input:checked + .toggle-slider { background: var(--accent); }
+    .toggle-switch input:checked + .toggle-slider::before { transform: translateX(16px); background: #fff; }
+
+    /* Source link buttons */
+    .source-link {
+      background: none; border: none; color: var(--accent);
+      cursor: pointer; font-size: 0.75rem; text-align: left;
+      padding: 0; text-decoration: underline dotted;
+    }
+    .source-link:hover { color: var(--text); }
 
     /* Scrollbars */
     #chat-window::-webkit-scrollbar,
@@ -791,23 +748,14 @@
 
 <!-- HEADER -->
 <header>
-  <button class="hbtn icon-btn" id="sidebar-toggle" title="Toggle sidebar">☰</button>
   <div class="logo">D</div>
   <h1>Dave-in-a-Box</h1>
   <div class="h-sep"></div>
   <select id="model-select"><option value="">Loading…</option></select>
   <button class="hbtn icon-btn" id="tts-btn" title="Toggle text-to-speech">🔊</button>
-  <button class="hbtn icon-btn" id="export-btn" title="Export conversation as Markdown">⬇</button>
+  <button class="hbtn icon-btn" id="vault-btn" title="Vault explorer">📁</button>
   <button class="hbtn icon-btn" id="settings-btn" title="Settings">⚙</button>
-  <button class="hbtn icon-btn" id="debug-btn" title="Show debug info">🐛</button>
 </header>
-
-<!-- STATUS BAR -->
-<div id="status-bar">
-  <span class="dot" id="status-dot"></span>
-  <span id="status-text">Connecting…</span>
-  <button id="reindex-btn" disabled>Re-index</button>
-</div>
 
 <!-- MAIN -->
 <div id="main">
@@ -816,7 +764,7 @@
   <div id="sidebar">
     <div id="sidebar-actions">
       <button id="new-chat-btn">＋ New Chat</button>
-      <button class="hbtn icon-btn" id="vault-btn" title="Vault file manager">📁</button>
+      <button id="sidebar-toggle" title="Collapse sidebar" style="width:28px;height:28px;padding:0;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-dim);cursor:pointer;font-size:0.9rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:border-color 0.15s,color 0.15s;">‹</button>
     </div>
     <div id="conv-list"></div>
   </div>
@@ -831,10 +779,6 @@
       </div>
     </div>
 
-    <div id="chat-toolbar">
-      <button id="export-toolbar-btn" title="Export conversation as Markdown">⬇ Export</button>
-    </div>
-
     <div id="input-area">
       <textarea id="message-input" placeholder="Ask something…" rows="1" autocomplete="off"></textarea>
       <button class="input-btn" id="web-btn" title="Toggle web search">🌐</button>
@@ -842,6 +786,7 @@
     </div>
   </div>
 </div>
+<button id="sidebar-open-btn" title="Open sidebar" style="display:none;position:fixed;left:8px;top:60px;z-index:50;width:28px;height:28px;padding:0;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-dim);cursor:pointer;font-size:0.9rem;align-items:center;justify-content:center;transition:border-color 0.15s,color 0.15s;">›</button>
 
 <!-- SETTINGS PANEL -->
 <div id="overlay"></div>
@@ -871,6 +816,24 @@
     <select id="voice-select"><option value="af_heart">af_heart (loading…)</option></select>
     <div class="setting-desc">Voice used for text-to-speech playback.</div>
   </div>
+
+  <div class="setting-group">
+    <div class="setting-label">
+      <span>Debug Info</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="debug-toggle" />
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="setting-desc">Show distance/threshold/chunk counts on responses.</div>
+  </div>
+
+  <div class="setting-group" style="margin-top:auto;padding-top:16px;border-top:1px solid var(--border);">
+    <div style="display:flex;align-items:center;gap:8px;font-size:0.75rem;color:var(--text-dim);">
+      <span class="dot" id="status-dot"></span>
+      <span id="status-text">Connecting…</span>
+    </div>
+  </div>
 </div>
 
 <!-- VAULT PANEL -->
@@ -889,10 +852,6 @@
       <div id="vault-drop-hint">Drop files here or <label for="vault-file-input">browse</label></div>
       <input type="file" id="vault-file-input" accept=".md,.txt,.pdf" multiple />
     </div>
-    <div class="vault-subfolder-row">
-      <label for="vault-subfolder">Subfolder (optional):</label>
-      <input type="text" id="vault-subfolder" placeholder="e.g. medical/2025" />
-    </div>
   </div>
   <div id="vault-banner"></div>
 </div>
@@ -901,6 +860,17 @@
 <div id="ctx-menu">
   <button id="ctx-rename">Rename</button>
   <button id="ctx-delete" class="danger">Delete</button>
+</div>
+
+<!-- FILE PREVIEW MODAL -->
+<div id="file-modal" style="display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:700px;max-width:90vw;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);">
+      <span id="file-modal-title" style="font-size:0.9rem;font-weight:600;color:var(--text)"></span>
+      <button id="file-modal-close" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:1.1rem;">✕</button>
+    </div>
+    <pre id="file-modal-content" style="flex:1;overflow:auto;padding:16px;font-size:0.8rem;color:var(--text);white-space:pre-wrap;word-break:break-word;line-height:1.6;margin:0;background:var(--bg);"></pre>
+  </div>
 </div>
 
 <!-- TOAST -->
@@ -917,15 +887,10 @@ const webBtn          = document.getElementById("web-btn");
 const modelSelect     = document.getElementById("model-select");
 const statusDot       = document.getElementById("status-dot");
 const statusText      = document.getElementById("status-text");
-const reindexBtn      = document.getElementById("reindex-btn");
-const debugBtn        = document.getElementById("debug-btn");
 const settingsBtn     = document.getElementById("settings-btn");
 const settingsPanel   = document.getElementById("settings-panel");
 const settingsClose   = document.getElementById("settings-close");
 const overlay         = document.getElementById("overlay");
-const exportBtn       = document.getElementById("export-btn");
-const exportToolbarBtn= document.getElementById("export-toolbar-btn");
-const chatToolbar     = document.getElementById("chat-toolbar");
 const convList        = document.getElementById("conv-list");
 const newChatBtn      = document.getElementById("new-chat-btn");
 const ctxMenu         = document.getElementById("ctx-menu");
@@ -936,6 +901,7 @@ const tempSlider      = document.getElementById("temp-slider");
 const threshSlider    = document.getElementById("thresh-slider");
 const topkSlider      = document.getElementById("topk-slider");
 const sidebarToggle   = document.getElementById("sidebar-toggle");
+const sidebarOpenBtn  = document.getElementById("sidebar-open-btn");
 const vaultBtn        = document.getElementById("vault-btn");
 const vaultPanel      = document.getElementById("vault-panel");
 const vaultClose      = document.getElementById("vault-close");
@@ -944,7 +910,6 @@ const vaultMeta       = document.getElementById("vault-meta");
 const vaultFileList   = document.getElementById("vault-file-list");
 const vaultFileInput  = document.getElementById("vault-file-input");
 const vaultDropZone   = document.getElementById("vault-drop-zone");
-const vaultSubfolder  = document.getElementById("vault-subfolder");
 const vaultBanner     = document.getElementById("vault-banner");
 const ttsBtn          = document.getElementById("tts-btn");
 const voiceSelect     = document.getElementById("voice-select");
@@ -956,6 +921,8 @@ let webSearch      = false;
 let activeConvId   = null;
 let ctxTargetId    = null;
 let selectedModel  = null;
+let messageHistory = [];
+let historyIndex   = -1;
 
 // ── Settings (localStorage) ──
 const SETTINGS_KEY = "diab_settings";
@@ -992,16 +959,21 @@ loadSettings();
 const SIDEBAR_KEY = "diab_sidebar_open";
 function applySidebar(open) {
   document.body.classList.toggle("sidebar-collapsed", !open);
-  sidebarToggle.classList.toggle("active", !open);
+  sidebarToggle.style.display = open ? "flex" : "none";
+  sidebarOpenBtn.style.display = open ? "none" : "flex";
 }
 let sidebarOpen = localStorage.getItem(SIDEBAR_KEY) !== "false";
 applySidebar(sidebarOpen);
 sidebarToggle.addEventListener("click", () => {
-  sidebarOpen = !sidebarOpen;
+  sidebarOpen = false;
   localStorage.setItem(SIDEBAR_KEY, sidebarOpen);
   applySidebar(sidebarOpen);
-  // Close vault panel if sidebar is closing
-  if (!sidebarOpen) closeVaultPanel();
+  closeVaultPanel();
+});
+sidebarOpenBtn.addEventListener("click", () => {
+  sidebarOpen = true;
+  localStorage.setItem(SIDEBAR_KEY, sidebarOpen);
+  applySidebar(sidebarOpen);
 });
 
 // ── TTS toggle ──
@@ -1048,10 +1020,10 @@ async function loadVoices() {
 }
 
 // ── Debug toggle ──
-debugBtn.addEventListener("click", () => {
-  debugMode = !debugMode;
+const debugToggle = document.getElementById("debug-toggle");
+debugToggle.addEventListener("change", () => {
+  debugMode = debugToggle.checked;
   document.body.classList.toggle("debug-on", debugMode);
-  debugBtn.classList.toggle("active", debugMode);
 });
 
 // ── Web search toggle ──
@@ -1078,7 +1050,6 @@ async function checkHealth() {
     const data = await res.json();
     statusDot.className = "dot green";
     statusText.textContent = `API ready · ${data.llm_model} · ${data.embed_model}`;
-    reindexBtn.disabled = false;
   } catch (e) {
     statusDot.className = "dot orange";
     statusText.textContent = `API unreachable (${e.message})`;
@@ -1088,8 +1059,6 @@ checkHealth();
 
 // ── Re-index (shared logic) ──
 async function runReindex({ statusBtn, statusBtnLabel } = {}) {
-  reindexBtn.disabled = true;
-  reindexBtn.textContent = "Indexing…";
   if (statusBtn) { statusBtn.disabled = true; statusBtn.textContent = "Indexing…"; }
   statusDot.className = "dot";
   statusText.textContent = "Re-indexing vault…";
@@ -1104,12 +1073,9 @@ async function runReindex({ statusBtn, statusBtnLabel } = {}) {
     statusDot.className = "dot orange";
     statusText.textContent = `Re-index failed: ${e.message}`;
   } finally {
-    reindexBtn.disabled = false;
-    reindexBtn.textContent = "Re-index";
     if (statusBtn) { statusBtn.disabled = false; statusBtn.textContent = statusBtnLabel || "↺ Re-index"; }
   }
 }
-reindexBtn.addEventListener("click", () => runReindex());
 
 // ── Models ──
 async function loadModels() {
@@ -1193,7 +1159,6 @@ async function loadConversation(id) {
       else appendAIBubble(msg.content, msg.sources || [], msg.web_sources || [], msg.model_used, null, null);
     });
     updateActiveSidebar();
-    updateChatToolbar();
     scrollBottom();
   } catch {}
 }
@@ -1231,7 +1196,6 @@ ctxDelete.addEventListener("click", async () => {
     activeConvId = null;
     chatWindow.innerHTML = "";
     chatWindow.appendChild(makeWelcome());
-    updateChatToolbar();
   }
   loadConversations();
 });
@@ -1242,7 +1206,6 @@ newChatBtn.addEventListener("click", () => {
   chatWindow.innerHTML = "";
   chatWindow.appendChild(makeWelcome());
   updateActiveSidebar();
-  updateChatToolbar();
   input.focus();
 });
 
@@ -1255,24 +1218,6 @@ function makeWelcome() {
 }
 
 loadConversations();
-
-// ── Export ──
-function exportConversation() {
-  const rows = chatWindow.querySelectorAll(".message-row");
-  if (!rows.length) return showToast("Nothing to export.");
-  let md = `# Dave-in-a-Box Conversation\n\n`;
-  rows.forEach(row => {
-    const bubble = row.querySelector(".bubble");
-    const text = bubble ? bubble.innerText.replace(/\n📋.*/, "").trim() : "";
-    if (row.classList.contains("user")) md += `**You:** ${text}\n\n`;
-    else md += `**Dave-in-a-Box:** ${text}\n\n---\n\n`;
-  });
-  const blob = new Blob([md], { type: "text/markdown" });
-  const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
-  a.download = "conversation.md"; a.click();
-}
-exportBtn.addEventListener("click", exportConversation);
-exportToolbarBtn.addEventListener("click", exportConversation);
 
 // ── TTS Audio Engine ──
 let audioCtx = null;
@@ -1321,7 +1266,7 @@ async function speakText(fullText, voice, playBtn) {
   ttsAbortController = new AbortController();
   const signal = ttsAbortController.signal;
 
-  if (playBtn) { playBtn.textContent = "⏸"; playBtn.classList.add("playing"); activeTtsBtn = playBtn; }
+  if (playBtn) { playBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>'; playBtn.classList.add("playing"); activeTtsBtn = playBtn; }
 
   try {
     const sentences = splitSentences(fullText);
@@ -1335,7 +1280,7 @@ async function speakText(fullText, voice, playBtn) {
   } catch (e) {
     if (e.name !== "AbortError") logger.warn?.("TTS error:", e);
   } finally {
-    if (playBtn && !signal.aborted) { playBtn.textContent = "▶"; playBtn.classList.remove("playing"); }
+    if (playBtn && !signal.aborted) { playBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>'; playBtn.classList.remove("playing"); }
     if (activeTtsBtn === playBtn) activeTtsBtn = null;
     currentSource = null;
   }
@@ -1345,12 +1290,7 @@ function stopSpeaking() {
   ttsAbortController?.abort();
   try { currentSource?.stop(); } catch {}
   currentSource = null;
-  if (activeTtsBtn) { activeTtsBtn.textContent = "▶"; activeTtsBtn.classList.remove("playing"); activeTtsBtn = null; }
-}
-
-// ── Chat toolbar visibility ──
-function updateChatToolbar() {
-  chatToolbar.classList.toggle("visible", !!activeConvId);
+  if (activeTtsBtn) { activeTtsBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>'; activeTtsBtn.classList.remove("playing"); activeTtsBtn = null; }
 }
 
 // ── Vault panel ──
@@ -1489,7 +1429,7 @@ async function uploadFiles(files, subfolder) {
 
 // File picker
 vaultFileInput.addEventListener("change", () => {
-  if (vaultFileInput.files.length) uploadFiles(Array.from(vaultFileInput.files), vaultSubfolder.value.trim());
+  if (vaultFileInput.files.length) uploadFiles(Array.from(vaultFileInput.files), "");
   vaultFileInput.value = "";
 });
 
@@ -1500,7 +1440,7 @@ vaultDropZone.addEventListener("drop", (e) => {
   e.preventDefault();
   vaultDropZone.classList.remove("dragover");
   const files = Array.from(e.dataTransfer.files);
-  if (files.length) uploadFiles(files, vaultSubfolder.value.trim());
+  if (files.length) uploadFiles(files, "");
 });
 
 // ── Input ──
@@ -1510,6 +1450,20 @@ input.addEventListener("input", () => {
 });
 input.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  if (e.key === "ArrowUp" && !isLoading) {
+    if (messageHistory.length === 0) return;
+    if (historyIndex === -1) historyIndex = messageHistory.length - 1;
+    else if (historyIndex > 0) historyIndex--;
+    input.value = messageHistory[historyIndex];
+    e.preventDefault();
+    setTimeout(() => { input.setSelectionRange(input.value.length, input.value.length); }, 0);
+  }
+  if (e.key === "ArrowDown" && historyIndex !== -1) {
+    historyIndex++;
+    if (historyIndex >= messageHistory.length) { historyIndex = -1; input.value = ""; }
+    else input.value = messageHistory[historyIndex];
+    e.preventDefault();
+  }
 });
 sendBtn.addEventListener("click", sendMessage);
 
@@ -1532,6 +1486,47 @@ function appendUserBubble(text) {
   scrollBottom();
 }
 
+// ── Minimal markdown renderer ──
+function renderMarkdown(text) {
+  // Escape HTML first
+  let s = text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  // Code blocks
+  s = s.replace(/```[\w]*\n?([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+  // Inline code
+  s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+  // Bold
+  s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/__(.+?)__/g, '<strong>$1</strong>');
+  // Italic
+  s = s.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  s = s.replace(/_(.+?)_/g, '<em>$1</em>');
+  // Headings
+  s = s.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  s = s.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  s = s.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+  // Unordered lists
+  s = s.replace(/^[\*\-] (.+)$/gm, '<li>$1</li>');
+  s = s.replace(/(<li>[\s\S]+?<\/li>)/g, '<ul>$1</ul>');
+  // Ordered lists
+  s = s.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+  // Tables (simple: | col | col |)
+  s = s.replace(/\|(.+)\|\n\|[-| :]+\|\n((?:\|.+\|\n?)+)/g, (match, header, rows) => {
+    const ths = header.split('|').filter(c=>c.trim()).map(c=>`<th>${c.trim()}</th>`).join('');
+    const trs = rows.trim().split('\n').map(row => {
+      const tds = row.split('|').filter(c=>c.trim()).map(c=>`<td>${c.trim()}</td>`).join('');
+      return `<tr>${tds}</tr>`;
+    }).join('');
+    return `<table><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`;
+  });
+  // Horizontal rule
+  s = s.replace(/^---$/gm, '<hr>');
+  // Paragraphs / line breaks
+  s = s.replace(/\n\n/g, '</p><p>');
+  s = s.replace(/\n/g, '<br>');
+  return '<p>' + s + '</p>';
+}
+
 // ── Append AI bubble (final) ──
 function appendAIBubble(text, sources, webSources, modelUsed, debugData, stepRows) {
   // Remove status steps if they exist
@@ -1547,7 +1542,7 @@ function appendAIBubble(text, sources, webSources, modelUsed, debugData, stepRow
   } else {
     sourcesHtml = `<div class="sources-wrap">`;
     if (sources.length) {
-      const items = sources.map(s => `<li>${esc(s)}</li>`).join("");
+      const items = sources.map(s => `<li><button class="source-link" data-path="${esc(s)}">${esc(s)}</button></li>`).join("");
       sourcesHtml += `<details class="sources"><summary>${sources.length} vault source${sources.length>1?"s":""}</summary><ul>${items}</ul></details>`;
     }
     if (webSources.length) {
@@ -1567,9 +1562,9 @@ function appendAIBubble(text, sources, webSources, modelUsed, debugData, stepRow
 
   row.innerHTML = `
     <div class="bubble">
-      <button class="tts-btn" title="Read aloud">▶</button>
-      <button class="copy-btn" title="Copy">📋 Copy</button>
-      ${esc(text)}
+      <button class="tts-btn" title="Read aloud"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></button>
+      <button class="copy-btn" title="Copy"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+      ${renderMarkdown(text)}
     </div>
     ${sourcesHtml}
     <div class="msg-meta">
@@ -1582,9 +1577,12 @@ function appendAIBubble(text, sources, webSources, modelUsed, debugData, stepRow
   // Copy button
   row.querySelector(".copy-btn").addEventListener("click", function() {
     navigator.clipboard.writeText(text).then(() => {
-      this.textContent = "✓ Copied";
+      this.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 12 4 16"/></svg>';
       this.classList.add("copied");
-      setTimeout(() => { this.textContent = "📋 Copy"; this.classList.remove("copied"); }, 2000);
+      setTimeout(() => {
+        this.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+        this.classList.remove("copied");
+      }, 2000);
     });
   });
 
@@ -1602,6 +1600,29 @@ function appendAIBubble(text, sources, webSources, modelUsed, debugData, stepRow
   scrollBottom();
   return row;
 }
+
+// ── File preview modal ──
+chatWindow.addEventListener("click", async (e) => {
+  const btn = e.target.closest(".source-link");
+  if (!btn) return;
+  const path = btn.dataset.path;
+  const modal = document.getElementById("file-modal");
+  const title = document.getElementById("file-modal-title");
+  const content = document.getElementById("file-modal-content");
+  title.textContent = path;
+  content.textContent = "Loading…";
+  modal.style.display = "flex";
+  try {
+    const res = await fetch(`${API}/vault/file?path=${encodeURIComponent(path)}`);
+    if (!res.ok) throw new Error(await res.text());
+    content.textContent = await res.text();
+  } catch (e) {
+    content.textContent = `Error loading file: ${e.message}`;
+  }
+});
+document.getElementById("file-modal-close").addEventListener("click", () => {
+  document.getElementById("file-modal").style.display = "none";
+});
 
 // ── Streaming status steps ──
 function createStatusSteps() {
@@ -1659,6 +1680,8 @@ async function sendMessage() {
   const text = input.value.trim();
   if (!text || isLoading) return;
 
+  messageHistory.push(text);
+  historyIndex = -1;
   input.value = "";
   input.style.height = "auto";
   setLoading(true);
@@ -1727,7 +1750,6 @@ async function sendMessage() {
         } else if (event.type === "done") {
           convId = event.conversation_id || convId;
           activeConvId = convId;
-          updateChatToolbar();
           const stepRows = [steps.container];
           const answerText = event.answer || fullAnswer;
           if (streamBubble) {

@@ -23,7 +23,7 @@ from typing import Optional, AsyncGenerator
 import httpx
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, Response
 from pydantic import BaseModel
 import ollama as ollama_client
 
@@ -482,3 +482,17 @@ def delete_vault_file(body: VaultDeleteRequest):
 
     target.unlink()
     return {"ok": True}
+
+
+@app.get("/vault/file")
+def vault_file(path: str):
+    full_path = os.path.join(VAULT_PATH, path)
+    # Security: ensure path is within vault
+    full_path = os.path.realpath(full_path)
+    vault_real = os.path.realpath(VAULT_PATH)
+    if not full_path.startswith(vault_real + os.sep) and full_path != vault_real:
+        raise HTTPException(status_code=403, detail="Access denied")
+    if not os.path.isfile(full_path):
+        raise HTTPException(status_code=404, detail="File not found")
+    with open(full_path, "r", encoding="utf-8", errors="replace") as f:
+        return Response(content=f.read(), media_type="text/plain")
