@@ -150,6 +150,40 @@ def add_message(
     return mid
 
 
+def search_conversations(query: str) -> list[dict]:
+    """Full-text search across conversation titles and message content."""
+    q = f"%{query.strip()}%"
+    with _conn() as conn:
+        rows = conn.execute("""
+            SELECT DISTINCT c.id, c.title, c.updated_at,
+                   m.role, m.content AS snippet
+            FROM conversations c
+            JOIN messages m ON m.conversation_id = c.id
+            WHERE c.title LIKE ? OR m.content LIKE ?
+            ORDER BY c.updated_at DESC
+            LIMIT 50
+        """, (q, q)).fetchall()
+    # Deduplicate by conv id, keep best snippet
+    seen = {}
+    results = []
+    for r in rows:
+        r = dict(r)
+        cid = r["id"]
+        if cid not in seen:
+            seen[cid] = True
+            # Truncate snippet around match
+            content = r["snippet"] or ""
+            idx = content.lower().find(query.lower())
+            if idx >= 0:
+                start = max(0, idx - 60)
+                end = min(len(content), idx + 120)
+                snippet = ("…" if start > 0 else "") + content[start:end].strip() + ("…" if end < len(content) else "")
+            else:
+                snippet = content[:120]
+            results.append({"id": cid, "title": r["title"], "updated_at": r["updated_at"], "snippet": snippet})
+    return results
+
+
 def auto_title(conversation_id: str, text: str):
     """Set conversation title from first user message if still default."""
     title = text.strip()[:60]

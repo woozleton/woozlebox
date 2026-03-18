@@ -355,6 +355,13 @@ async def tts_proxy(text: str, voice: str = DEFAULT_VOICE, format: str = "wav"):
 
 # --- Conversation endpoints ---
 
+@app.get("/conversations/search")
+def search_convs(q: str = ""):
+    if not q.strip():
+        return []
+    return db.search_conversations(q)
+
+
 @app.get("/conversations")
 def list_convs():
     return db.list_conversations()
