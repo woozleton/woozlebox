@@ -79,6 +79,8 @@ class ChatRequest(BaseModel):
     threshold: Optional[float] = None
     top_k: int = DEFAULT_TOP_K
     web_search: bool = False
+    history_limit: int = 10
+    compact_threshold: int = 75  # % of context at which to auto-compact
 
 class ConversationPatch(BaseModel):
     title: str
@@ -135,7 +137,7 @@ async def chat_stream(request: ChatRequest) -> AsyncGenerator[str, None]:
     top_k = max(1, request.top_k)
 
     # Step 1: Embed
-    yield sse({"type": "status", "step": "embed", "text": f"Converting your question to a vector using {EMBED_MODEL}…"})
+    yield sse({"type": "status", "step": "embed", "text": "Understanding your question…"})
     try:
         loop = asyncio.get_event_loop()
         query_embedding = await loop.run_in_executor(
@@ -144,10 +146,10 @@ async def chat_stream(request: ChatRequest) -> AsyncGenerator[str, None]:
     except Exception as e:
         yield sse({"type": "error", "text": f"Embedding failed: {e}"})
         return
-    yield sse({"type": "status", "step": "embed", "text": "Question embedded", "done": True})
+    yield sse({"type": "status", "step": "embed", "text": "Question understood", "done": True})
 
     # Step 2: Vault search
-    yield sse({"type": "status", "step": "vault", "text": f"Scanning vault for relevant content (top {top_k} chunks)…"})
+    yield sse({"type": "status", "step": "vault", "text": "Reading through your vault…"})
     try:
         chroma_client = get_chroma_client()
         collection = chroma_client.get_collection(COLLECTION_NAME)
@@ -173,16 +175,18 @@ async def chat_stream(request: ChatRequest) -> AsyncGenerator[str, None]:
     debug = {"best_distance": best_distance, "threshold": threshold, "chunks_retrieved": len(documents), "chunks_used": len(relevant)}
 
     if relevant:
-        yield sse({"type": "status", "step": "vault", "text": f"Found {len(relevant)} relevant chunks", "done": True})
+        src_names = ", ".join(os.path.basename(s) for s in sources[:3])
+        yield sse({"type": "status", "step": "vault", "text": f"Found relevant content in {src_names}", "done": True})
     else:
-        yield sse({"type": "status", "step": "vault", "text": "No vault match found", "done": True})
+        yield sse({"type": "status", "step": "vault", "text": "Nothing relevant found in vault", "done": True})
 
     # Step 3: Web search (optional)
     web_sources = []
     if request.web_search:
-        yield sse({"type": "status", "step": "web", "text": "Searching web..."})
+        yield sse({"type": "status", "step": "web", "text": "Searching the web…"})
         web_sources = await web_search(request.message)
-        yield sse({"type": "status", "step": "web", "text": f"Found {len(web_sources)} web results", "done": True})
+        suffix = f"found {len(web_sources)} results" if web_sources else "no results found"
+        yield sse({"type": "status", "step": "web", "text": f"Web search complete — {suffix}", "done": True})
 
     # Step 4: Vault miss with no web results
     if not relevant and not web_sources:
@@ -219,27 +223,75 @@ async def chat_stream(request: ChatRequest) -> AsyncGenerator[str, None]:
     context_text = "\n\n" + "\n\n".join(context_parts)
     source_instruction = "Use the vault context as your primary source." if relevant and web_sources else ""
 
-    prompt = f"""You are Dave's personal AI assistant. Answer the question using ONLY the information in the provided context. Do not use any outside knowledge. If the context does not contain enough information, say so. {source_instruction}
+    system_prompt = f"""You are Dave's personal AI assistant. Answer the question using ONLY the information in the provided context. Do not use any outside knowledge. If the context does not contain enough information, say so. {source_instruction}
 
 Context:
 {context_text}
 
-Question: {request.message}
+Answer concisely, then end with a single relevant follow-up question on its own line, prefixed with "**Follow-up:**"."""
 
-Answer:"""
+    # Auto-compact if context is getting full
+    if request.conversation_id and request.compact_threshold > 0:
+        try:
+            ctx_limit = 4096
+            async with httpx.AsyncClient(timeout=5) as hc:
+                r = await hc.post(f"{OLLAMA_BASE_URL}/api/show", json={"model": model})
+                info = r.json().get("model_info", {})
+                for key in ("context_length", "llama.context_length", "qwen2.context_length"):
+                    if key in info:
+                        ctx_limit = int(info[key]); break
+            conv_check = db.get_conversation(request.conversation_id)
+            if conv_check:
+                total_chars = sum(len(m["content"]) for m in conv_check["messages"])
+                pct = (total_chars // 4) / ctx_limit * 100
+                if pct >= request.compact_threshold:
+                    logger.info(f"Context at {pct:.1f}% — auto-compacting conversation {request.conversation_id}")
+                    yield sse({"type": "status", "step": "compact", "text": "Compacting conversation history…"})
+                    history_text = "\n\n".join(
+                        f"{m['role'].upper()}: {m['content']}" for m in conv_check["messages"]
+                    )
+                    compact_resp = httpx.post(
+                        f"{OLLAMA_BASE_URL}/api/chat",
+                        json={
+                            "model": model,
+                            "messages": [
+                                {"role": "system", "content": "You are a concise summarizer. Output only the summary, nothing else."},
+                                {"role": "user", "content": f"Summarize this conversation history concisely, preserving all key facts, decisions, and context:\n\n{history_text}"},
+                            ],
+                            "options": {"temperature": 0.3, "num_predict": 600},
+                            "think": False,
+                            "stream": False,
+                        },
+                        timeout=60,
+                    )
+                    summary = compact_resp.json().get("message", {}).get("content", "").strip()
+                    if summary:
+                        db.compact_conversation(request.conversation_id, summary)
+                        yield sse({"type": "status", "step": "compact", "text": "History compacted", "done": True})
+        except Exception as e:
+            logger.warning(f"Auto-compact failed: {e}")
 
-    logger.info(f"Sending {len(relevant)} vault chunks + {len(web_sources)} web results to LLM ({len(context_text)} chars)")
+    # Build message history for multi-turn context
+    messages = [{"role": "system", "content": system_prompt}]
+    if request.conversation_id and request.history_limit > 0:
+        conv = db.get_conversation(request.conversation_id)
+        if conv:
+            for msg in conv["messages"][-request.history_limit:]:
+                messages.append({"role": msg["role"] if msg["role"] != "assistant" else "assistant", "content": msg["content"]})
+    messages.append({"role": "user", "content": request.message})
+
+    logger.info(f"Sending {len(relevant)} vault chunks + {len(web_sources)} web results to LLM ({len(context_text)} chars), {len(messages)} messages in history")
 
     # Step 6: Stream LLM response
     ctx_kb = round(len(context_text) / 1024, 1)
-    yield sse({"type": "status", "step": "llm", "text": f"Sending {ctx_kb} KB of context to {model}…"})
+    yield sse({"type": "status", "step": "llm", "text": f"Thinking through {ctx_kb} KB of context…"})
 
     full_answer = ""
     try:
         client = ollama_client.Client(host=OLLAMA_BASE_URL)
         stream = client.chat(
             model=model,
-            messages=[{"role": "user", "content": prompt}],
+            messages=messages,
             options={"temperature": request.temperature},
             stream=True,
         )
@@ -311,6 +363,38 @@ def list_models():
         raise HTTPException(status_code=503, detail=f"Ollama unavailable: {e}")
 
 
+@app.get("/context-info")
+async def context_info(model: str = None, conversation_id: str = None):
+    """Return model context limit and estimated token usage for a conversation."""
+    use_model = model or LLM_MODEL
+    # Get context length from Ollama
+    ctx_limit = 4096  # safe fallback
+    try:
+        async with httpx.AsyncClient(timeout=5) as client:
+            r = await client.post(f"{OLLAMA_BASE_URL}/api/show", json={"model": use_model})
+            info = r.json().get("model_info", {})
+            for key in ("context_length", "llama.context_length", "qwen2.context_length"):
+                if key in info:
+                    ctx_limit = int(info[key])
+                    break
+    except Exception:
+        pass
+
+    # Estimate tokens used (chars / 4 is a reasonable approximation)
+    tokens_used = 0
+    if conversation_id:
+        conv = db.get_conversation(conversation_id)
+        if conv:
+            for msg in conv["messages"]:
+                tokens_used += len(msg["content"]) // 4
+
+    return {
+        "context_limit": ctx_limit,
+        "tokens_used": tokens_used,
+        "percent": round(tokens_used / ctx_limit * 100, 1) if ctx_limit else 0,
+    }
+
+
 @app.post("/chat")
 async def chat(request: ChatRequest):
     if not request.message.strip():
@@ -327,6 +411,60 @@ async def trigger_reindex():
     loop = asyncio.get_event_loop()
     result = await loop.run_in_executor(None, index_vault, VAULT_PATH, EMBED_MODEL, OLLAMA_BASE_URL)
     return IndexResponse(**result)
+
+
+@app.get("/suggestions")
+async def get_suggestions(model: str = None):
+    """Generate contextual chat suggestions based on vault contents."""
+    import json as _json
+    use_model = model or LLM_MODEL
+    # Gather vault filenames
+    vault = Path(VAULT_PATH)
+    filenames = []
+    if vault.is_dir():
+        for p in vault.rglob("*"):
+            if p.is_file():
+                filenames.append(str(p.relative_to(vault)))
+    if not filenames:
+        return {"suggestions": []}
+    file_list = "\n".join(f"- {f}" for f in filenames[:40])
+    prompt = (
+        f"Files in vault:\n{file_list}\n\n"
+        "Write exactly 4 questions a user might ask about these files. "
+        "Rules: each question on its own line, ends with ?, under 60 chars, no numbering, no bullets, no explanations."
+    )
+    try:
+        client = ollama_client.Client(host=OLLAMA_BASE_URL)
+        import re as _re, httpx as _httpx
+        # Call Ollama API directly so we can pass think:false (disables reasoning mode)
+        ollama_resp = _httpx.post(
+            f"{OLLAMA_BASE_URL}/api/chat",
+            json={
+                "model": use_model,
+                "messages": [
+                    {"role": "system", "content": "You are a concise assistant. Output only the requested list, nothing else. No explanations, no preamble, no reasoning."},
+                    {"role": "user", "content": prompt},
+                ],
+                "options": {"temperature": 0.7, "num_predict": 800},
+                "think": False,
+                "stream": False,
+            },
+            timeout=60,
+        )
+        ollama_resp.raise_for_status()
+        data = ollama_resp.json()
+        raw = data.get("message", {}).get("content", "")
+        import re as _re
+        cleaned = _re.sub(r"<think>[\s\S]*?</think>", "", raw, flags=_re.IGNORECASE)
+        lines = [line.strip().lstrip("-•* ") for line in cleaned.splitlines()]
+        # Extract all question-shaped lines
+        suggestions = [s for s in lines if s.endswith("?") and 10 < len(s) < 100][:4]
+        if not suggestions:
+            raise ValueError("no suggestions parsed")
+        return {"suggestions": suggestions}
+    except Exception as e:
+        import logging; logging.getLogger("uvicorn").warning(f"suggestions failed: {e}")
+        return {"suggestions": []}
 
 
 @app.get("/search")
@@ -539,5 +677,9 @@ def vault_file(path: str):
         raise HTTPException(status_code=403, detail="Access denied")
     if not os.path.isfile(full_path):
         raise HTTPException(status_code=404, detail="File not found")
+    ext = os.path.splitext(full_path)[1].lower()
+    if ext == ".pdf":
+        with open(full_path, "rb") as f:
+            return Response(content=f.read(), media_type="application/pdf")
     with open(full_path, "r", encoding="utf-8", errors="replace") as f:
         return Response(content=f.read(), media_type="text/plain")

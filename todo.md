@@ -1,0 +1,3 @@
+- Settings: Needs to have a UI/UX section where the logo can be changed 
+  - Customize UI section
+- Default model still doesn't persist

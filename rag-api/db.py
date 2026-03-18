@@ -105,6 +105,13 @@ def get_conversation(cid: str) -> Optional[dict]:
     return result
 
 
+def compact_conversation(cid: str, summary: str) -> str:
+    """Replace all messages in a conversation with a single summary message."""
+    with _conn() as conn:
+        conn.execute("DELETE FROM messages WHERE conversation_id = ?", (cid,))
+    return add_message(cid, "system", f"[Conversation summary]\n{summary}")
+
+
 def delete_conversation(cid: str):
     with _conn() as conn:
         conn.execute("DELETE FROM conversations WHERE id = ?", (cid,))
