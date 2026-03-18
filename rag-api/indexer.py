@@ -3,11 +3,14 @@ indexer.py — file ingestion, chunking, embedding, and ChromaDB upsert.
 
 Chunking strategy:
   - RecursiveCharacterTextSplitter
-  - chunk_size = 1024 chars (safe for nomic-embed-text's 2048-token window)
-  - chunk_overlap = 128 chars — prevents context loss at chunk boundaries
+  - chunk_size = 512 chars
+  - chunk_overlap = 64 chars
   - Separators tried in order: paragraph breaks, line breaks, sentences, words
 
 Supported file types: .md, .txt, .pdf
+
+Each user gets their own ChromaDB collection: vault_{user_id_no_hyphens}
+and their own vault subdirectory: {VAULT_PATH}/{user_id}/
 """
 
 import os
@@ -25,10 +28,14 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 logger = logging.getLogger(__name__)
 
-COLLECTION_NAME = "dave_vault"
 CHUNK_SIZE = 512
 CHUNK_OVERLAP = 64
 SUPPORTED_EXTENSIONS = {".md", ".txt", ".pdf"}
+
+
+def collection_name_for_user(user_id: str) -> str:
+    """ChromaDB collection name for a given user. Must be 3-63 chars, alphanumeric+underscore."""
+    return f"vault_{user_id.replace('-', '')}"
 
 
 def get_chroma_client() -> chromadb.HttpClient:
@@ -37,9 +44,9 @@ def get_chroma_client() -> chromadb.HttpClient:
     return chromadb.HttpClient(host=host, port=port)
 
 
-def get_or_create_collection(client: chromadb.HttpClient):
+def get_or_create_collection(client: chromadb.HttpClient, collection_name: str):
     return client.get_or_create_collection(
-        name=COLLECTION_NAME,
+        name=collection_name,
         metadata={"hnsw:space": "cosine"},
     )
 
@@ -73,28 +80,27 @@ def file_hash(filepath: Path) -> str:
     return h.hexdigest()
 
 
-def index_vault(vault_path: str, embed_model: str, ollama_base_url: str) -> dict:
+def index_vault(vault_path: str, user_id: str, embed_model: str, ollama_base_url: str) -> dict:
     """
-    Walk vault_path, chunk all supported files, embed them, and upsert into ChromaDB.
+    Walk vault_path/{user_id}/, chunk all supported files, embed them, and upsert
+    into the user's ChromaDB collection.
 
     Full re-index strategy: delete collection and rebuild every time.
-    Simple and avoids stale-chunk bugs from renamed/deleted files.
     Returns: {files_processed, chunks_upserted, errors}
     """
-    vault = Path(vault_path)
-    if not vault.exists():
-        logger.error(f"Vault path {vault_path} does not exist")
-        return {"files_processed": 0, "chunks_upserted": 0, "errors": ["Vault path not found"]}
+    user_vault = Path(vault_path) / user_id
+    user_vault.mkdir(parents=True, exist_ok=True)
 
+    collection_name = collection_name_for_user(user_id)
     client = get_chroma_client()
 
     try:
-        client.delete_collection(COLLECTION_NAME)
-        logger.info(f"Deleted existing collection '{COLLECTION_NAME}' for re-index")
+        client.delete_collection(collection_name)
+        logger.info(f"Deleted existing collection '{collection_name}' for re-index")
     except Exception:
-        pass  # Didn't exist yet, that's fine
+        pass
 
-    collection = get_or_create_collection(client)
+    collection = get_or_create_collection(client, collection_name)
 
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=CHUNK_SIZE,
@@ -107,11 +113,11 @@ def index_vault(vault_path: str, embed_model: str, ollama_base_url: str) -> dict
     errors = []
 
     all_files = [
-        f for f in vault.rglob("*")
+        f for f in user_vault.rglob("*")
         if f.is_file() and f.suffix.lower() in SUPPORTED_EXTENSIONS
     ]
 
-    logger.info(f"Found {len(all_files)} files to index in {vault_path}")
+    logger.info(f"Found {len(all_files)} files to index for user {user_id}")
 
     for filepath in all_files:
         try:
@@ -129,7 +135,7 @@ def index_vault(vault_path: str, embed_model: str, ollama_base_url: str) -> dict
             metadatas = [
                 {
                     "source": filepath.name,
-                    "filepath": str(filepath.relative_to(vault)),
+                    "filepath": str(filepath.relative_to(user_vault)),
                     "chunk_index": i,
                     "file_hash": fhash,
                 }
@@ -154,7 +160,7 @@ def index_vault(vault_path: str, embed_model: str, ollama_base_url: str) -> dict
             errors.append(f"{filepath.name}: {str(e)}")
 
     logger.info(
-        f"Indexing complete: {files_processed} files, {chunks_upserted} chunks, {len(errors)} errors"
+        f"Indexing complete for {user_id}: {files_processed} files, {chunks_upserted} chunks, {len(errors)} errors"
     )
     result = {
         "files_processed": files_processed,
@@ -162,9 +168,9 @@ def index_vault(vault_path: str, embed_model: str, ollama_base_url: str) -> dict
         "errors": errors,
     }
 
-    # Write sidecar so /vault/files can report last-indexed time and stats
+    # Write per-user sidecar
     db_dir = os.environ.get("DB_DIR", "/app/data")
-    meta_path = Path(db_dir) / "index_meta.json"
+    meta_path = Path(db_dir) / f"index_meta_{user_id}.json"
     try:
         meta_path.parent.mkdir(parents=True, exist_ok=True)
         meta_path.write_text(json.dumps({
@@ -174,6 +180,6 @@ def index_vault(vault_path: str, embed_model: str, ollama_base_url: str) -> dict
             "errors": errors,
         }))
     except Exception as e:
-        logger.warning(f"Could not write index_meta.json: {e}")
+        logger.warning(f"Could not write index_meta for {user_id}: {e}")
 
     return result

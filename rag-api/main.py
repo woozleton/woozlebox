@@ -15,19 +15,21 @@ import json
 import logging
 import asyncio
 import shutil
+import secrets
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, AsyncGenerator
 
 import httpx
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, Response
+from passlib.context import CryptContext
 from pydantic import BaseModel
 import ollama as ollama_client
 
-from indexer import get_chroma_client, embed_texts, index_vault, COLLECTION_NAME
+from indexer import get_chroma_client, embed_texts, index_vault, collection_name_for_user
 import db
 
 logging.basicConfig(level=logging.INFO)
@@ -54,15 +56,83 @@ KOKORO_VOICES = [
     "bm_george", "bm_lewis",
 ]
 
+pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+# --- Auth helpers ---
+
+def get_current_user(request: Request) -> dict:
+    token = request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
+    if not token:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    session = db.get_session(token)
+    if not session:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    user = db.get_user_by_id(session["user_id"])
+    if not user or not user["is_active"]:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    return user
+
+
+def require_admin(user: dict = Depends(get_current_user)) -> dict:
+    if user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Forbidden")
+    return user
+
+
+# --- Vault helpers ---
+
+def user_vault_path(user_id: str) -> Path:
+    p = Path(VAULT_PATH) / user_id
+    p.mkdir(parents=True, exist_ok=True)
+    return p
+
+
+def _migrate_vault_files(admin_id: str):
+    """Move any files/dirs at the vault root (not in a UUID subdir) into /vault/{admin_id}/."""
+    vault = Path(VAULT_PATH)
+    if not vault.exists():
+        return
+    dest = vault / admin_id
+    dest.mkdir(parents=True, exist_ok=True)
+    import re
+    uuid_re = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
+    for item in list(vault.iterdir()):
+        if item.name == admin_id:
+            continue
+        if item.is_dir() and uuid_re.match(item.name):
+            continue  # already a user subdir
+        try:
+            shutil.move(str(item), str(dest / item.name))
+            logger.info(f"Vault migration: moved {item.name} → {admin_id}/")
+        except Exception as e:
+            logger.warning(f"Vault migration: could not move {item.name}: {e}")
+
 
 # --- Lifespan ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     db.init_db()
-    logger.info("Starting up — indexing vault...")
+
+    # Migrate vault files to admin subdir if needed
+    users = db.list_users()
+    admins = [u for u in users if u["role"] == "admin"]
+    if admins:
+        _migrate_vault_files(admins[0]["id"])
+
+    # Index vault for each active user
+    logger.info("Starting up — indexing vaults...")
     loop = asyncio.get_event_loop()
-    result = await loop.run_in_executor(None, index_vault, VAULT_PATH, EMBED_MODEL, OLLAMA_BASE_URL)
-    logger.info(f"Indexing result: {result}")
+    for user in users:
+        if user.get("is_active"):
+            try:
+                result = await loop.run_in_executor(
+                    None, index_vault, VAULT_PATH, user["id"], EMBED_MODEL, OLLAMA_BASE_URL
+                )
+                logger.info(f"Indexed vault for user {user['username']}: {result}")
+            except Exception as e:
+                logger.warning(f"Vault index failed for {user['username']}: {e}")
+
     yield
 
 
@@ -75,7 +145,7 @@ class ChatRequest(BaseModel):
     message: str
     model: Optional[str] = None
     conversation_id: Optional[str] = None
-    project_id: Optional[str] = None
+    topic_id: Optional[str] = None
     temperature: float = 0.2
     threshold: Optional[float] = None
     top_k: int = DEFAULT_TOP_K
@@ -83,16 +153,22 @@ class ChatRequest(BaseModel):
     history_limit: int = 10
     compact_threshold: int = 75  # % of context at which to auto-compact
     user_context: Optional[str] = None  # profile name/role/preferences
+    default_prompt: Optional[str] = None  # global default system prompt from settings
 
 class ConversationPatch(BaseModel):
     title: str
 
-class ProjectCreate(BaseModel):
+class ConversationMove(BaseModel):
+    topic_id: str
+
+class TopicCreate(BaseModel):
     name: str
+    description: Optional[str] = None
     system_prompt: Optional[str] = None
 
-class ProjectPatch(BaseModel):
+class TopicPatch(BaseModel):
     name: Optional[str] = None
+    description: Optional[str] = None
     system_prompt: Optional[str] = None
 
 class MemoryFactCreate(BaseModel):
@@ -113,6 +189,29 @@ class VaultDeleteRequest(BaseModel):
 class VaultRenameRequest(BaseModel):
     path: str
     new_name: str
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+class AdminCreateUserRequest(BaseModel):
+    username: str
+    password: str
+    role: str = "user"
+
+class AdminPatchUserRequest(BaseModel):
+    role: Optional[str] = None
+    is_active: Optional[bool] = None
+
+class AdminSetPasswordRequest(BaseModel):
+    new_password: str
+
+class UserSettingsRequest(BaseModel):
+    settings: str  # opaque JSON string
 
 
 # --- SSE helpers ---
@@ -144,10 +243,11 @@ async def web_search(query: str, num_results: int = 5) -> list[dict]:
 
 
 # --- Streaming chat generator ---
-async def chat_stream(request: ChatRequest) -> AsyncGenerator[str, None]:
+async def chat_stream(request: ChatRequest, user_id: str) -> AsyncGenerator[str, None]:
     model = request.model or LLM_MODEL
     threshold = request.threshold if request.threshold is not None else SIMILARITY_THRESHOLD
     top_k = max(1, request.top_k)
+    collection_name = collection_name_for_user(user_id)
 
     # Step 1: Embed
     yield sse({"type": "status", "step": "embed", "text": "Understanding your question…"})
@@ -163,9 +263,10 @@ async def chat_stream(request: ChatRequest) -> AsyncGenerator[str, None]:
 
     # Step 2: Vault search
     yield sse({"type": "status", "step": "vault", "text": "Reading through your vault…"})
+    documents, metadatas, distances = [], [], []
     try:
         chroma_client = get_chroma_client()
-        collection = chroma_client.get_collection(COLLECTION_NAME)
+        collection = chroma_client.get_collection(collection_name)
         results = collection.query(
             query_embeddings=[query_embedding],
             n_results=top_k,
@@ -175,8 +276,9 @@ async def chat_stream(request: ChatRequest) -> AsyncGenerator[str, None]:
         metadatas = results["metadatas"][0]
         distances = results["distances"][0]
     except Exception as e:
-        yield sse({"type": "error", "text": f"Vault search failed: {e}"})
-        return
+        if "does not exist" not in str(e):
+            yield sse({"type": "error", "text": f"Vault search failed: {e}"})
+            return
 
     best_distance = distances[0] if distances else 2.0
     relevant = [
@@ -201,25 +303,7 @@ async def chat_stream(request: ChatRequest) -> AsyncGenerator[str, None]:
         suffix = f"found {len(web_sources)} results" if web_sources else "no results found"
         yield sse({"type": "status", "step": "web", "text": f"Web search complete — {suffix}", "done": True})
 
-    # Step 4: Vault miss with no web results
-    if not relevant and not web_sources:
-        conv_id = request.conversation_id
-        if not conv_id:
-            conv_id = db.create_conversation()
-            db.auto_title(conv_id, request.message)
-        db.add_message(conv_id, "user", request.message)
-        db.add_message(conv_id, "assistant", NOT_FOUND_MSG, model_used=model)
-        yield sse({
-            "type": "done",
-            "from_vault": False,
-            "answer": NOT_FOUND_MSG,
-            "sources": [],
-            "web_sources": [],
-            "model_used": model,
-            "conversation_id": conv_id,
-            "debug": debug,
-        })
-        return
+    # Step 4: (fallthrough — always proceed to LLM)
 
     # Step 5: Build context
     context_parts = []
@@ -236,17 +320,17 @@ async def chat_stream(request: ChatRequest) -> AsyncGenerator[str, None]:
     context_text = "\n\n" + "\n\n".join(context_parts)
     source_instruction = "Use the vault context as your primary source." if relevant and web_sources else ""
 
-    # Build system prompt — project override, memory, user profile
-    base_instructions = "You are a personal AI assistant. Answer the question using ONLY the information in the provided context. Do not use any outside knowledge. If the context does not contain enough information, say so."
+    # Build system prompt — topic override, memory, user profile
+    base_instructions = request.default_prompt or "You are a personal AI assistant. When relevant context from the user's vault is provided, prioritize it in your answer. Otherwise, answer using your general knowledge."
 
-    # Use project system prompt if provided
-    if request.project_id:
-        project = db.get_project(request.project_id)
-        if project and project.get("system_prompt"):
-            base_instructions = project["system_prompt"]
+    # Use topic system prompt if provided (overrides default)
+    if request.topic_id:
+        topic = db.get_topic(request.topic_id, user_id)
+        if topic and topic.get("system_prompt"):
+            base_instructions = topic["system_prompt"]
 
     # Inject memory facts
-    memory_facts = db.list_memory()
+    memory_facts = db.list_memory(user_id)
     memory_section = ""
     if memory_facts:
         facts_text = "\n".join(f"- {m['fact']}" for m in memory_facts)
@@ -257,10 +341,8 @@ async def chat_stream(request: ChatRequest) -> AsyncGenerator[str, None]:
     if request.user_context:
         user_section = f"\n\nUser profile:\n{request.user_context}"
 
-    system_prompt = f"""{base_instructions}{memory_section}{user_section} {source_instruction}
-
-Context:
-{context_text}
+    context_block = f"\n\nContext:\n{context_text}" if context_parts else ""
+    system_prompt = f"""{base_instructions}{memory_section}{user_section}{' ' + source_instruction if source_instruction else ''}{context_block}
 
 Answer concisely, then end with a single relevant follow-up question on its own line, prefixed with "**Follow-up:**"."""
 
@@ -274,7 +356,7 @@ Answer concisely, then end with a single relevant follow-up question on its own 
                 for key in ("context_length", "llama.context_length", "qwen2.context_length"):
                     if key in info:
                         ctx_limit = int(info[key]); break
-            conv_check = db.get_conversation(request.conversation_id)
+            conv_check = db.get_conversation(request.conversation_id, user_id)
             if conv_check:
                 total_chars = sum(len(m["content"]) for m in conv_check["messages"])
                 pct = (total_chars // 4) / ctx_limit * 100
@@ -300,7 +382,7 @@ Answer concisely, then end with a single relevant follow-up question on its own 
                     )
                     summary = compact_resp.json().get("message", {}).get("content", "").strip()
                     if summary:
-                        db.compact_conversation(request.conversation_id, summary)
+                        db.compact_conversation(request.conversation_id, user_id, summary)
                         yield sse({"type": "status", "step": "compact", "text": "History compacted", "done": True})
         except Exception as e:
             logger.warning(f"Auto-compact failed: {e}")
@@ -308,7 +390,7 @@ Answer concisely, then end with a single relevant follow-up question on its own 
     # Build message history for multi-turn context
     messages = [{"role": "system", "content": system_prompt}]
     if request.conversation_id and request.history_limit > 0:
-        conv = db.get_conversation(request.conversation_id)
+        conv = db.get_conversation(request.conversation_id, user_id)
         if conv:
             for msg in conv["messages"][-request.history_limit:]:
                 messages.append({"role": msg["role"] if msg["role"] != "assistant" else "assistant", "content": msg["content"]})
@@ -336,14 +418,18 @@ Answer concisely, then end with a single relevant follow-up question on its own 
                 yield sse({"type": "token", "text": token})
     except Exception as e:
         logger.error(f"LLM streaming failed: {e}")
-        yield sse({"type": "error", "text": f"LLM unavailable: {e}"})
+        err_str = str(e)
+        if "system memory" in err_str or "out of memory" in err_str.lower():
+            yield sse({"type": "error", "text": f"Model '{model}' requires more memory than is available. Please select a smaller model in Settings > AI > Default LLM."})
+        else:
+            yield sse({"type": "error", "text": f"LLM unavailable: {e}"})
         return
 
     # Step 7: Save to DB
     conv_id = request.conversation_id
     if not conv_id:
-        conv_id = db.create_conversation()
-    db.auto_title(conv_id, request.message)
+        conv_id = db.create_conversation(user_id=user_id, topic_id=request.topic_id)
+    db.auto_title(conv_id, user_id, request.message)
     db.add_message(conv_id, "user", request.message)
     db.add_message(conv_id, "assistant", full_answer.strip(), sources=sources, web_sources=web_sources, model_used=model)
 
@@ -362,7 +448,6 @@ Answer concisely, then end with a single relevant follow-up question on its own 
 
 @app.get("/health")
 async def health():
-    import httpx
     services = {}
     async with httpx.AsyncClient(timeout=2) as client:
         for name, url in [
@@ -398,11 +483,9 @@ def list_models():
 
 
 @app.get("/context-info")
-async def context_info(model: str = None, conversation_id: str = None):
-    """Return model context limit and estimated token usage for a conversation."""
+async def context_info(model: str = None, conversation_id: str = None, user: dict = Depends(get_current_user)):
     use_model = model or LLM_MODEL
-    # Get context length from Ollama
-    ctx_limit = 4096  # safe fallback
+    ctx_limit = 4096
     try:
         async with httpx.AsyncClient(timeout=5) as client:
             r = await client.post(f"{OLLAMA_BASE_URL}/api/show", json={"model": use_model})
@@ -414,10 +497,9 @@ async def context_info(model: str = None, conversation_id: str = None):
     except Exception:
         pass
 
-    # Estimate tokens used (chars / 4 is a reasonable approximation)
     tokens_used = 0
     if conversation_id:
-        conv = db.get_conversation(conversation_id)
+        conv = db.get_conversation(conversation_id, user["id"])
         if conv:
             for msg in conv["messages"]:
                 tokens_used += len(msg["content"]) // 4
@@ -430,30 +512,27 @@ async def context_info(model: str = None, conversation_id: str = None):
 
 
 @app.post("/chat")
-async def chat(request: ChatRequest):
+async def chat(request: ChatRequest, user: dict = Depends(get_current_user)):
     if not request.message.strip():
         raise HTTPException(status_code=400, detail="Message cannot be empty")
     return StreamingResponse(
-        chat_stream(request),
+        chat_stream(request, user["id"]),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
 
 
 @app.post("/index", response_model=IndexResponse)
-async def trigger_reindex():
+async def trigger_reindex(user: dict = Depends(get_current_user)):
     loop = asyncio.get_event_loop()
-    result = await loop.run_in_executor(None, index_vault, VAULT_PATH, EMBED_MODEL, OLLAMA_BASE_URL)
+    result = await loop.run_in_executor(None, index_vault, VAULT_PATH, user["id"], EMBED_MODEL, OLLAMA_BASE_URL)
     return IndexResponse(**result)
 
 
 @app.get("/suggestions")
-async def get_suggestions(model: str = None):
-    """Generate contextual chat suggestions based on vault contents."""
-    import json as _json
+async def get_suggestions(model: str = None, user: dict = Depends(get_current_user)):
     use_model = model or LLM_MODEL
-    # Gather vault filenames
-    vault = Path(VAULT_PATH)
+    vault = user_vault_path(user["id"])
     filenames = []
     if vault.is_dir():
         for p in vault.rglob("*"):
@@ -468,10 +547,8 @@ async def get_suggestions(model: str = None):
         "Rules: each question on its own line, ends with ?, under 60 chars, no numbering, no bullets, no explanations."
     )
     try:
-        client = ollama_client.Client(host=OLLAMA_BASE_URL)
-        import re as _re, httpx as _httpx
-        # Call Ollama API directly so we can pass think:false (disables reasoning mode)
-        ollama_resp = _httpx.post(
+        import re as _re
+        ollama_resp = httpx.post(
             f"{OLLAMA_BASE_URL}/api/chat",
             json={
                 "model": use_model,
@@ -488,23 +565,152 @@ async def get_suggestions(model: str = None):
         ollama_resp.raise_for_status()
         data = ollama_resp.json()
         raw = data.get("message", {}).get("content", "")
-        import re as _re
         cleaned = _re.sub(r"<think>[\s\S]*?</think>", "", raw, flags=_re.IGNORECASE)
         lines = [line.strip().lstrip("-•* ") for line in cleaned.splitlines()]
-        # Extract all question-shaped lines
         suggestions = [s for s in lines if s.endswith("?") and 10 < len(s) < 100][:4]
         if not suggestions:
             raise ValueError("no suggestions parsed")
         return {"suggestions": suggestions}
     except Exception as e:
-        import logging; logging.getLogger("uvicorn").warning(f"suggestions failed: {e}")
+        logger.warning(f"suggestions failed: {e}")
         return {"suggestions": []}
 
 
 @app.get("/search")
-async def search_proxy(q: str):
+async def search_proxy(q: str, user: dict = Depends(get_current_user)):
     results = await web_search(q)
     return {"results": results}
+
+
+# --- Auth endpoints (public) ---
+
+@app.get("/auth/status")
+def auth_status():
+    return {"has_users": db.has_users()}
+
+
+@app.post("/auth/login")
+def auth_login(body: LoginRequest):
+    user = db.get_user_by_username(body.username)
+    if not user or not user["is_active"]:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    if not pwd_ctx.verify(body.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    token = db.create_session(user["id"])
+    return {
+        "token": token,
+        "user": {
+            "id": user["id"],
+            "username": user["username"],
+            "role": user["role"],
+            "settings": user["settings"],
+        },
+    }
+
+
+# --- Auth endpoints (require login) ---
+
+@app.post("/auth/logout")
+def auth_logout(request: Request, user: dict = Depends(get_current_user)):
+    token = request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
+    if token:
+        db.delete_session(token)
+    return {"ok": True}
+
+
+@app.get("/auth/me")
+def auth_me(user: dict = Depends(get_current_user)):
+    return {
+        "id": user["id"],
+        "username": user["username"],
+        "role": user["role"],
+        "settings": user["settings"],
+    }
+
+
+@app.put("/auth/me/password")
+def change_own_password(body: ChangePasswordRequest, user: dict = Depends(get_current_user)):
+    if not pwd_ctx.verify(body.current_password, user["password_hash"]):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    if len(body.new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    db.update_user_password(user["id"], pwd_ctx.hash(body.new_password))
+    return {"ok": True}
+
+
+@app.put("/users/me/settings")
+def update_own_settings(body: UserSettingsRequest, user: dict = Depends(get_current_user)):
+    db.update_user_settings(user["id"], body.settings)
+    return {"ok": True}
+
+
+@app.delete("/users/me")
+def delete_own_account(user: dict = Depends(get_current_user)):
+    db.delete_user(user["id"])
+    return {"ok": True}
+
+
+# --- Admin endpoints ---
+
+@app.get("/admin/users")
+def admin_list_users(admin: dict = Depends(require_admin)):
+    return db.list_users()
+
+
+@app.post("/admin/users")
+def admin_create_user(body: AdminCreateUserRequest, request: Request):
+    # If no users exist yet, always create as admin (bootstrap)
+    if not db.has_users():
+        role = "admin"
+    else:
+        # Require admin auth for subsequent users
+        token = request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
+        if not token:
+            raise HTTPException(status_code=401, detail="Unauthorized")
+        session = db.get_session(token)
+        if not session:
+            raise HTTPException(status_code=401, detail="Unauthorized")
+        caller = db.get_user_by_id(session["user_id"])
+        if not caller or caller["role"] != "admin":
+            raise HTTPException(status_code=403, detail="Forbidden")
+        role = body.role if body.role in ("admin", "user") else "user"
+
+    if not body.username.strip():
+        raise HTTPException(status_code=400, detail="Username cannot be empty")
+    if len(body.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+
+    uid = db.create_user(body.username.strip(), pwd_ctx.hash(body.password), role)
+    return {"id": uid, "username": body.username.strip(), "role": role}
+
+
+@app.patch("/admin/users/{uid}")
+def admin_patch_user(uid: str, body: AdminPatchUserRequest, admin: dict = Depends(require_admin)):
+    if uid == admin["id"] and body.is_active is False:
+        raise HTTPException(status_code=400, detail="Cannot disable your own account")
+    if body.role is not None:
+        if body.role not in ("admin", "user"):
+            raise HTTPException(status_code=400, detail="Role must be 'admin' or 'user'")
+        db.update_user_role(uid, body.role)
+    if body.is_active is not None:
+        db.update_user_active(uid, body.is_active)
+    return {"ok": True}
+
+
+@app.put("/admin/users/{uid}/password")
+def admin_set_password(uid: str, body: AdminSetPasswordRequest, admin: dict = Depends(require_admin)):
+    if len(body.new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    db.update_user_password(uid, pwd_ctx.hash(body.new_password))
+    return {"ok": True}
+
+
+@app.delete("/admin/users/{uid}")
+def admin_delete_user(uid: str, admin: dict = Depends(require_admin)):
+    if uid == admin["id"]:
+        raise HTTPException(status_code=400, detail="Cannot delete your own account")
+    db.delete_user(uid)
+    return {"ok": True}
 
 
 # --- TTS endpoints ---
@@ -543,101 +749,106 @@ async def tts_proxy(text: str, voice: str = DEFAULT_VOICE, format: str = "wav"):
     )
 
 
-# --- Project endpoints ---
+# --- Topic endpoints ---
 
-@app.get("/projects")
-def list_projects():
-    return db.list_projects()
+@app.get("/topics")
+def list_topics(user: dict = Depends(get_current_user)):
+    return db.list_topics(user["id"])
 
-@app.post("/projects")
-def create_project(body: ProjectCreate):
-    pid = db.create_project(body.name, body.system_prompt)
+@app.post("/topics")
+def create_topic(body: TopicCreate, user: dict = Depends(get_current_user)):
+    pid = db.create_topic(user["id"], body.name, body.description, body.system_prompt)
     return {"id": pid}
 
-@app.patch("/projects/{pid}")
-def update_project(pid: str, body: ProjectPatch):
-    db.update_project(pid, body.name, body.system_prompt)
+@app.patch("/topics/{pid}")
+def update_topic(pid: str, body: TopicPatch, user: dict = Depends(get_current_user)):
+    db.update_topic(pid, user["id"], body.name, body.description, body.system_prompt)
     return {"ok": True}
 
-@app.delete("/projects/{pid}")
-def delete_project(pid: str):
-    db.delete_project(pid)
+@app.delete("/topics/{pid}")
+def delete_topic(pid: str, user: dict = Depends(get_current_user)):
+    db.delete_topic(pid, user["id"])
     return {"ok": True}
 
 
 # --- Memory endpoints ---
 
 @app.get("/memory")
-def list_memory():
-    return db.list_memory()
+def list_memory(user: dict = Depends(get_current_user)):
+    return db.list_memory(user["id"])
 
 @app.post("/memory")
-def add_memory(body: MemoryFactCreate):
-    mid = db.add_memory_fact(body.fact)
+def add_memory(body: MemoryFactCreate, user: dict = Depends(get_current_user)):
+    mid = db.add_memory_fact(body.fact, user["id"])
     return {"id": mid}
 
 @app.delete("/memory/{mid}")
-def delete_memory(mid: str):
-    db.delete_memory_fact(mid)
+def delete_memory(mid: str, user: dict = Depends(get_current_user)):
+    db.delete_memory_fact(mid, user["id"])
     return {"ok": True}
 
 
 # --- Conversation endpoints ---
 
 @app.get("/conversations/search")
-def search_convs(q: str = ""):
+def search_convs(q: str = "", user: dict = Depends(get_current_user)):
     if not q.strip():
         return []
-    return db.search_conversations(q)
+    return db.search_conversations(q, user["id"])
 
 
 @app.get("/conversations")
-def list_convs():
-    return db.list_conversations()
+def list_convs(user: dict = Depends(get_current_user)):
+    return db.list_conversations(user["id"])
 
 
 @app.post("/conversations")
-def create_conv(project_id: Optional[str] = None):
-    cid = db.create_conversation(project_id=project_id)
+def create_conv(topic_id: Optional[str] = None, user: dict = Depends(get_current_user)):
+    cid = db.create_conversation(user_id=user["id"], topic_id=topic_id)
     return {"id": cid}
 
 
 @app.get("/conversations/{cid}")
-def get_conv(cid: str):
-    conv = db.get_conversation(cid)
+def get_conv(cid: str, user: dict = Depends(get_current_user)):
+    conv = db.get_conversation(cid, user["id"])
     if not conv:
         raise HTTPException(status_code=404, detail="Conversation not found")
     return conv
 
 
 @app.delete("/conversations/{cid}")
-def delete_conv(cid: str):
-    db.delete_conversation(cid)
+def delete_conv(cid: str, user: dict = Depends(get_current_user)):
+    db.delete_conversation(cid, user["id"])
     return {"ok": True}
 
 
 @app.patch("/conversations/{cid}")
-def rename_conv(cid: str, body: ConversationPatch):
-    db.rename_conversation(cid, body.title)
+def rename_conv(cid: str, body: ConversationPatch, user: dict = Depends(get_current_user)):
+    db.rename_conversation(cid, user["id"], body.title)
+    return {"ok": True}
+
+
+@app.patch("/conversations/{cid}/move")
+def move_conv(cid: str, body: ConversationMove, user: dict = Depends(get_current_user)):
+    db.move_conversation(cid, user["id"], body.topic_id)
     return {"ok": True}
 
 
 # --- Vault file management endpoints ---
 
-def _read_index_meta() -> dict:
-    meta_path = Path(DB_DIR) / "index_meta.json"
+def _read_index_meta(user_id: str) -> dict:
+    meta_path = Path(DB_DIR) / f"index_meta_{user_id}.json"
     try:
         return json.loads(meta_path.read_text())
     except Exception:
         return {"last_indexed": None, "files_processed": 0, "chunks_upserted": 0, "errors": []}
 
 
-def _get_chunk_counts() -> dict[str, int]:
-    """Return {source_filename: chunk_count} from ChromaDB metadata."""
+def _get_chunk_counts(user_id: str) -> dict[str, int]:
     counts: dict[str, int] = {}
     try:
         chroma_client = get_chroma_client()
-        collection = chroma_client.get_collection(COLLECTION_NAME)
+        collection = chroma_client.get_collection(collection_name_for_user(user_id))
         result = collection.get(include=["metadatas"])
         for meta in result.get("metadatas", []):
             src = meta.get("source", "")
@@ -649,14 +860,14 @@ def _get_chunk_counts() -> dict[str, int]:
 
 
 @app.get("/vault/files")
-def list_vault_files():
-    vault = Path(VAULT_PATH)
+def list_vault_files(user: dict = Depends(get_current_user)):
+    vault = user_vault_path(user["id"])
     if not vault.exists():
         raise HTTPException(status_code=503, detail="Vault path not found")
 
     supported = {".md", ".txt", ".pdf"}
-    chunk_counts = _get_chunk_counts()
-    meta = _read_index_meta()
+    chunk_counts = _get_chunk_counts(user["id"])
+    meta = _read_index_meta(user["id"])
 
     files = []
     for f in sorted(vault.rglob("*")):
@@ -680,13 +891,16 @@ def list_vault_files():
 
 
 @app.post("/vault/upload")
-async def upload_vault_file(file: UploadFile = File(...), subfolder: str = Form("")):
+async def upload_vault_file(
+    file: UploadFile = File(...),
+    subfolder: str = Form(""),
+    user: dict = Depends(get_current_user),
+):
     suffix = Path(file.filename).suffix.lower()
     if suffix not in SUPPORTED_UPLOAD_EXTENSIONS:
         raise HTTPException(status_code=400, detail=f"Unsupported file type: {suffix}")
 
-    vault = Path(VAULT_PATH)
-    # Sanitize subfolder: strip leading slashes/dots, no parent traversal
+    vault = user_vault_path(user["id"])
     safe_sub = Path(subfolder.strip("/").strip()) if subfolder.strip() else Path("")
     for part in safe_sub.parts:
         if part in (".", ".."):
@@ -703,13 +917,12 @@ async def upload_vault_file(file: UploadFile = File(...), subfolder: str = Form(
 
 
 @app.delete("/vault/files")
-def delete_vault_file(body: VaultDeleteRequest):
-    vault = Path(VAULT_PATH)
-    # Resolve and ensure path stays within vault
+def delete_vault_file(body: VaultDeleteRequest, user: dict = Depends(get_current_user)):
+    vault = user_vault_path(user["id"])
     target = (vault / body.path).resolve()
     try:
         vault_resolved = vault.resolve()
-        target.relative_to(vault_resolved)  # raises ValueError if outside vault
+        target.relative_to(vault_resolved)
     except ValueError:
         raise HTTPException(status_code=400, detail="Path outside vault")
 
@@ -723,8 +936,8 @@ def delete_vault_file(body: VaultDeleteRequest):
 
 
 @app.post("/vault/rename")
-def rename_vault_file(body: VaultRenameRequest):
-    vault = Path(VAULT_PATH)
+def rename_vault_file(body: VaultRenameRequest, user: dict = Depends(get_current_user)):
+    vault = user_vault_path(user["id"])
     target = (vault / body.path).resolve()
     try:
         target.relative_to(vault.resolve())
@@ -732,7 +945,7 @@ def rename_vault_file(body: VaultRenameRequest):
         raise HTTPException(status_code=400, detail="Path outside vault")
     if not target.is_file():
         raise HTTPException(status_code=404, detail="File not found")
-    new_name = Path(body.new_name).name  # strip any path components
+    new_name = Path(body.new_name).name
     dest = target.parent / new_name
     if dest.exists():
         raise HTTPException(status_code=409, detail="File already exists")
@@ -741,11 +954,10 @@ def rename_vault_file(body: VaultRenameRequest):
 
 
 @app.get("/vault/file")
-def vault_file(path: str):
-    full_path = os.path.join(VAULT_PATH, path)
-    # Security: ensure path is within vault
-    full_path = os.path.realpath(full_path)
-    vault_real = os.path.realpath(VAULT_PATH)
+def vault_file(path: str, user: dict = Depends(get_current_user)):
+    vault = user_vault_path(user["id"])
+    full_path = os.path.realpath(os.path.join(str(vault), path))
+    vault_real = os.path.realpath(str(vault))
     if not full_path.startswith(vault_real + os.sep) and full_path != vault_real:
         raise HTTPException(status_code=403, detail="Access denied")
     if not os.path.isfile(full_path):
