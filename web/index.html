@@ -103,6 +103,14 @@
     }
     .hbtn:hover { border-color: var(--accent); color: var(--text); }
     .hbtn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+    .accent-btn {
+      background: var(--accent-dim); border: none; border-radius: 6px;
+      color: #fff; cursor: pointer; padding: 5px 12px; font-size: 0.8rem;
+      white-space: nowrap; transition: background 0.15s;
+    }
+    .accent-btn:hover { background: var(--accent); }
+    .accent-btn.danger { background: rgba(239,68,68,0.15); color: #ef4444; }
+    .accent-btn.danger:hover { background: rgba(239,68,68,0.3); }
 
     .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
     .dot.green { background: var(--success); }
@@ -383,17 +391,29 @@
     }
     .suggestion-chip:hover { border-color: var(--accent); color: var(--text); background: var(--surface3); }
 
-    .text-size-btn {
-      background: var(--surface3); border: 1px solid var(--border);
-      color: var(--text-dim); border-radius: 8px;
-      padding: 4px 12px; font-size: 0.82rem; cursor: pointer;
-      transition: border-color 0.15s, color 0.15s;
-    }
-    .text-size-btn:hover, .text-size-btn.active { border-color: var(--accent); color: var(--accent); }
-
-    html.text-small  { font-size: 13px; }
+    html.text-small  { font-size: 12px; }
     html.text-medium { font-size: 15px; }
     html.text-large  { font-size: 17px; }
+    html.text-xlarge { font-size: 19px; }
+
+    .text-size-row { display:flex; align-items:center; gap:10px; }
+    .text-size-row span { font-size:0.75rem; color:var(--text-dim); white-space:nowrap; }
+    .text-size-row input[type=range] { flex:1; }
+
+    /* Theme presets */
+    .theme-presets { display:flex; gap:8px; flex-wrap:wrap; }
+    .theme-preset {
+      display:flex; flex-direction:column; align-items:center; gap:4px;
+      cursor:pointer; padding:4px; border-radius:8px;
+      border:2px solid transparent; transition:border-color 0.15s;
+    }
+    .theme-preset:hover, .theme-preset.active { border-color: var(--accent); }
+    .theme-preset-swatch {
+      width:44px; height:28px; border-radius:6px; border:1px solid rgba(255,255,255,0.1);
+      display:flex; overflow:hidden;
+    }
+    .theme-preset-swatch span { flex:1; }
+    .theme-preset-label { font-size:0.68rem; color:var(--text-dim); }
 
     /* ── Message rows ── */
     .message-row {
@@ -776,11 +796,12 @@
     }
     .setting-desc { font-size: 0.7rem; color: var(--text-faint); line-height: 1.4; }
     .settings-section-header {
-      font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em;
-      color: var(--text-dim); text-transform: uppercase;
-      padding: 20px 0 8px; margin-top: 4px;
+      font-size: 0.78rem; font-weight: 700; letter-spacing: 0.05em;
+      color: var(--text); text-transform: uppercase;
+      padding-bottom: 6px; margin-top: 24px; margin-bottom: 0;
+      border-bottom: 1px solid var(--border);
     }
-    .settings-section-header:first-child { padding-top: 0; margin-top: 0; }
+    .settings-section-header:first-child { margin-top: 0; }
     .setting-input {
       background: var(--surface3); border: 1px solid var(--border); border-radius: 8px;
       color: var(--text); padding: 5px 10px; font-size: 0.82rem; font-family: inherit;
@@ -828,11 +849,6 @@
     }
     .color-swatch.active { border-color: var(--text); }
     .logo-upload-row { display: flex; gap: 8px; align-items: center; }
-    .logo-upload-row button {
-      background: var(--surface3); border: 1px solid var(--border); border-radius: 6px;
-      color: var(--text-dim); cursor: pointer; padding: 4px 10px; font-size: 0.78rem;
-    }
-    .logo-upload-row button:hover { border-color: var(--accent); color: var(--text); }
     .logo-preview { width: 28px; height: 28px; border-radius: 6px; object-fit: cover; }
     input[type=range] {
       width: 100%;
@@ -968,7 +984,10 @@
       flex-shrink: 0;
       padding: 6px 8px 10px;
       border-top: 1px solid var(--border);
+      display: flex;
+      gap: 4px;
     }
+    #sidebar-bottom .sidebar-row { width: auto; justify-content: center; padding: 8px 10px; }
     body.sidebar-collapsed #sidebar-bottom { display: none; }
 
     /* Search modal results */
@@ -1283,25 +1302,72 @@
     .auth-logo span { font-size: 1.1rem; font-weight: 700; color: var(--text); }
 
     /* ── Admin panel in settings ── */
-    .admin-user-row {
-      display: flex; align-items: center; gap: 8px;
-      padding: 8px 10px;
-      background: var(--surface2);
-      border-radius: 8px;
-      font-size: 0.82rem;
-      color: var(--text);
+    .admin-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; table-layout: fixed; }
+    .admin-table colgroup col:nth-child(1) { width: 35%; }
+    .admin-table colgroup col:nth-child(2) { width: 20%; }
+    .admin-table colgroup col:nth-child(3) { width: 28%; }
+    .admin-table colgroup col:nth-child(4) { width: 17%; }
+    .admin-table th {
+      text-align: left; font-size: 0.68rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.07em; color: var(--text-dim); padding: 0 0 8px 0;
+      border-bottom: 1px solid var(--border);
     }
-    .admin-user-name { flex: 1; font-weight: 500; }
+    .admin-table td { padding: 10px 0; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .admin-table tr:last-child td { border-bottom: none; }
+    .admin-table td:last-child { text-align: right; }
+    .admin-user-name { font-weight: 500; color: var(--text); font-size: 0.85rem; }
     .role-badge {
-      font-size: 0.7rem; font-weight: 600;
-      padding: 2px 7px; border-radius: 12px;
-      text-transform: uppercase; letter-spacing: 0.04em;
+      font-size: 0.64rem; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+      text-transform: uppercase; letter-spacing: 0.06em;
     }
     .role-badge.admin { background: var(--accent-glow); color: var(--accent); }
     .role-badge.user  { background: var(--surface3); color: var(--text-dim); }
-    .admin-user-row .hbtn { font-size: 0.72rem; padding: 3px 8px; }
-    #logout-btn { color: var(--danger); }
-    #logout-btn:hover { color: var(--danger); background: rgba(249,115,22,0.1); }
+    .admin-active-wrap { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; user-select: none; }
+    .admin-active-wrap input[type=checkbox] { display: none; }
+    .admin-toggle-track {
+      width: 32px; height: 18px; border-radius: 9px; background: var(--surface3);
+      border: 1px solid var(--border); position: relative; transition: background 0.2s, border-color 0.2s; flex-shrink: 0;
+    }
+    .admin-toggle-track::after {
+      content: ""; position: absolute; top: 2px; left: 2px;
+      width: 12px; height: 12px; border-radius: 50%; background: var(--text-dim);
+      transition: transform 0.2s, background 0.2s;
+    }
+    .admin-active-wrap input:checked ~ .admin-toggle-track { background: var(--accent); border-color: var(--accent); }
+    .admin-active-wrap input:checked ~ .admin-toggle-track::after { transform: translateX(14px); background: #fff; }
+    .admin-active-label { font-size: 0.75rem; color: var(--text-dim); }
+    .admin-avatar {
+      width: 28px; height: 28px; border-radius: 50%; background: var(--accent-dim);
+      color: #fff; font-size: 0.7rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .admin-icon-btn {
+      background: none; border: none; cursor: pointer; padding: 4px 6px; border-radius: 6px;
+      color: var(--text-dim); transition: color 0.15s, background 0.15s; line-height: 0;
+    }
+    .admin-icon-btn:hover { background: var(--surface3); color: var(--text); }
+    .admin-icon-btn.danger:hover { color: var(--danger); background: rgba(239,68,68,0.1); }
+    #add-user-modal {
+      display: none; position: fixed; inset: 0; z-index: 500;
+      background: rgba(0,0,0,0.6); align-items: center; justify-content: center;
+    }
+    #add-user-modal.open { display: flex; }
+    #add-user-modal-inner {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      width: 380px; max-width: 92vw; display: flex; flex-direction: column; overflow: hidden;
+    }
+    #add-user-modal-inner h3 { margin: 0; font-size: 0.95rem; font-weight: 600; color: var(--text); }
+    #add-user-modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px 12px; border-bottom: 1px solid var(--border);
+    }
+    #add-user-modal-body { padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+    #add-user-modal-body .setting-input { font-size: 0.85rem; padding: 8px 11px; }
+    #add-user-modal-footer {
+      display: flex; justify-content: flex-end; gap: 8px;
+      padding: 12px 20px; border-top: 1px solid var(--border);
+    }
+    #admin-create-error { font-size: 0.78rem; color: var(--danger); min-height: 16px; }
   </style>
 </head>
 <body>
@@ -1375,13 +1441,11 @@
 
     <!-- Sidebar bottom -->
     <div id="sidebar-bottom">
-      <button class="sidebar-row" id="settings-btn">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        Settings
+      <button class="sidebar-row" id="settings-btn" title="Settings">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       </button>
-      <button class="sidebar-row" id="logout-btn" style="display:none;">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        <span id="logout-label">Log out</span>
+      <button class="sidebar-row" id="logout-btn" style="display:none;" title="Log out">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
       </button>
     </div>
   </div>
@@ -1398,10 +1462,12 @@
     </div>
 
     <div id="input-area">
-      <div id="ctx-bar-wrap" style="display:none;align-items:center;gap:8px;padding:0 4px 6px;font-size:0.7rem;color:var(--text-faint);">
-        <div style="flex:1;height:3px;background:var(--surface3);border-radius:2px;overflow:hidden;">
-          <div id="ctx-bar" style="height:100%;width:0%;background:var(--accent);border-radius:2px;transition:width 0.4s,background 0.4s;"></div>
-        </div>
+      <div id="ctx-bar-wrap" style="display:none;align-items:center;justify-content:flex-end;gap:6px;padding:0 6px 4px;font-size:0.7rem;color:var(--text-faint);">
+        <svg id="ctx-pie" width="16" height="16" viewBox="0 0 16 16" style="flex-shrink:0;transform:rotate(-90deg);">
+          <circle cx="8" cy="8" r="6" fill="none" stroke="var(--surface3)" stroke-width="3"/>
+          <circle id="ctx-pie-arc" cx="8" cy="8" r="6" fill="none" stroke="var(--accent)" stroke-width="3"
+            stroke-dasharray="0 37.7" stroke-linecap="round" style="transition:stroke-dasharray 0.4s,stroke 0.4s;"/>
+        </svg>
         <span id="ctx-label">0%</span>
       </div>
       <div id="topic-crumb">
@@ -1460,9 +1526,11 @@
         <div class="settings-nav-item" data-pane="ai">AI</div>
         <div class="settings-nav-item" data-pane="appearance">Appearance</div>
         <div class="settings-nav-item" data-pane="voice">Voice</div>
-        <div class="settings-nav-item" data-pane="developer">Developer</div>
         <div class="settings-nav-divider"></div>
-        <div class="settings-nav-item" data-pane="admin" id="admin-nav-item" style="display:none;">Administration</div>
+        <div class="settings-nav-item" data-pane="admin" id="admin-nav-item" style="display:none;">Users</div>
+        <div class="settings-nav-item" data-pane="interface" id="interface-nav-item" style="display:none;">Interface</div>
+        <div class="settings-nav-item" data-pane="defaults" id="defaults-nav-item" style="display:none;">Defaults</div>
+        <div class="settings-nav-item" data-pane="developer" id="developer-nav-item" style="display:none;">Developer</div>
       </div>
 
       <!-- Right content -->
@@ -1515,14 +1583,14 @@
             <input type="password" id="change-pw-current" class="setting-input" placeholder="Current password" autocomplete="current-password" />
             <input type="password" id="change-pw-new" class="setting-input" placeholder="New password (min 6 chars)" autocomplete="new-password" style="margin-top:6px;" />
             <div style="display:flex;align-items:center;gap:10px;margin-top:6px;">
-              <button id="change-pw-btn" style="background:var(--accent-dim);border:none;border-radius:6px;color:#fff;cursor:pointer;padding:6px 14px;font-size:0.8rem;white-space:nowrap;transition:background 0.15s;" onmouseover="this.style.background='var(--accent)'" onmouseout="this.style.background='var(--accent-dim)'">Update</button>
+              <button id="change-pw-btn" class="accent-btn">Update</button>
               <span id="change-pw-msg" style="font-size:0.75rem;color:var(--text-dim);"></span>
             </div>
           </div>
 
           <!-- Delete Account -->
           <div class="setting-group">
-            <button id="delete-account-btn" style="background:rgba(239,68,68,0.15);border:none;border-radius:6px;color:#ef4444;cursor:pointer;padding:5px 12px;font-size:0.78rem;white-space:nowrap;transition:background 0.15s;align-self:flex-start;" onmouseover="this.style.background='rgba(239,68,68,0.3)'" onmouseout="this.style.background='rgba(239,68,68,0.15)'">Delete My Account</button>
+            <button id="delete-account-btn" class="accent-btn danger" style="align-self:flex-start;">Delete My Account</button>
             <div class="setting-desc">Permanently delete your account and all your data. This cannot be undone.</div>
           </div>
 
@@ -1570,12 +1638,42 @@
         <!-- Appearance -->
         <div class="settings-pane" id="pane-appearance">
           <div class="setting-group">
-            <div class="setting-label"><span>Text Size</span></div>
-            <div style="display:flex;gap:6px;">
-              <button class="text-size-btn" data-size="small">A</button>
-              <button class="text-size-btn" data-size="medium" style="font-size:1rem;">A</button>
-              <button class="text-size-btn" data-size="large" style="font-size:1.2rem;">A</button>
+            <div class="setting-label"><span>Text Size</span><span id="text-size-val" class="setting-val">Medium</span></div>
+            <div class="text-size-row">
+              <span>A</span>
+              <input type="range" id="text-size-slider" min="0" max="3" step="1" value="1" />
+              <span style="font-size:1.1rem;">A</span>
             </div>
+          </div>
+          <div class="setting-group">
+            <div class="setting-label"><span>Theme</span></div>
+            <div class="theme-presets" id="theme-presets">
+              <div class="theme-preset active" data-theme="dark" title="Dark (default)">
+                <div class="theme-preset-swatch"><span style="background:#1a1a2e;"></span><span style="background:#7c6af7;"></span></div>
+                <div class="theme-preset-label">Dark</div>
+              </div>
+              <div class="theme-preset" data-theme="midnight" title="Midnight">
+                <div class="theme-preset-swatch"><span style="background:#0d1117;"></span><span style="background:#58a6ff;"></span></div>
+                <div class="theme-preset-label">Midnight</div>
+              </div>
+              <div class="theme-preset" data-theme="slate" title="Slate">
+                <div class="theme-preset-swatch"><span style="background:#1e2433;"></span><span style="background:#64748b;"></span></div>
+                <div class="theme-preset-label">Slate</div>
+              </div>
+              <div class="theme-preset" data-theme="forest" title="Forest">
+                <div class="theme-preset-swatch"><span style="background:#0d1f12;"></span><span style="background:#22c55e;"></span></div>
+                <div class="theme-preset-label">Forest</div>
+              </div>
+              <div class="theme-preset" data-theme="rose" title="Rose">
+                <div class="theme-preset-swatch"><span style="background:#1c0e14;"></span><span style="background:#f43f5e;"></span></div>
+                <div class="theme-preset-label">Rose</div>
+              </div>
+              <div class="theme-preset" data-theme="light" title="Light">
+                <div class="theme-preset-swatch"><span style="background:#f0f0f5;border:1px solid #d4d4de;"></span><span style="background:#7c6af7;"></span></div>
+                <div class="theme-preset-label">Light</div>
+              </div>
+            </div>
+            <div class="setting-desc">Preset themes. Customize individual colors below.</div>
           </div>
           <div class="setting-group">
             <div class="setting-label"><span>Accent Color</span></div>
@@ -1589,20 +1687,6 @@
               <input type="color" id="accent-custom" title="Custom color" style="width:28px;height:28px;border-radius:50%;border:2px solid var(--border);cursor:pointer;padding:0;background:none;" />
             </div>
             <div class="setting-desc">Accent color used throughout the UI.</div>
-          </div>
-          <div class="setting-group">
-            <div class="setting-label"><span>App Name</span></div>
-            <input type="text" id="app-name-input" class="setting-input" placeholder="Dave-in-a-Box" />
-          </div>
-          <div class="setting-group">
-            <div class="setting-label"><span>Logo</span></div>
-            <div class="logo-upload-row">
-              <button id="logo-upload-btn">Upload image…</button>
-              <button id="logo-reset-btn" style="display:none;">Reset</button>
-              <img id="logo-preview" class="logo-preview" style="display:none;" />
-            </div>
-            <input type="file" id="logo-file-input" accept="image/*" style="display:none;" />
-            <div class="setting-desc">Replace the logo in the sidebar. PNG, JPG, or SVG.</div>
           </div>
         </div>
 
@@ -1620,14 +1704,18 @@
           </div>
           <div class="setting-group">
             <div class="setting-label"><span>TTS Voice</span></div>
-            <select id="voice-select"><option value="af_heart">af_heart (loading…)</option></select>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <select id="voice-select" style="flex:1;"><option value="af_heart">af_heart (loading…)</option></select>
+              <button id="voice-preview-btn" class="accent-btn" style="flex-shrink:0;">Preview</button>
+            </div>
+            <div id="voice-desc" style="font-size:0.78rem;color:var(--text-dim);margin-top:4px;font-style:italic;"></div>
             <div class="setting-desc">Voice used for text-to-speech playback.</div>
           </div>
         </div>
 
-        <!-- Developer + Services -->
+        <!-- Developer + Services (admin only) -->
         <div class="settings-pane" id="pane-developer">
-          <div class="setting-group">
+          <div class="setting-group" style="gap:6px;">
             <div class="setting-label">
               <span>Debug Info</span>
               <label class="toggle-switch">
@@ -1637,42 +1725,185 @@
             </div>
             <div class="setting-desc">Show distance/threshold/chunk counts on responses.</div>
           </div>
-          <div class="settings-section-header">Services</div>
-          <div class="setting-group">
-            <div id="service-status-list" style="display:flex;flex-direction:column;gap:6px;font-size:0.75rem;color:var(--text-dim);"></div>
+          <div class="setting-group" style="gap:6px;">
+            <div class="setting-label"><span>Services</span></div>
+            <div id="service-status-list" style="display:flex;flex-direction:column;gap:4px;font-size:0.78rem;color:var(--text-dim);"></div>
           </div>
         </div>
 
         <!-- Administration (admin only) -->
         <div class="settings-pane" id="pane-admin">
+          <div class="setting-group" style="gap:0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+              <div class="setting-label" style="margin:0;">Users</div>
+              <button class="accent-btn" id="admin-add-user-toggle">+ Add User</button>
+            </div>
+            <table class="admin-table">
+              <colgroup><col style="width:36px"/><col/><col/><col/><col/><col style="width:17%"/></colgroup>
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Username</th>
+                  <th>Name</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="admin-user-list"></tbody>
+            </table>
+          </div>
 
-          <div class="setting-group" id="admin-user-list-wrap">
-            <div class="setting-label" style="margin-bottom:8px;">Users</div>
-            <div id="admin-user-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+        </div>
+
+        <!-- Interface (admin only) -->
+        <div class="settings-pane" id="pane-interface">
+          <div class="setting-group">
+            <div class="setting-label"><span>App Name</span></div>
+            <input type="text" id="app-name-input" class="setting-input" placeholder="Dave-in-a-Box" />
+            <div class="setting-desc">Displayed in the sidebar and browser tab.</div>
+          </div>
+          <div class="setting-group">
+            <div class="setting-label"><span>Logo</span></div>
+            <div class="logo-upload-row">
+              <button id="logo-upload-btn" class="accent-btn">Upload image…</button>
+              <button id="logo-reset-btn" class="hbtn" style="display:none;">Reset</button>
+              <img id="logo-preview" class="logo-preview" style="display:none;" />
+            </div>
+            <input type="file" id="logo-file-input" accept="image/*" style="display:none;" />
+            <div class="setting-desc">Replace the sidebar logo. PNG, JPG, or SVG. Recommended size: 160 × 40 px.</div>
+          </div>
+          <div class="setting-group">
+            <div class="setting-label"><span>Favicon</span></div>
+            <div class="logo-upload-row">
+              <button id="favicon-upload-btn" class="accent-btn">Upload image…</button>
+              <button id="favicon-reset-btn" class="hbtn" style="display:none;">Reset</button>
+              <img id="favicon-preview" class="logo-preview" style="display:none;" />
+            </div>
+            <input type="file" id="favicon-file-input" accept="image/png,image/x-icon,image/svg+xml" style="display:none;" />
+            <div class="setting-desc">Browser tab icon. PNG or ICO recommended. 32 × 32 px.</div>
+          </div>
+        </div>
+
+        <!-- Defaults (admin only) -->
+        <div class="settings-pane" id="pane-defaults">
+          <div class="setting-group">
+            <div class="setting-label"><span>Default LLM</span></div>
+            <select id="admin-default-model" class="setting-input"></select>
+            <div class="setting-desc">The default Large Language Model used to generate responses.</div>
+          </div>
+          <div class="setting-group">
+            <div class="setting-label"><span>Default System Prompt</span></div>
+            <textarea id="admin-default-prompt" class="setting-input" rows="4" placeholder="You are a personal AI assistant. When relevant context from the user's vault is provided, prioritize it in your answer. Otherwise, answer using your general knowledge."></textarea>
+            <div class="setting-desc">Sets the AI's base behavior. Leave blank to use the built-in default.</div>
+          </div>
+          <div class="setting-group">
+            <div class="setting-label"><span>Temperature</span><span id="admin-temp-val" class="setting-val">0.20</span></div>
+            <input type="range" id="admin-temp-slider" min="0" max="1" step="0.05" value="0.2" />
+            <div class="setting-desc">Controls how creative or unpredictable the AI is. Lower = more focused and factual. Higher = more varied and creative.</div>
+          </div>
+          <div class="setting-group">
+            <div class="setting-label"><span>Similarity Threshold</span><span id="admin-thresh-val" class="setting-val">0.60</span></div>
+            <input type="range" id="admin-thresh-slider" min="0.1" max="1.0" step="0.05" value="0.6" />
+            <div class="setting-desc">How closely a passage from the vault must match the question to be used as context.</div>
+          </div>
+          <div class="setting-group">
+            <div class="setting-label"><span>Context Passages</span><span id="admin-topk-val" class="setting-val">30</span></div>
+            <input type="range" id="admin-topk-slider" min="5" max="50" step="5" value="30" />
+            <div class="setting-desc">How many passages from the vault are pulled in to answer each question.</div>
+          </div>
+          <div class="setting-group">
+            <div class="setting-label"><span>History Limit</span><span id="admin-history-val" class="setting-val">10</span></div>
+            <input type="range" id="admin-history-slider" min="0" max="40" step="2" value="10" />
+            <div class="setting-desc">How many previous messages the AI can see. 0 = no history.</div>
+          </div>
+          <div class="setting-group">
+            <div class="setting-label"><span>Auto-Compact Threshold</span><span id="admin-compact-val" class="setting-val">75%</span></div>
+            <input type="range" id="admin-compact-slider" min="0" max="95" step="5" value="75" />
+            <div class="setting-desc">When conversation reaches this % of context limit, older messages are summarized. 0 = disabled.</div>
           </div>
 
           <div class="setting-group">
-            <div class="setting-label" style="margin-bottom:8px;">New User</div>
-            <div style="display:flex;flex-direction:column;gap:8px;">
-              <input id="admin-new-username" type="text" placeholder="Username" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 10px;font-size:0.82rem;outline:none;" />
-              <input id="admin-new-password" type="password" placeholder="Password (min 6 chars)" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 10px;font-size:0.82rem;outline:none;" />
-              <select id="admin-new-role" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 10px;font-size:0.82rem;outline:none;">
-                <option value="user">User</option>
-                <option value="admin">Administrator</option>
-              </select>
-              <button id="admin-create-user-btn" class="hbtn" style="align-self:flex-start;padding:6px 14px;font-size:0.8rem;">Create User</button>
-              <div id="admin-create-error" style="font-size:0.78rem;color:var(--danger);min-height:16px;"></div>
+            <div class="setting-label"><span>Text Size</span><span id="admin-text-size-val" class="setting-val">Medium</span></div>
+            <div class="text-size-row">
+              <span>A</span>
+              <input type="range" id="admin-text-size-slider" min="0" max="3" step="1" value="1" />
+              <span style="font-size:1.1rem;">A</span>
+            </div>
+          </div>
+          <div class="setting-group">
+            <div class="setting-label"><span>Theme</span></div>
+            <div class="theme-presets" id="admin-theme-presets">
+              <div class="theme-preset active" data-admin-theme="dark">
+                <div class="theme-preset-swatch"><span style="background:#1a1a2e;"></span><span style="background:#7c6af7;"></span></div>
+                <div class="theme-preset-label">Dark</div>
+              </div>
+              <div class="theme-preset" data-admin-theme="midnight">
+                <div class="theme-preset-swatch"><span style="background:#0d1117;"></span><span style="background:#58a6ff;"></span></div>
+                <div class="theme-preset-label">Midnight</div>
+              </div>
+              <div class="theme-preset" data-admin-theme="slate">
+                <div class="theme-preset-swatch"><span style="background:#1e2433;"></span><span style="background:#64748b;"></span></div>
+                <div class="theme-preset-label">Slate</div>
+              </div>
+              <div class="theme-preset" data-admin-theme="forest">
+                <div class="theme-preset-swatch"><span style="background:#0d1f12;"></span><span style="background:#22c55e;"></span></div>
+                <div class="theme-preset-label">Forest</div>
+              </div>
+              <div class="theme-preset" data-admin-theme="rose">
+                <div class="theme-preset-swatch"><span style="background:#1c0e14;"></span><span style="background:#f43f5e;"></span></div>
+                <div class="theme-preset-label">Rose</div>
+              </div>
+              <div class="theme-preset" data-admin-theme="light">
+                <div class="theme-preset-swatch"><span style="background:#f0f0f5;border:1px solid #d4d4de;"></span><span style="background:#7c6af7;"></span></div>
+                <div class="theme-preset-label">Light</div>
+              </div>
+            </div>
+          </div>
+          <div class="setting-group">
+            <div class="setting-label"><span>Accent Color</span></div>
+            <div class="color-swatches" id="admin-color-swatches">
+              <div class="color-swatch" data-admin-color="#7c6af7" style="background:#7c6af7;" title="Purple (default)"></div>
+              <div class="color-swatch" data-admin-color="#3b82f6" style="background:#3b82f6;" title="Blue"></div>
+              <div class="color-swatch" data-admin-color="#10b981" style="background:#10b981;" title="Green"></div>
+              <div class="color-swatch" data-admin-color="#f59e0b" style="background:#f59e0b;" title="Amber"></div>
+              <div class="color-swatch" data-admin-color="#ef4444" style="background:#ef4444;" title="Red"></div>
+              <div class="color-swatch" data-admin-color="#ec4899" style="background:#ec4899;" title="Pink"></div>
+              <input type="color" id="admin-accent-custom" title="Custom color" style="width:28px;height:28px;border-radius:50%;border:2px solid var(--border);cursor:pointer;padding:0;background:none;" value="#7c6af7" />
             </div>
           </div>
 
           <div class="setting-group">
-            <div class="setting-label" style="margin-bottom:4px;">Change My Password</div>
-            <div style="display:flex;flex-direction:column;gap:8px;">
-              <input id="my-current-password" type="password" placeholder="Current password" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 10px;font-size:0.82rem;outline:none;" />
-              <input id="my-new-password" type="password" placeholder="New password" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 10px;font-size:0.82rem;outline:none;" />
-              <button id="my-change-pw-btn" class="hbtn" style="align-self:flex-start;padding:6px 14px;font-size:0.8rem;">Change Password</button>
-              <div id="my-pw-msg" style="font-size:0.78rem;min-height:16px;"></div>
+            <div class="setting-label">
+              <span>Auto-play TTS</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="admin-tts-toggle" />
+                <span class="toggle-slider"></span>
+              </label>
             </div>
+            <div class="setting-desc">Automatically read AI responses aloud.</div>
+          </div>
+          <div class="setting-group">
+            <div class="setting-label"><span>TTS Voice</span></div>
+            <select id="admin-default-voice" class="setting-input">
+              <option value="af_heart">af_heart — Warm American female</option>
+              <option value="af_bella">af_bella — Clear American female</option>
+              <option value="af_nicole">af_nicole — Soft American female</option>
+              <option value="af_sarah">af_sarah — Bright American female</option>
+              <option value="af_sky">af_sky — Airy American female</option>
+              <option value="am_adam">am_adam — Neutral American male</option>
+              <option value="am_michael">am_michael — Deep American male</option>
+              <option value="bf_emma">bf_emma — Refined British female</option>
+              <option value="bf_isabella">bf_isabella — Warm British female</option>
+              <option value="bm_george">bm_george — Classic British male</option>
+              <option value="bm_lewis">bm_lewis — Crisp British male</option>
+            </select>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:4px;margin-top:8px;">
+            <button class="accent-btn" id="admin-save-defaults-btn" style="align-self:flex-start;">Save Defaults</button>
+            <div id="admin-defaults-msg" style="font-size:0.78rem;color:var(--text-dim);"></div>
+            <div class="setting-desc">Applied when a new user account is created. Existing accounts are not affected.</div>
           </div>
         </div>
 
@@ -1690,8 +1921,9 @@
 <div id="setup-screen" class="auth-screen">
   <div class="auth-card">
     <div class="auth-logo">
-      <div class="logo"><span id="logo-letter-auth">D</span></div>
-      <span>Dave-in-a-Box</span>
+      <div class="logo" id="auth-logo-letter-setup"><span>D</span></div>
+      <img id="auth-logo-img-setup" style="display:none;width:36px;height:36px;border-radius:10px;object-fit:cover;" />
+      <span id="auth-app-name-setup">Dave-in-a-Box</span>
     </div>
     <h1>Create administrator account</h1>
     <p>This is the first run. Set up your admin account to get started.</p>
@@ -1707,8 +1939,9 @@
 <div id="login-screen" class="auth-screen">
   <div class="auth-card">
     <div class="auth-logo">
-      <div class="logo"><span>D</span></div>
-      <span>Dave-in-a-Box</span>
+      <div class="logo" id="auth-logo-letter-login"><span>D</span></div>
+      <img id="auth-logo-img-login" style="display:none;width:36px;height:36px;border-radius:10px;object-fit:cover;" />
+      <span id="auth-app-name-login">Dave-in-a-Box</span>
     </div>
     <h1>Sign in</h1>
     <div class="auth-field"><label>Username</label><input id="login-username" type="text" autocomplete="username" /></div>
@@ -1735,6 +1968,44 @@
 </div>
 
 <!-- CONFIRM MODAL -->
+<div id="add-user-modal">
+  <div id="add-user-modal-inner">
+    <div id="add-user-modal-header">
+      <h3>Add User</h3>
+    </div>
+    <div id="add-user-modal-body">
+      <input id="admin-new-username" type="text" placeholder="Username" class="setting-input" autocomplete="off" />
+      <input id="admin-new-password" type="password" placeholder="Password (min 6 chars)" class="setting-input" />
+      <select id="admin-new-role" class="setting-input">
+        <option value="user">User</option>
+        <option value="admin">Administrator</option>
+      </select>
+      <div id="admin-create-error"></div>
+    </div>
+    <div id="add-user-modal-footer">
+      <button id="admin-add-cancel-btn" class="hbtn" style="padding:7px 16px;font-size:0.82rem;">Cancel</button>
+      <button id="admin-create-user-btn" class="accent-btn" style="padding:7px 18px;font-size:0.82rem;">Create User</button>
+    </div>
+  </div>
+</div>
+
+<div id="reset-pw-modal" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:340px;max-width:92vw;display:flex;flex-direction:column;overflow:hidden;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid var(--border);">
+      <h3 style="margin:0;font-size:0.95rem;font-weight:600;color:var(--text);">Reset Password</h3>
+    </div>
+    <div style="padding:20px;display:flex;flex-direction:column;gap:10px;">
+      <div style="font-size:0.82rem;color:var(--text-dim);">Set a new password for <strong id="reset-pw-username" style="color:var(--text);"></strong></div>
+      <input id="reset-pw-input" type="password" placeholder="New password (min 6 chars)" class="setting-input" style="font-size:0.85rem;padding:8px 11px;" />
+      <div id="reset-pw-error" style="font-size:0.78rem;color:var(--danger);min-height:16px;"></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;padding:12px 20px;border-top:1px solid var(--border);">
+      <button id="reset-pw-cancel-btn" class="hbtn" style="padding:7px 16px;font-size:0.82rem;">Cancel</button>
+      <button id="reset-pw-confirm-btn" class="accent-btn" style="padding:7px 18px;font-size:0.82rem;">Reset</button>
+    </div>
+  </div>
+</div>
+
 <div id="confirm-modal">
   <div id="confirm-modal-inner">
     <div id="confirm-modal-header">
@@ -1860,10 +2131,13 @@ function applyUserSession(user) {
   // Show logout button with username
   const logoutBtn = document.getElementById("logout-btn");
   logoutBtn.style.display = "";
-  document.getElementById("logout-label").textContent = `Log out ${user.username}`;
+  logoutBtn.title = `Log out ${user.username}`;
   // Show admin section if admin
   if (user.role === "admin") {
     document.getElementById("admin-nav-item").style.display = "";
+    document.getElementById("interface-nav-item").style.display = "";
+    document.getElementById("defaults-nav-item").style.display = "";
+    document.getElementById("developer-nav-item").style.display = "";
   }
   // Restore settings from DB blob if present
   if (user.settings && user.settings !== "{}") {
@@ -1932,8 +2206,11 @@ async function loadApp() {
   loadSettings();
   loadProfile();
   applyLogo(localStorage.getItem(LOGO_KEY));
-  const savedAccent = localStorage.getItem(ACCENT_KEY);
-  if (savedAccent) applyAccent(savedAccent);
+  applyFavicon(localStorage.getItem(FAVICON_KEY));
+  const savedTheme = localStorage.getItem(THEME_KEY);
+  if (savedTheme && THEMES[savedTheme]) applyTheme(savedTheme, true);
+  else { const savedAccent = localStorage.getItem(ACCENT_KEY); if (savedAccent) applyAccent(savedAccent); }
+  applyTextSize(localStorage.getItem(TEXT_SIZE_KEY) || "medium");
   loadModels();
   await loadConversations();
 }
@@ -2120,16 +2397,23 @@ function applyLogo(dataUrl) {
   const img    = document.getElementById("logo-img");
   const prev   = document.getElementById("logo-preview");
   const reset  = document.getElementById("logo-reset-btn");
+  // Auth screens
+  const authLetters = ["auth-logo-letter-setup", "auth-logo-letter-login"].map(id => document.getElementById(id));
+  const authImgs    = ["auth-logo-img-setup",    "auth-logo-img-login"   ].map(id => document.getElementById(id));
   if (dataUrl) {
     letter.style.display = "none";
     img.src = dataUrl; img.style.display = "";
-    prev.src = dataUrl; prev.style.display = "";
-    reset.style.display = "";
+    if (prev) { prev.src = dataUrl; prev.style.display = ""; }
+    if (reset) reset.style.display = "";
+    authLetters.forEach(el => { if (el) el.style.display = "none"; });
+    authImgs.forEach(el => { if (el) { el.src = dataUrl; el.style.display = ""; } });
   } else {
     letter.style.display = "";
     img.style.display = "none";
-    prev.style.display = "none";
-    reset.style.display = "none";
+    if (prev) prev.style.display = "none";
+    if (reset) reset.style.display = "none";
+    authLetters.forEach(el => { if (el) el.style.display = ""; });
+    authImgs.forEach(el => { if (el) { el.src = ""; el.style.display = "none"; } });
   }
 }
 document.getElementById("logo-upload-btn").addEventListener("click", () => {
@@ -2142,6 +2426,7 @@ document.getElementById("logo-file-input").addEventListener("change", e => {
   reader.onload = ev => {
     localStorage.setItem(LOGO_KEY, ev.target.result);
     applyLogo(ev.target.result);
+    scheduleSettingsSync();
   };
   reader.readAsDataURL(file);
 });
@@ -2149,18 +2434,59 @@ document.getElementById("logo-reset-btn").addEventListener("click", () => {
   localStorage.removeItem(LOGO_KEY);
   applyLogo(null);
   document.getElementById("logo-file-input").value = "";
+  scheduleSettingsSync();
+});
+
+// ── Favicon customization ──
+const FAVICON_KEY = "diab_favicon";
+function applyFavicon(dataUrl) {
+  let link = document.querySelector("link[rel~='icon']");
+  if (!link) { link = document.createElement("link"); link.rel = "icon"; document.head.appendChild(link); }
+  const prev   = document.getElementById("favicon-preview");
+  const reset  = document.getElementById("favicon-reset-btn");
+  if (dataUrl) {
+    link.href = dataUrl;
+    prev.src = dataUrl; prev.style.display = "";
+    reset.style.display = "";
+  } else {
+    link.href = "/favicon.ico";
+    prev.style.display = "none";
+    reset.style.display = "none";
+  }
+}
+document.getElementById("favicon-upload-btn").addEventListener("click", () => {
+  document.getElementById("favicon-file-input").click();
+});
+document.getElementById("favicon-file-input").addEventListener("change", e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    localStorage.setItem(FAVICON_KEY, ev.target.result);
+    applyFavicon(ev.target.result);
+    scheduleSettingsSync();
+  };
+  reader.readAsDataURL(file);
+});
+document.getElementById("favicon-reset-btn").addEventListener("click", () => {
+  localStorage.removeItem(FAVICON_KEY);
+  applyFavicon(null);
+  document.getElementById("favicon-file-input").value = "";
+  scheduleSettingsSync();
 });
 
 // ── Accent color ──
 const ACCENT_KEY = "diab_accent";
 function applyAccent(color) {
   document.documentElement.style.setProperty("--accent", color);
-  // Darken for accent-dim
   document.documentElement.style.setProperty("--accent-dim", color + "99");
+  const r = parseInt(color.slice(1,3),16), g = parseInt(color.slice(3,5),16), b = parseInt(color.slice(5,7),16);
+  if (!isNaN(r)) document.documentElement.style.setProperty("--accent-glow", `rgba(${r},${g},${b},0.15)`);
   document.querySelectorAll(".color-swatch").forEach(s => {
     s.classList.toggle("active", s.dataset.color === color);
   });
-  document.getElementById("accent-custom").value = color;
+  const customPicker = document.getElementById("accent-custom");
+  if (customPicker) customPicker.value = color;
 }
 const ACCENT_KEY_INIT = localStorage.getItem(ACCENT_KEY);
 if (ACCENT_KEY_INIT) applyAccent(ACCENT_KEY_INIT);
@@ -2596,7 +2922,7 @@ function openSettings() {
   settingsPanel.classList.add("open");
   if (!voicesLoaded) loadVoices();
   loadMemory();
-  if (currentUser?.role === "admin") loadAdminUsers();
+  if (currentUser?.role === "admin") { loadAdminUsers(); loadAdminDefaults(); }
 }
 function closeSettings() {
   settingsPanel.classList.remove("open");
@@ -2616,6 +2942,23 @@ document.querySelectorAll(".settings-nav-item[data-pane]").forEach(item => {
   });
 });
 
+const VOICE_DESCRIPTIONS = {
+  "af_heart":    "Warm, expressive American female. Friendly and natural.",
+  "af_bella":    "Clear, confident American female. Professional tone.",
+  "af_nicole":   "Soft, breathy American female. Calm and intimate.",
+  "af_sarah":    "Bright, energetic American female. Upbeat delivery.",
+  "af_sky":      "Airy, light American female. Gentle and soothing.",
+  "am_adam":     "Neutral American male. Balanced and articulate.",
+  "am_michael":  "Deep, measured American male. Authoritative.",
+  "bf_emma":     "Refined British female. Polished and clear.",
+  "bf_isabella": "Warm British female. Elegant and expressive.",
+  "bm_george":   "Classic British male. Confident and distinguished.",
+  "bm_lewis":    "Crisp British male. Modern and direct.",
+};
+function updateVoiceDesc() {
+  const desc = document.getElementById("voice-desc");
+  if (desc) desc.textContent = VOICE_DESCRIPTIONS[voiceSelect.value] || "";
+}
 async function loadVoices() {
   try {
     const res = await apiFetch(`/tts/voices`);
@@ -2625,10 +2968,29 @@ async function loadVoices() {
       `<option value="${v}"${v === saved ? " selected" : ""}>${v}</option>`
     ).join("");
     voicesLoaded = true;
+    updateVoiceDesc();
   } catch {
     // Kokoro unavailable — keep placeholder
   }
 }
+voiceSelect.addEventListener("change", updateVoiceDesc);
+
+// Voice preview
+document.getElementById("voice-preview-btn")?.addEventListener("click", async () => {
+  const btn = document.getElementById("voice-preview-btn");
+  btn.disabled = true; btn.textContent = "Playing…";
+  try {
+    const params = new URLSearchParams({ text: "Hello, this is a preview of the selected voice.", voice: voiceSelect.value });
+    const res = await apiFetch(`/tts?${params}`);
+    if (!res.ok) throw new Error();
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.onended = () => { URL.revokeObjectURL(url); btn.disabled = false; btn.textContent = "Preview"; };
+    audio.onerror = () => { btn.disabled = false; btn.textContent = "Preview"; };
+    audio.play();
+  } catch { btn.disabled = false; btn.textContent = "Preview"; }
+});
 
 // ── Debug toggle ──
 const debugToggle = document.getElementById("debug-toggle");
@@ -2679,8 +3041,8 @@ function showToast(msg, type = "error") {
 // ── Health check ──
 async function updateContextBar(convId) {
   if (!convId) return;
-  const wrap = document.getElementById("ctx-bar-wrap");
-  const bar  = document.getElementById("ctx-bar");
+  const wrap  = document.getElementById("ctx-bar-wrap");
+  const arc   = document.getElementById("ctx-pie-arc");
   const label = document.getElementById("ctx-label");
   try {
     const model = selectedModel || "";
@@ -2689,10 +3051,13 @@ async function updateContextBar(convId) {
     const res = await apiFetch(`/context-info?${params}`);
     const data = await res.json();
     const pct = Math.min(data.percent, 100);
+    const circumference = 2 * Math.PI * 6; // r=6 → ~37.7
+    const filled = (pct / 100) * circumference;
+    const color = pct > 80 ? "var(--danger)" : pct > 60 ? "#f59e0b" : "var(--accent)";
     wrap.style.display = "flex";
-    bar.style.width = pct + "%";
-    bar.style.background = pct > 80 ? "var(--danger)" : pct > 60 ? "#f59e0b" : "var(--accent)";
-    label.textContent = `${pct}% context used`;
+    arc.setAttribute("stroke-dasharray", `${filled.toFixed(1)} ${circumference.toFixed(1)}`);
+    arc.setAttribute("stroke", color);
+    label.textContent = `${pct}% context`;
     label.style.color = pct > 80 ? "var(--danger)" : pct > 60 ? "#f59e0b" : "var(--text-faint)";
   } catch { /* silently ignore */ }
 }
@@ -2717,31 +3082,86 @@ checkHealth();
 
 // ── Text size ──
 const TEXT_SIZE_KEY = "diab_text_size";
+const TEXT_SIZES = ["small", "medium", "large", "xlarge"];
+const TEXT_SIZE_LABELS = ["Small", "Medium", "Large", "X-Large"];
 function applyTextSize(size) {
-  document.documentElement.classList.remove("text-small","text-medium","text-large");
+  document.documentElement.classList.remove("text-small","text-medium","text-large","text-xlarge");
   document.documentElement.classList.add(`text-${size}`);
-  document.querySelectorAll(".text-size-btn").forEach(b => b.classList.toggle("active", b.dataset.size === size));
   localStorage.setItem(TEXT_SIZE_KEY, size);
+  const idx = TEXT_SIZES.indexOf(size);
+  const slider = document.getElementById("text-size-slider");
+  if (slider) slider.value = idx >= 0 ? idx : 1;
+  const lbl = document.getElementById("text-size-val");
+  if (lbl) lbl.textContent = TEXT_SIZE_LABELS[idx >= 0 ? idx : 1];
 }
-document.querySelectorAll(".text-size-btn").forEach(b => b.addEventListener("click", () => applyTextSize(b.dataset.size)));
+const textSizeSlider = document.getElementById("text-size-slider");
+if (textSizeSlider) {
+  textSizeSlider.addEventListener("input", () => {
+    applyTextSize(TEXT_SIZES[parseInt(textSizeSlider.value)]);
+    scheduleSettingsSync();
+  });
+}
 applyTextSize(localStorage.getItem(TEXT_SIZE_KEY) || "medium");
+
+// ── Themes ──
+const THEME_KEY = "diab_theme";
+const THEMES = {
+  dark:     { "--bg": "#12121e", "--surface": "#1a1a2e", "--surface2": "#1f1f33", "--surface3": "#26263a", "--border": "#2e2e45", "--text": "#e8e8f0", "--text-dim": "#888898", "--accent": "#7c6af7" },
+  midnight: { "--bg": "#0d1117", "--surface": "#161b22", "--surface2": "#1c2230", "--surface3": "#21283a", "--border": "#30363d", "--text": "#e6edf3", "--text-dim": "#7d8590", "--accent": "#58a6ff" },
+  slate:    { "--bg": "#0f1117", "--surface": "#1e2433", "--surface2": "#252c3d", "--surface3": "#2c3347", "--border": "#363d50", "--text": "#e2e5ed", "--text-dim": "#7a8394", "--accent": "#94a3b8" },
+  forest:   { "--bg": "#0a150c", "--surface": "#0d1f12", "--surface2": "#122418", "--surface3": "#182e1e", "--border": "#1e3824", "--text": "#e8f5ea", "--text-dim": "#92b89a", "--accent": "#22c55e" },
+  rose:     { "--bg": "#130810", "--surface": "#1c0e14", "--surface2": "#23111b", "--surface3": "#2b1523", "--border": "#381a28", "--text": "#faedf2", "--text-dim": "#c08898", "--accent": "#f43f5e" },
+  light:    { "--bg": "#f0f0f5", "--surface": "#ffffff", "--surface2": "#f4f4f8", "--surface3": "#e8e8ef", "--border": "#d4d4de", "--text": "#1a1a2e", "--text-dim": "#555568", "--accent": "#7c6af7" },
+};
+function applyTheme(name, skipAccent = false) {
+  const t = THEMES[name];
+  if (!t) return;
+  Object.entries(t).forEach(([k, v]) => {
+    if (k === "--accent") return; // always handled by applyAccent
+    document.documentElement.style.setProperty(k, v);
+  });
+  if (!skipAccent) {
+    applyAccent(t["--accent"]);
+    localStorage.setItem(ACCENT_KEY, t["--accent"]);
+  } else {
+    const savedAccent = localStorage.getItem(ACCENT_KEY);
+    if (savedAccent) applyAccent(savedAccent);
+  }
+  localStorage.setItem(THEME_KEY, name);
+  document.querySelectorAll(".theme-preset").forEach(p => p.classList.toggle("active", p.dataset.theme === name));
+}
+document.querySelectorAll(".theme-preset[data-theme]").forEach(p => {
+  p.addEventListener("click", () => {
+    applyTheme(p.dataset.theme);
+    scheduleSettingsSync();
+  });
+});
+const savedTheme = localStorage.getItem(THEME_KEY);
+if (savedTheme && THEMES[savedTheme]) applyTheme(savedTheme, true);
 
 // ── App name / branding ──
 const BRAND_KEY = "diab_brand";
 function applyBrand() {
   const saved = JSON.parse(localStorage.getItem(BRAND_KEY) || "{}");
-  if (saved.name) {
-    document.getElementById("sidebar-title").textContent = saved.name;
-    document.title = saved.name;
+  const name = saved.name || "";
+  if (name) {
+    document.getElementById("sidebar-title").textContent = name;
+    document.title = name;
+    ["auth-app-name-setup", "auth-app-name-login"].forEach(id => {
+      const el = document.getElementById(id); if (el) el.textContent = name;
+    });
   }
   const inp = document.getElementById("app-name-input");
-  if (inp) inp.value = saved.name || "";
+  if (inp) inp.value = name;
 }
 document.getElementById("app-name-input")?.addEventListener("input", e => {
   const name = e.target.value.trim() || "Dave-in-a-Box";
   localStorage.setItem(BRAND_KEY, JSON.stringify({ name }));
   document.getElementById("sidebar-title").textContent = name;
   document.title = name;
+  ["auth-app-name-setup", "auth-app-name-login"].forEach(id => {
+    const el = document.getElementById(id); if (el) el.textContent = name;
+  });
 });
 applyBrand();
 
@@ -3078,6 +3498,8 @@ document.getElementById("setup-submit-btn").addEventListener("click", async () =
 });
 
 document.getElementById("logout-btn").addEventListener("click", async () => {
+  const ok = await showConfirm({ title: "Log out", message: "Are you sure you want to log out?", okLabel: "Log out", okClass: "primary" });
+  if (!ok) return;
   try { await apiFetch("/auth/logout", { method: "POST" }); } catch {}
   clearSession();
   location.reload();
@@ -3092,17 +3514,34 @@ async function loadAdminUsers() {
     const list = document.getElementById("admin-user-list");
     list.innerHTML = "";
     users.forEach(u => {
-      const row = document.createElement("div");
-      row.className = "admin-user-row";
+      let profileName = "";
+      try {
+        const s = JSON.parse(u.settings || "{}");
+        const p = JSON.parse(s.diab_profile || "{}");
+        profileName = p.name || "";
+      } catch {}
+      const initials = profileName ? profileName.trim().split(/\s+/).map(w => w[0]).join("").toUpperCase().slice(0, 2) : u.username[0].toUpperCase();
+      const row = document.createElement("tr");
       row.innerHTML = `
-        <span class="admin-user-name">${esc(u.username)}</span>
-        <span class="role-badge ${u.role}">${u.role}</span>
-        <label style="display:flex;align-items:center;gap:4px;font-size:0.75rem;color:var(--text-dim);cursor:pointer;">
-          <input type="checkbox" ${u.is_active ? "checked" : ""} data-uid="${u.id}" class="admin-active-toggle" style="cursor:pointer;" />
-          Active
-        </label>
-        <button class="hbtn admin-reset-pw-btn" data-uid="${u.id}" data-uname="${esc(u.username)}">Reset PW</button>
-        ${u.id !== currentUser.id ? `<button class="hbtn danger admin-del-btn" data-uid="${u.id}" data-uname="${esc(u.username)}">Delete</button>` : ""}
+        <td><div class="admin-avatar">${esc(initials)}</div></td>
+        <td class="admin-user-name">${esc(u.username)}</td>
+        <td style="color:var(--text-dim);font-size:0.8rem;">${esc(profileName)}</td>
+        <td><span class="role-badge ${u.role}">${u.role}</span></td>
+        <td>
+          <label class="admin-active-wrap" title="${u.is_active ? "Deactivate" : "Activate"} user">
+            <input type="checkbox" ${u.is_active ? "checked" : ""} data-uid="${u.id}" class="admin-active-toggle" />
+            <span class="admin-toggle-track"></span>
+            <span class="admin-active-label">${u.is_active ? "Active" : "Inactive"}</span>
+          </label>
+        </td>
+        <td style="white-space:nowrap;text-align:right;">
+          <button class="admin-icon-btn admin-reset-pw-btn" data-uid="${u.id}" data-uname="${esc(u.username)}" title="Reset password">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </button>
+          ${u.id !== currentUser.id ? `<button class="admin-icon-btn danger admin-del-btn" data-uid="${u.id}" data-uname="${esc(u.username)}" title="Delete user">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          </button>` : ""}
+        </td>
       `;
       list.appendChild(row);
     });
@@ -3112,6 +3551,8 @@ async function loadAdminUsers() {
         if (cb.dataset.uid === currentUser.id && !cb.checked) {
           showToast("Cannot disable your own account"); cb.checked = true; return;
         }
+        const label = cb.closest(".admin-active-wrap").querySelector(".admin-active-label");
+        if (label) label.textContent = cb.checked ? "Active" : "Inactive";
         await apiFetch(`/admin/users/${cb.dataset.uid}`, {
           method: "PATCH",
           body: JSON.stringify({ is_active: cb.checked }),
@@ -3120,15 +3561,7 @@ async function loadAdminUsers() {
     });
 
     list.querySelectorAll(".admin-reset-pw-btn").forEach(btn => {
-      btn.addEventListener("click", async () => {
-        const pw = prompt(`New password for ${btn.dataset.uname}:`);
-        if (!pw || pw.length < 6) { showToast("Password must be at least 6 chars"); return; }
-        const res = await apiFetch(`/admin/users/${btn.dataset.uid}/password`, {
-          method: "PUT",
-          body: JSON.stringify({ new_password: pw }),
-        });
-        if (res.ok) showToast("Password updated"); else showToast("Error updating password");
-      });
+      btn.addEventListener("click", () => openResetPwModal(btn.dataset.uid, btn.dataset.uname));
     });
 
     list.querySelectorAll(".admin-del-btn").forEach(btn => {
@@ -3142,6 +3575,20 @@ async function loadAdminUsers() {
   } catch {}
 }
 
+const addUserModal = document.getElementById("add-user-modal");
+function openAddUserModal() {
+  document.getElementById("admin-new-username").value = "";
+  document.getElementById("admin-new-password").value = "";
+  document.getElementById("admin-new-role").value = "user";
+  document.getElementById("admin-create-error").textContent = "";
+  addUserModal.classList.add("open");
+  setTimeout(() => document.getElementById("admin-new-username").focus(), 50);
+}
+function closeAddUserModal() { addUserModal.classList.remove("open"); }
+document.getElementById("admin-add-user-toggle").addEventListener("click", openAddUserModal);
+document.getElementById("admin-add-cancel-btn").addEventListener("click", closeAddUserModal);
+addUserModal.addEventListener("click", e => { if (e.target === addUserModal) closeAddUserModal(); });
+
 document.getElementById("admin-create-user-btn").addEventListener("click", async () => {
   const username = document.getElementById("admin-new-username").value.trim();
   const password = document.getElementById("admin-new-password").value;
@@ -3149,14 +3596,13 @@ document.getElementById("admin-create-user-btn").addEventListener("click", async
   const errEl    = document.getElementById("admin-create-error");
   errEl.textContent = "";
   if (!username) { errEl.textContent = "Username required"; return; }
-  if (password.length < 6) { errEl.textContent = "Password min 6 chars"; return; }
+  if (password.length < 6) { errEl.textContent = "Min 6 chars"; return; }
   const res = await apiFetch("/admin/users", {
     method: "POST",
     body: JSON.stringify({ username, password, role }),
   });
   if (res.ok) {
-    document.getElementById("admin-new-username").value = "";
-    document.getElementById("admin-new-password").value = "";
+    closeAddUserModal();
     loadAdminUsers();
     showToast(`User "${username}" created`);
   } else {
@@ -3165,24 +3611,148 @@ document.getElementById("admin-create-user-btn").addEventListener("click", async
   }
 });
 
-document.getElementById("my-change-pw-btn").addEventListener("click", async () => {
-  const cur = document.getElementById("my-current-password").value;
-  const nw  = document.getElementById("my-new-password").value;
-  const msg = document.getElementById("my-pw-msg");
-  msg.style.color = "var(--danger)"; msg.textContent = "";
-  if (!cur || nw.length < 6) { msg.textContent = "Fill in both fields (min 6 chars for new)"; return; }
-  const res = await apiFetch("/auth/me/password", {
-    method: "PUT",
-    body: JSON.stringify({ current_password: cur, new_password: nw }),
+
+// ── Admin default settings ──
+const ADMIN_DEFAULTS_KEY = "diab_admin_defaults";
+
+function loadAdminDefaults() {
+  // Populate model list from main select
+  const srcSel = document.getElementById("model-select");
+  const dstSel = document.getElementById("admin-default-model");
+  if (srcSel && dstSel && srcSel.options.length > 1) dstSel.innerHTML = srcSel.innerHTML;
+  try {
+    const d = JSON.parse(localStorage.getItem(ADMIN_DEFAULTS_KEY) || "{}");
+    if (d.model && dstSel) dstSel.value = d.model;
+    if (d.prompt !== undefined) document.getElementById("admin-default-prompt").value = d.prompt;
+    if (d.temperature !== undefined) {
+      document.getElementById("admin-temp-slider").value = d.temperature;
+      document.getElementById("admin-temp-val").textContent = parseFloat(d.temperature).toFixed(2);
+    }
+    if (d.threshold !== undefined) {
+      document.getElementById("admin-thresh-slider").value = d.threshold;
+      document.getElementById("admin-thresh-val").textContent = parseFloat(d.threshold).toFixed(2);
+    }
+    if (d.topk !== undefined) {
+      document.getElementById("admin-topk-slider").value = d.topk;
+      document.getElementById("admin-topk-val").textContent = d.topk;
+    }
+    if (d.history !== undefined) {
+      document.getElementById("admin-history-slider").value = d.history;
+      document.getElementById("admin-history-val").textContent = d.history;
+    }
+    if (d.compact !== undefined) {
+      document.getElementById("admin-compact-slider").value = d.compact;
+      document.getElementById("admin-compact-val").textContent = d.compact + "%";
+    }
+    if (d.textSize !== undefined) {
+      const idx = parseInt(d.textSize) || 1;
+      document.getElementById("admin-text-size-slider").value = idx;
+      document.getElementById("admin-text-size-val").textContent = TEXT_SIZE_LABELS[idx] || "Medium";
+    }
+    if (d.theme) {
+      document.querySelectorAll("#admin-theme-presets [data-admin-theme]").forEach(el => {
+        el.classList.toggle("active", el.dataset.adminTheme === d.theme);
+      });
+    }
+    if (d.accent) {
+      document.querySelectorAll("#admin-color-swatches [data-admin-color]").forEach(el => {
+        el.classList.toggle("active", el.dataset.adminColor === d.accent);
+      });
+      document.getElementById("admin-accent-custom").value = d.accent;
+    }
+    if (d.tts !== undefined) document.getElementById("admin-tts-toggle").checked = !!d.tts;
+    if (d.voice) document.getElementById("admin-default-voice").value = d.voice;
+  } catch {}
+}
+
+// Slider live-update labels
+document.getElementById("admin-temp-slider").addEventListener("input", e => {
+  document.getElementById("admin-temp-val").textContent = parseFloat(e.target.value).toFixed(2);
+});
+document.getElementById("admin-thresh-slider").addEventListener("input", e => {
+  document.getElementById("admin-thresh-val").textContent = parseFloat(e.target.value).toFixed(2);
+});
+document.getElementById("admin-topk-slider").addEventListener("input", e => {
+  document.getElementById("admin-topk-val").textContent = e.target.value;
+});
+document.getElementById("admin-history-slider").addEventListener("input", e => {
+  document.getElementById("admin-history-val").textContent = e.target.value;
+});
+document.getElementById("admin-compact-slider").addEventListener("input", e => {
+  document.getElementById("admin-compact-val").textContent = e.target.value + "%";
+});
+document.getElementById("admin-text-size-slider").addEventListener("input", e => {
+  const idx = parseInt(e.target.value);
+  document.getElementById("admin-text-size-val").textContent = TEXT_SIZE_LABELS[idx] || "Medium";
+});
+
+// Theme preset clicks
+document.querySelectorAll("#admin-theme-presets [data-admin-theme]").forEach(el => {
+  el.addEventListener("click", () => {
+    document.querySelectorAll("#admin-theme-presets [data-admin-theme]").forEach(x => x.classList.remove("active"));
+    el.classList.add("active");
   });
-  if (res.ok) {
-    msg.style.color = "var(--success)"; msg.textContent = "Password changed.";
-    document.getElementById("my-current-password").value = "";
-    document.getElementById("my-new-password").value = "";
-  } else {
-    const d = await res.json().catch(() => ({}));
-    msg.textContent = d.detail || "Error";
-  }
+});
+
+// Accent color swatch clicks
+document.querySelectorAll("#admin-color-swatches [data-admin-color]").forEach(el => {
+  el.addEventListener("click", () => {
+    document.querySelectorAll("#admin-color-swatches [data-admin-color]").forEach(x => x.classList.remove("active"));
+    el.classList.add("active");
+    document.getElementById("admin-accent-custom").value = el.dataset.adminColor;
+  });
+});
+document.getElementById("admin-accent-custom").addEventListener("input", e => {
+  document.querySelectorAll("#admin-color-swatches [data-admin-color]").forEach(x => x.classList.remove("active"));
+});
+
+document.getElementById("admin-save-defaults-btn").addEventListener("click", () => {
+  const activeThemeEl = document.querySelector("#admin-theme-presets [data-admin-theme].active");
+  const activeColorEl = document.querySelector("#admin-color-swatches [data-admin-color].active");
+  const defaults = {
+    model:       document.getElementById("admin-default-model").value,
+    prompt:      document.getElementById("admin-default-prompt").value.trim(),
+    temperature: parseFloat(document.getElementById("admin-temp-slider").value),
+    threshold:   parseFloat(document.getElementById("admin-thresh-slider").value),
+    topk:        parseInt(document.getElementById("admin-topk-slider").value),
+    history:     parseInt(document.getElementById("admin-history-slider").value),
+    compact:     parseInt(document.getElementById("admin-compact-slider").value),
+    textSize:    parseInt(document.getElementById("admin-text-size-slider").value),
+    theme:       activeThemeEl ? activeThemeEl.dataset.adminTheme : "dark",
+    accent:      activeColorEl ? activeColorEl.dataset.adminColor : document.getElementById("admin-accent-custom").value,
+    tts:         document.getElementById("admin-tts-toggle").checked,
+    voice:       document.getElementById("admin-default-voice").value,
+  };
+  localStorage.setItem(ADMIN_DEFAULTS_KEY, JSON.stringify(defaults));
+  scheduleSettingsSync();
+  const msg = document.getElementById("admin-defaults-msg");
+  msg.style.color = "var(--success)"; msg.textContent = "Defaults saved.";
+  setTimeout(() => msg.textContent = "", 2500);
+});
+
+// ── Reset PW modal ──
+let _resetPwUid = null;
+const resetPwModal = document.getElementById("reset-pw-modal");
+function openResetPwModal(uid, uname) {
+  _resetPwUid = uid;
+  document.getElementById("reset-pw-username").textContent = uname;
+  document.getElementById("reset-pw-input").value = "";
+  document.getElementById("reset-pw-error").textContent = "";
+  resetPwModal.style.display = "flex";
+  setTimeout(() => document.getElementById("reset-pw-input").focus(), 50);
+}
+function closeResetPwModal() { resetPwModal.style.display = "none"; _resetPwUid = null; }
+document.getElementById("reset-pw-cancel-btn").addEventListener("click", closeResetPwModal);
+resetPwModal.addEventListener("click", e => { if (e.target === resetPwModal) closeResetPwModal(); });
+document.getElementById("reset-pw-confirm-btn").addEventListener("click", async () => {
+  const pw = document.getElementById("reset-pw-input").value;
+  const errEl = document.getElementById("reset-pw-error");
+  if (pw.length < 6) { errEl.textContent = "Minimum 6 characters"; return; }
+  const res = await apiFetch(`/admin/users/${_resetPwUid}/password`, {
+    method: "PUT", body: JSON.stringify({ new_password: pw }),
+  });
+  if (res.ok) { closeResetPwModal(); showToast("Password updated"); }
+  else { errEl.textContent = "Error updating password"; }
 });
 
 initApp();
@@ -3919,19 +4489,8 @@ chatWindow.addEventListener("click", async (e) => {
   const btn = e.target.closest(".source-link");
   if (!btn) return;
   const path = btn.dataset.path;
-  const modal = document.getElementById("file-modal");
-  const title = document.getElementById("file-modal-title");
-  const content = document.getElementById("file-modal-content");
-  title.textContent = path;
-  content.textContent = "Loading…";
-  modal.style.display = "flex";
-  try {
-    const res = await apiFetch(`/vault/file?path=${encodeURIComponent(path)}`);
-    if (!res.ok) throw new Error(await res.text());
-    content.textContent = await res.text();
-  } catch (e) {
-    content.textContent = `Error loading file: ${e.message}`;
-  }
+  const name = path.split("/").pop();
+  previewVaultFile({ name, path });
 });
 function expandTable(btn) {
   const table = btn.closest(".md-table-wrap").querySelector(".md-table");

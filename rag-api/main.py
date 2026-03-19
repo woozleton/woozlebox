@@ -344,7 +344,7 @@ async def chat_stream(request: ChatRequest, user_id: str) -> AsyncGenerator[str,
     context_block = f"\n\nContext:\n{context_text}" if context_parts else ""
     system_prompt = f"""{base_instructions}{memory_section}{user_section}{' ' + source_instruction if source_instruction else ''}{context_block}
 
-Answer concisely, then end with a single relevant follow-up question on its own line, prefixed with "**Follow-up:**"."""
+Answer concisely."""
 
     # Auto-compact if context is getting full
     if request.conversation_id and request.compact_threshold > 0:
