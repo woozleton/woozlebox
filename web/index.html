@@ -1130,7 +1130,7 @@
     #vault-close:hover { color: var(--text); }
 
     #vault-meta {
-      padding: 8px 16px;
+      padding: 0;
       font-size: 0.72rem; color: var(--text-dim);
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
@@ -1140,32 +1140,40 @@
     #vault-file-list {
       flex: 1;
       overflow-y: auto;
-      padding: 8px 0;
+      padding: 4px 0 4px;
     }
 
     .vault-folder {
-      padding: 4px 16px;
+      padding: 0 8px 0 12px;
     }
     .vault-folder-header {
       display: flex; align-items: center; gap: 6px;
-      font-size: 0.76rem; color: var(--text-dim);
-      cursor: pointer; user-select: none;
-      padding: 3px 0;
+      font-size: 0.76rem; font-family: inherit; font-weight: 400; color: var(--text-dim);
+      user-select: none;
+      padding: 5px 6px 5px 4px;
+      border-radius: 6px;
+      transition: background 0.1s;
     }
-    .vault-folder-header:hover { color: var(--text); }
-    .vault-folder-toggle { font-size: 0.55rem; transition: transform 0.15s; }
+    .vault-folder-header:hover { background: var(--surface2); color: var(--text); }
+    .vault-folder-header.drag-over { background: var(--accent-glow); outline: 1px dashed var(--accent); color: var(--accent); }
+    .vault-folder-name { flex: 1; cursor: pointer; }
+    .vault-folder-toggle { font-size: 0.55rem; transition: transform 0.15s; cursor: pointer; flex-shrink: 0; }
     .vault-folder.open .vault-folder-toggle { transform: rotate(90deg); }
     .vault-folder-files { display: none; }
     .vault-folder.open .vault-folder-files { display: block; }
+    .vault-folder-actions { display: flex; gap: 2px; opacity: 0; transition: opacity 0.15s; flex-shrink: 0; }
+    .vault-folder-header:hover .vault-folder-actions { opacity: 1; }
 
     .vault-file-item {
       display: flex; align-items: center; gap: 8px;
-      padding: 5px 16px;
+      padding: 5px 12px 5px 28px;
       font-size: 0.78rem; color: var(--text-dim);
       transition: background 0.1s;
+      cursor: grab;
     }
     .vault-file-item:hover { background: var(--surface2); }
-    .vault-file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .vault-file-item.dragging { opacity: 0.4; cursor: grabbing; }
+    .vault-file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
     .vault-chunk-count {
       font-size: 0.66rem; color: var(--text-faint);
       font-family: monospace; white-space: nowrap; flex-shrink: 0;
@@ -1179,6 +1187,43 @@
     }
     .vault-delete-btn:hover { color: var(--danger); background: rgba(249,115,22,0.1); }
     .vault-rename-btn:hover { color: var(--accent); background: var(--accent-glow); }
+
+    /* Vault root drop target */
+    #vault-file-list.drag-over-root { background: var(--accent-glow); }
+    .vault-meta-info {
+      font-size: 0.72rem; color: var(--text-dim); padding: 8px 16px 6px;
+    }
+    .vault-meta-actions {
+      display: flex; gap: 6px; padding: 0 16px 10px; justify-content: center;
+    }
+    .vault-action-btn {
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+      background: var(--surface3); border: 1px solid var(--border);
+      color: var(--text-dim); border-radius: 999px; padding: 4px 10px;
+      font-size: 0.7rem; font-family: inherit; cursor: pointer; white-space: nowrap;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .vault-action-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .vault-action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* inline new-folder row */
+    .vault-new-folder-row {
+      display: flex; align-items: center; gap: 6px;
+      padding: 4px 8px 4px 16px;
+    }
+    .vault-new-folder-row input {
+      flex: 1; background: var(--surface3); border: 1px solid var(--accent);
+      border-radius: 4px; color: var(--text); padding: 2px 7px;
+      font-size: 0.76rem; font-family: inherit; outline: none; min-width: 0;
+    }
+    .vault-new-folder-row button {
+      background: none; border: none; cursor: pointer; padding: 2px 4px;
+      font-size: 0.72rem; border-radius: 4px; flex-shrink: 0;
+    }
+    .vault-new-folder-confirm { color: var(--accent); }
+    .vault-new-folder-confirm:hover { background: var(--accent-glow); }
+    .vault-new-folder-cancel { color: var(--text-faint); }
+    .vault-new-folder-cancel:hover { color: var(--danger); }
 
     /* Upload area */
     #vault-upload-area {
@@ -4504,7 +4549,7 @@ async function loadVaultFiles() {
     if (!res.ok) throw new Error(await res.text());
     const data = await res.json();
     renderVaultMeta(data);
-    renderVaultFiles(data.files);
+    renderVaultFiles(data.files, data.folders || []);
   } catch (e) {
     vaultFileList.innerHTML = `<div style="padding:16px;font-size:0.78rem;color:var(--danger)">Failed to load: ${esc(e.message)}</div>`;
   }
@@ -4516,52 +4561,176 @@ function renderVaultMeta(data) {
     const d = new Date(data.last_indexed);
     lastIndexed = d.toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
   }
-  vaultMeta.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-    <span>Last indexed: <strong>${lastIndexed}</strong><br>${data.files_processed} file${data.files_processed !== 1 ? "s" : ""} · ${data.chunks_upserted} chunks</span>
-    <button id="vault-reindex-btn" title="Re-index vault">↺ Re-index</button>
-  </div>`;
-  document.getElementById("vault-reindex-btn").addEventListener("click", () => runReindex({ statusBtn: document.getElementById("vault-reindex-btn"), statusBtnLabel: "↺ Re-index" }));
+  const SVG_FOLDER_NEW = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`;
+  const SVG_REINDEX    = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>`;
+  vaultMeta.innerHTML = `
+    <div class="vault-meta-info">Last indexed: <strong>${lastIndexed}</strong> &nbsp;·&nbsp; ${data.files_processed} file${data.files_processed !== 1 ? "s" : ""} · ${data.chunks_upserted} chunks</div>
+    <div class="vault-meta-actions">
+      <button id="vault-new-folder-btn" class="vault-action-btn" title="New folder">${SVG_FOLDER_NEW}<span>New Folder</span></button>
+      <button id="vault-reindex-btn"    class="vault-action-btn" title="Re-index vault">${SVG_REINDEX}<span>Re-index</span></button>
+    </div>`;
+  document.getElementById("vault-reindex-btn").addEventListener("click", () => runReindex({ statusBtn: document.getElementById("vault-reindex-btn"), statusBtnLabel: "Re-index" }));
+  document.getElementById("vault-new-folder-btn").addEventListener("click", () => {
+    if (vaultFileList.querySelector(".vault-new-folder-row")) return;
+    const row = document.createElement("div");
+    row.className = "vault-new-folder-row";
+    row.innerHTML = `
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--text-faint)"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      <input type="text" placeholder="Folder name…" />
+      <button class="vault-new-folder-confirm" title="Create">✓</button>
+      <button class="vault-new-folder-cancel" title="Cancel">✕</button>
+    `;
+    vaultFileList.prepend(row);
+    const inp = row.querySelector("input");
+    inp.focus();
+    const confirm = async () => {
+      const name = inp.value.trim();
+      if (!name) { cancel(); return; }
+      try {
+        const res = await apiFetch(`/vault/folder`, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ folder: name }) });
+        if (!res.ok) throw new Error((await res.json()).detail);
+        loadVaultFiles();
+      } catch(e) { showToast(`Could not create folder: ${e.message}`); }
+    };
+    const cancel = () => row.remove();
+    row.querySelector(".vault-new-folder-confirm").addEventListener("click", confirm);
+    row.querySelector(".vault-new-folder-cancel").addEventListener("click", cancel);
+    inp.addEventListener("keydown", e => { if (e.key === "Enter") confirm(); if (e.key === "Escape") cancel(); });
+    inp.addEventListener("blur", e => { if (!row.contains(e.relatedTarget)) cancel(); });
+  });
 }
 
-function renderVaultFiles(files) {
+function renderVaultFiles(files, apiFolders) {
   vaultFileList.innerHTML = "";
-  if (!files.length) {
+
+  // Group files by folder
+  const filesByFolder = {};
+  files.forEach(f => {
+    const parts = f.path.split("/");
+    const folder = parts.length > 1 ? parts.slice(0, -1).join("/") : "";
+    if (!filesByFolder[folder]) filesByFolder[folder] = [];
+    filesByFolder[folder].push(f);
+  });
+
+  // Union of folders from files + folders from API (includes empty ones)
+  const allFolders = new Set([
+    ...Object.keys(filesByFolder).filter(f => f),
+    ...(apiFolders || []),
+  ]);
+  const sortedFolders = [...allFolders].sort((a, b) => a.localeCompare(b));
+
+  if (!files.length && !sortedFolders.length) {
     vaultFileList.innerHTML = `<div style="padding:16px;font-size:0.78rem;color:var(--text-faint)">No files in vault.</div>`;
     return;
   }
 
-  // Group by folder
-  const folders = {};
-  files.forEach(f => {
-    const parts = f.path.split("/");
-    const folder = parts.length > 1 ? parts.slice(0, -1).join("/") : "";
-    if (!folders[folder]) folders[folder] = [];
-    folders[folder].push(f);
+  sortedFolders.forEach(folder => {
+    vaultFileList.appendChild(makeFolderEl(folder, filesByFolder[folder] || []));
+  });
+  // root files (no folder)
+  (filesByFolder[""] || []).forEach(f => vaultFileList.appendChild(makeFileItem(f)));
+}
+
+function makeFolderEl(folder, items) {
+  const folderEl = document.createElement("div");
+  folderEl.className = "vault-folder open";
+  folderEl.dataset.folder = folder;
+
+  const SVG_FOLDER = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`;
+  const SVG_RENAME = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+  const SVG_TRASH  = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
+
+  const header = document.createElement("div");
+  header.className = "vault-folder-header";
+  header.innerHTML = `
+    <span class="vault-folder-toggle">▶</span>
+    ${SVG_FOLDER}
+    <span class="vault-folder-name">${esc(folder)}</span>
+    <div class="vault-folder-actions">
+      <button class="vault-rename-btn" title="Rename folder">${SVG_RENAME}</button>
+      <button class="vault-delete-btn" title="Delete folder">${SVG_TRASH}</button>
+    </div>
+  `;
+
+  // toggle collapse on name/toggle click (not action buttons)
+  header.querySelector(".vault-folder-toggle").addEventListener("click", () => folderEl.classList.toggle("open"));
+  header.querySelector(".vault-folder-name").addEventListener("click", () => folderEl.classList.toggle("open"));
+
+  // rename folder
+  header.querySelector(".vault-rename-btn").addEventListener("click", (e) => {
+    e.stopPropagation();
+    startFolderRename(header, folder);
   });
 
-  Object.entries(folders).sort(([a],[b]) => a.localeCompare(b)).forEach(([folder, items]) => {
-    if (folder) {
-      const folderEl = document.createElement("div");
-      folderEl.className = "vault-folder open";
-      const header = document.createElement("div");
-      header.className = "vault-folder-header";
-      header.innerHTML = `<span class="vault-folder-toggle">▶</span>📁 ${esc(folder)}/`;
-      header.addEventListener("click", () => folderEl.classList.toggle("open"));
-      const filesDiv = document.createElement("div");
-      filesDiv.className = "vault-folder-files";
-      items.forEach(f => filesDiv.appendChild(makeFileItem(f)));
-      folderEl.appendChild(header);
-      folderEl.appendChild(filesDiv);
-      vaultFileList.appendChild(folderEl);
-    } else {
-      items.forEach(f => vaultFileList.appendChild(makeFileItem(f)));
-    }
+  // delete folder
+  header.querySelector(".vault-delete-btn").addEventListener("click", async (e) => {
+    e.stopPropagation();
+    const confirmed = await showConfirm({ title: "Delete Folder", message: `Delete folder "${folder}" and all its files? This cannot be undone.` });
+    if (!confirmed) return;
+    try {
+      const res = await apiFetch(`/vault/folder`, { method:"DELETE", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ folder }) });
+      if (!res.ok) throw new Error((await res.json()).detail);
+      showVaultBanner("Folder deleted — click Re-index to update search.");
+      loadVaultFiles();
+    } catch(e) { showToast(`Delete failed: ${e.message}`); }
   });
+
+  // drag-over: files can be dropped onto folder header
+  header.addEventListener("dragover", (e) => { e.preventDefault(); e.stopPropagation(); header.classList.add("drag-over"); });
+  header.addEventListener("dragleave", () => header.classList.remove("drag-over"));
+  header.addEventListener("drop", async (e) => {
+    e.preventDefault(); e.stopPropagation();
+    header.classList.remove("drag-over");
+    const path = e.dataTransfer.getData("text/vault-path");
+    if (!path) return;
+    await moveVaultFile(path, folder);
+  });
+
+  const filesDiv = document.createElement("div");
+  filesDiv.className = "vault-folder-files";
+  items.forEach(f => filesDiv.appendChild(makeFileItem(f)));
+  folderEl.appendChild(header);
+  folderEl.appendChild(filesDiv);
+  return folderEl;
+}
+
+function startFolderRename(header, oldFolder) {
+  const nameEl = header.querySelector(".vault-folder-name");
+  const inp = document.createElement("input");
+  inp.value = oldFolder;
+  inp.style.cssText = "background:var(--surface3);border:1px solid var(--accent);border-radius:4px;color:var(--text);padding:1px 6px;font-size:0.76rem;font-family:inherit;outline:none;flex:1;min-width:0;";
+  nameEl.replaceWith(inp);
+  inp.focus(); inp.select();
+  let done = false;
+  const finish = async (save) => {
+    if (done) return; done = true;
+    const newName = inp.value.trim();
+    if (save && newName && newName !== oldFolder) {
+      try {
+        const res = await apiFetch(`/vault/folder/rename`, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ path: oldFolder, new_name: newName }) });
+        if (!res.ok) throw new Error((await res.json()).detail);
+        loadVaultFiles(); return;
+      } catch(e) { showToast(`Rename failed: ${e.message}`); done = false; }
+    }
+    inp.replaceWith(nameEl);
+  };
+  inp.addEventListener("keydown", e => { if (e.key === "Enter") finish(true); if (e.key === "Escape") finish(false); });
+  inp.addEventListener("blur", () => finish(true));
+}
+
+async function moveVaultFile(path, destFolder) {
+  try {
+    const res = await apiFetch(`/vault/move`, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ path, dest_folder: destFolder }) });
+    if (!res.ok) throw new Error((await res.json()).detail);
+    showVaultBanner("File moved — click Re-index to update search.");
+    loadVaultFiles();
+  } catch(e) { showToast(`Move failed: ${e.message}`); }
 }
 
 function makeFileItem(f) {
   const el = document.createElement("div");
   el.className = "vault-file-item";
+  el.draggable = true;
   const chunkLabel = f.chunk_count ? `${f.chunk_count} chunks` : "not indexed";
   const ext = f.name.slice(f.name.lastIndexOf(".") + 1).toLowerCase();
   const fileIconColor = ext === "pdf" ? "#ef4444" : ext === "md" ? "#7c6af7" : "#60a5fa";
@@ -4578,8 +4747,16 @@ function makeFileItem(f) {
     <button class="vault-delete-btn" title="Delete ${esc(f.name)}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
   `;
   el.querySelector(".vault-file-name").addEventListener("click", () => previewVaultFile(f));
-  el.querySelector(".vault-rename-btn").addEventListener("click", () => startRename(el, f));
-  el.querySelector(".vault-delete-btn").addEventListener("click", () => deleteVaultFile(f));
+  el.querySelector(".vault-rename-btn").addEventListener("click", (e) => { e.stopPropagation(); startRename(el, f); });
+  el.querySelector(".vault-delete-btn").addEventListener("click", (e) => { e.stopPropagation(); deleteVaultFile(f); });
+
+  // drag source
+  el.addEventListener("dragstart", (e) => {
+    e.dataTransfer.setData("text/vault-path", f.path);
+    e.dataTransfer.effectAllowed = "move";
+    el.classList.add("dragging");
+  });
+  el.addEventListener("dragend", () => el.classList.remove("dragging"));
   return el;
 }
 
@@ -4592,15 +4769,17 @@ function startRename(el, f) {
   nameEl.replaceWith(inp);
   inp.focus();
   inp.select();
+  let done = false;
   const finish = async (save) => {
+    if (done) return; done = true;
     const newName = inp.value.trim();
     if (save && newName && newName !== orig) {
       try {
         const res = await apiFetch(`/vault/rename`, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ path: f.path, new_name: newName }) });
-        if (!res.ok) throw new Error(await res.text());
+        if (!res.ok) throw new Error((await res.json()).detail);
         loadVaultFiles();
         return;
-      } catch(e) { showToast(`Rename failed: ${e.message}`); }
+      } catch(e) { showToast(`Rename failed: ${e.message}`); done = false; }
     }
     inp.replaceWith(nameEl);
   };
@@ -4698,15 +4877,18 @@ vaultFileInput.addEventListener("change", () => {
   vaultFileInput.value = "";
 });
 
-// Drag-and-drop
+// Drop zone — upload new files OR move vault files to root
 vaultDropZone.addEventListener("dragover", (e) => { e.preventDefault(); vaultDropZone.classList.add("dragover"); });
 vaultDropZone.addEventListener("dragleave", () => vaultDropZone.classList.remove("dragover"));
-vaultDropZone.addEventListener("drop", (e) => {
+vaultDropZone.addEventListener("drop", async (e) => {
   e.preventDefault();
   vaultDropZone.classList.remove("dragover");
+  const vaultPath = e.dataTransfer.getData("text/vault-path");
+  if (vaultPath) { await moveVaultFile(vaultPath, ""); return; }
   const files = Array.from(e.dataTransfer.files);
   if (files.length) uploadFiles(files, "");
 });
+
 
 // ── Input ──
 input.addEventListener("input", () => {

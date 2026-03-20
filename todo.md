@@ -4,3 +4,4 @@
 - Active dude
 - Add vision?
 - Add STT?
+- Do I need to re-index when moving files to a different folder?

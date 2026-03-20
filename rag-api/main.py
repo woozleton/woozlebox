@@ -222,6 +222,13 @@ class VaultRenameRequest(BaseModel):
     path: str
     new_name: str
 
+class VaultFolderRequest(BaseModel):
+    folder: str  # relative folder path within vault
+
+class VaultMoveRequest(BaseModel):
+    path: str        # current relative file path
+    dest_folder: str # destination folder (empty string = vault root)
+
 class LoginRequest(BaseModel):
     username: str
     password: str
@@ -923,20 +930,25 @@ def list_vault_files(user: dict = Depends(get_current_user)):
     meta = _read_index_meta(user["id"])
 
     files = []
-    for f in sorted(vault.rglob("*")):
-        if f.is_file() and f.suffix.lower() in supported:
-            rel = f.relative_to(vault)
-            stat = f.stat()
+    folders = []
+    for item in sorted(vault.rglob("*")):
+        if item.is_file() and item.suffix.lower() in supported:
+            rel = item.relative_to(vault)
+            stat = item.stat()
             files.append({
-                "name": f.name,
+                "name": item.name,
                 "path": str(rel).replace("\\", "/"),
                 "size_bytes": stat.st_size,
                 "modified_at": datetime.utcfromtimestamp(stat.st_mtime).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                "chunk_count": chunk_counts.get(f.name, 0),
+                "chunk_count": chunk_counts.get(item.name, 0),
             })
+        elif item.is_dir():
+            rel = item.relative_to(vault)
+            folders.append(str(rel).replace("\\", "/"))
 
     return {
         "files": files,
+        "folders": folders,
         "last_indexed": meta.get("last_indexed"),
         "files_processed": meta.get("files_processed", 0),
         "chunks_upserted": meta.get("chunks_upserted", 0),
@@ -1000,10 +1012,88 @@ def rename_vault_file(body: VaultRenameRequest, user: dict = Depends(get_current
         raise HTTPException(status_code=404, detail="File not found")
     new_name = Path(body.new_name).name
     dest = target.parent / new_name
-    if dest.exists():
+    if dest.exists() and dest.resolve() != target.resolve():
         raise HTTPException(status_code=409, detail="File already exists")
     target.rename(dest)
     return {"ok": True, "path": str(dest.relative_to(vault.resolve()))}
+
+
+@app.post("/vault/folder")
+def create_vault_folder(body: VaultFolderRequest, user: dict = Depends(get_current_user)):
+    vault = user_vault_path(user["id"])
+    safe = Path(body.folder.strip("/").strip())
+    for part in safe.parts:
+        if part in (".", ".."):
+            raise HTTPException(status_code=400, detail="Invalid folder path")
+    target = (vault / safe).resolve()
+    try:
+        target.relative_to(vault.resolve())
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Path outside vault")
+    target.mkdir(parents=True, exist_ok=True)
+    return {"ok": True}
+
+
+@app.delete("/vault/folder")
+def delete_vault_folder(body: VaultFolderRequest, user: dict = Depends(get_current_user)):
+    vault = user_vault_path(user["id"])
+    safe = Path(body.folder.strip("/").strip())
+    target = (vault / safe).resolve()
+    try:
+        target.relative_to(vault.resolve())
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Path outside vault")
+    if not target.exists():
+        raise HTTPException(status_code=404, detail="Folder not found")
+    if not target.is_dir():
+        raise HTTPException(status_code=400, detail="Not a folder")
+    shutil.rmtree(target)
+    return {"ok": True}
+
+
+@app.post("/vault/move")
+def move_vault_file(body: VaultMoveRequest, user: dict = Depends(get_current_user)):
+    vault = user_vault_path(user["id"])
+    src = (vault / body.path).resolve()
+    try:
+        src.relative_to(vault.resolve())
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Path outside vault")
+    if not src.is_file():
+        raise HTTPException(status_code=404, detail="File not found")
+    dest_folder = Path(body.dest_folder.strip("/").strip()) if body.dest_folder.strip() else Path("")
+    for part in dest_folder.parts:
+        if part in (".", ".."):
+            raise HTTPException(status_code=400, detail="Invalid destination")
+    dest_dir = (vault / dest_folder).resolve()
+    try:
+        dest_dir.relative_to(vault.resolve())
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Destination outside vault")
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest = dest_dir / src.name
+    if dest.exists():
+        raise HTTPException(status_code=409, detail="A file with that name already exists in the destination")
+    src.rename(dest)
+    return {"ok": True, "path": str(dest.relative_to(vault.resolve())).replace("\\", "/")}
+
+
+@app.post("/vault/folder/rename")
+def rename_vault_folder(body: VaultRenameRequest, user: dict = Depends(get_current_user)):
+    vault = user_vault_path(user["id"])
+    target = (vault / body.path).resolve()
+    try:
+        target.relative_to(vault.resolve())
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Path outside vault")
+    if not target.is_dir():
+        raise HTTPException(status_code=404, detail="Folder not found")
+    new_name = Path(body.new_name).name
+    dest = target.parent / new_name
+    if dest.exists() and dest.resolve() != target.resolve():
+        raise HTTPException(status_code=409, detail="Folder already exists")
+    target.rename(dest)
+    return {"ok": True}
 
 
 @app.get("/vault/file")
