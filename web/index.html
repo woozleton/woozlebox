@@ -329,28 +329,27 @@
     #ctx-menu button.danger { color: var(--danger); }
 
     #topic-crumb {
-      display: inline-flex; align-items: center; gap: 5px;
+      display: flex; align-items: center; gap: 5px;
       font-size: 0.68rem; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase;
       color: var(--text-faint);
       white-space: nowrap;
       padding: 0 4px 8px;
-      cursor: pointer;
-      align-self: flex-start;
     }
-    #topic-crumb:hover { color: var(--text-dim); }
+    #topic-crumb-trigger:hover { color: var(--text-dim); }
     #topic-crumb-menu {
       display: none; position: fixed;
       background: none; border: none;
-      border-radius: 9px; padding: 4px; min-width: 160px;
+      border-radius: 0; padding: 0; min-width: 160px;
       z-index: 50;
     }
     #topic-crumb-menu.open { display: block; }
     .crumb-menu-item {
-      display: flex; align-items: center; gap: 7px;
-      padding: 7px 10px; border-radius: 6px; cursor: pointer;
-      font-size: 0.8rem; color: var(--text-dim);
+      display: flex; align-items: center; gap: 5px;
+      padding: 5px 0; border-radius: 0; cursor: pointer;
+      font-size: 0.68rem; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase;
+      color: var(--text-faint);
     }
-    .crumb-menu-item:hover { background: var(--surface3); color: var(--text); }
+    .crumb-menu-item:hover { background: none; color: var(--text-dim); }
     .crumb-menu-item.active { color: var(--accent); }
 
     /* ═══════════════════════════════════════
@@ -422,14 +421,29 @@
       max-width: 800px;
       width: 100%;
     }
-    .message-row.user { align-self: flex-end; align-items: flex-end; }
-    .message-row.ai   { align-self: flex-start; align-items: flex-start; }
+    .message-row.user { align-self: flex-end; align-items: flex-end; padding-right: 16px; }
+    .message-row.ai   { align-self: flex-start; align-items: flex-start; padding-left: 16px; }
+    .user-avatar-bubble {
+      width: 24px; height: 24px; border-radius: 50%; background: var(--accent);
+      color: #fff; font-size: 0.6rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden; position: absolute; top: -8px; right: -10px;
+      border: 2px solid var(--bg); flex-shrink: 0; z-index: 2;
+    }
+    .ai-avatar-bubble {
+      width: 24px; height: 24px; border-radius: 50%; background: var(--surface3);
+      color: var(--text-dim); font-size: 0.6rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden; position: absolute; top: -8px; left: -10px;
+      border: 2px solid var(--bg); flex-shrink: 0; z-index: 2;
+    }
 
     /* Constrains footer/meta to bubble width */
     .bubble-wrap {
       display: inline-flex;
       flex-direction: column;
       max-width: 100%;
+      position: relative;
     }
 
     .bubble {
@@ -443,13 +457,11 @@
     }
     .message-row.user .bubble {
       background: var(--user-bubble);
-      border: 1px solid #2d2860;
-      border-bottom-right-radius: 3px;
+      border: none;
     }
     .message-row.ai .bubble {
       background: var(--ai-bubble);
-      border: 1px solid var(--border);
-      border-bottom-left-radius: 3px;
+      border: none;
       white-space: normal;
       overflow-wrap: break-word;
     }
@@ -462,10 +474,9 @@
     .message-row.ai .bubble li { margin: 0.15em 0; }
     .message-row.ai .bubble h1,.message-row.ai .bubble h2,.message-row.ai .bubble h3 { margin: 0.6em 0 0.3em; font-weight: 600; }
     .message-row.ai .bubble h4,.message-row.ai .bubble h5,.message-row.ai .bubble h6 { margin: 0.4em 0 0.2em; font-weight: 600; font-size: 0.95em; color: var(--text-dim); }
-    .modal-resize-e  { position:absolute; right:-4px; top:8px; bottom:8px; width:8px; cursor:ew-resize; z-index:10; border-radius:4px; }
-    .modal-resize-s  { position:absolute; bottom:-4px; left:8px; right:8px; height:8px; cursor:ns-resize; z-index:10; border-radius:4px; }
-    .modal-resize-se { position:absolute; right:-4px; bottom:-4px; width:14px; height:14px; cursor:nwse-resize; z-index:11; }
-    .modal-resize-e:hover, .modal-resize-s:hover, .modal-resize-se:hover { background:var(--accent-dim); }
+    .modal-resize-se { position:absolute; right:0; bottom:0; width:16px; height:16px; cursor:nwse-resize; z-index:11; }
+    .modal-resize-se::after { content:""; position:absolute; right:3px; bottom:3px; width:7px; height:7px; border-right:2px solid var(--border); border-bottom:2px solid var(--border); border-radius:1px; }
+    .modal-resize-se:hover::after { border-color:var(--accent); }
     .md-table-wrap { overflow-x: auto; margin: 0.5em 0; position: relative; }
     .md-table-expand { position: absolute; top: 4px; right: 4px; background: var(--surface3); border: 1px solid var(--border); border-radius: 4px; color: var(--text-dim); cursor: pointer; font-size: 0.7rem; padding: 2px 6px; opacity: 0; transition: opacity 0.15s; }
     .md-table-wrap:hover .md-table-expand { opacity: 1; }
@@ -481,85 +492,91 @@
 
     /* Copy / TTS action buttons — sit below bubble in msg-meta row */
     .bubble-action-btn {
-      width: 26px; height: 26px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      color: var(--text-dim);
-      border-radius: 6px;
+      width: 20px; height: 20px;
+      background: none;
+      border: none;
+      color: var(--text-faint);
+      border-radius: 4px;
       cursor: pointer;
-      opacity: 0;
-      transition: opacity 0.15s, color 0.15s, border-color 0.15s;
+      opacity: 1;
+      transition: color 0.15s;
       display: flex; align-items: center; justify-content: center;
       padding: 0;
       flex-shrink: 0;
     }
-    .bubble-wrap:hover .bubble-action-btn { opacity: 1; }
-    .bubble-action-btn:hover { color: var(--text); border-color: var(--accent); }
+    .bubble-action-btn:hover { color: var(--text-dim); }
     .copy-btn.copied { opacity: 1; }
     .tts-btn.playing { color: var(--accent); border-color: var(--accent); opacity: 1; }
 
     .msg-meta {
       display: flex;
       align-items: center;
-      gap: 6px;
-      margin-top: 2px;
-      padding: 0 4px;
+      justify-content: flex-start;
+      gap: 4px;
+      margin-top: 1px;
+      padding: 0 2px;
       align-self: stretch;
     }
+    .message-row.user .msg-meta { justify-content: flex-end; }
     /* Bubble footer: sources left, action buttons right */
     .bubble-footer {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 8px;
-      margin-top: 6px;
-      min-height: 28px;
+      margin-top: 4px;
       align-self: stretch;
     }
+    .bubble-footer:empty { display: none; }
     .bubble-footer-left { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-    .bubble-actions { display: flex; gap: 5px; align-items: center; flex-shrink: 0; margin-left: auto; }
+    .bubble-actions {
+      display: flex; gap: 5px; align-items: center; flex-shrink: 0; margin-left: auto;
+      opacity: 0; pointer-events: none; transition: opacity 0.2s;
+    }
+    .bubble-wrap:hover .bubble-actions { opacity: 1; pointer-events: auto; }
     .timestamp { font-size: 0.67rem; color: var(--text-faint); }
-    .model-tag { font-size: 0.65rem; color: var(--text-faint); font-family: monospace; }
+    .model-tag { font-size: 0.67rem; color: var(--text-faint); font-family: monospace; }
+    .meta-sep { font-size: 0.67rem; color: var(--text-faint); opacity: 0.5; margin: 0 1px; }
+    .sources-inline { display: inline; }
 
     /* ── Sources ── */
-    .sources-wrap {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      align-items: center;
-    }
     .no-vault-badge {
       display: inline-flex; align-items: center; gap: 5px;
       background: #2a1a0a; border: 1px solid var(--danger);
       color: var(--danger); padding: 2px 9px;
       border-radius: 20px; font-size: 0.7rem; font-weight: 500;
     }
-    details.sources {
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 8px; overflow: hidden;
+    /* Inline toggle in meta row */
+    .sources-toggle {
+      font-size: 0.67rem; color: var(--text-faint); cursor: pointer;
+      background: none; border: none; padding: 0;
+      display: inline-flex; align-items: center; gap: 3px;
+      transition: color 0.15s;
     }
-    details.sources summary {
-      padding: 4px 10px; cursor: pointer;
-      font-size: 0.71rem; color: var(--text-dim);
-      user-select: none; list-style: none;
+    .sources-toggle:hover { color: var(--text-dim); }
+    .sources-toggle svg { transition: transform 0.15s; }
+    .sources-toggle.open svg { transform: rotate(90deg); }
+    /* Dropdown panel below meta row */
+    .sources-panel {
+      display: none;
+      flex-direction: column; gap: 2px;
+      margin-top: 3px; padding: 2px 0;
+    }
+    .sources-panel.open { display: flex; }
+    .sources-panel-label { display: none; }
+    .sources-panel .source-link {
+      font-size: 0.72rem; color: var(--accent); background: none; border: none;
+      cursor: pointer; padding: 1px 0; text-align: left; text-decoration: none;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 340px;
+      display: flex; align-items: center; gap: 5px; opacity: 0.85;
+    }
+    .sources-panel .source-link:hover { opacity: 1; color: var(--text); }
+    .sources-panel .web-link {
+      font-size: 0.72rem; color: #38bdf8; text-decoration: none; opacity: 0.85;
       display: flex; align-items: center; gap: 5px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 340px;
     }
-    details.sources summary::-webkit-details-marker { display: none; }
-    details.sources summary::before { content: "▶"; font-size: 0.5rem; transition: transform 0.15s; }
-    details.sources[open] summary::before { transform: rotate(90deg); }
-    details.sources ul { list-style: none; padding: 3px 10px 8px 16px; }
-    details.sources ul li {
-      font-size: 0.75rem; color: var(--accent);
-      padding: 2px 0; display: flex; align-items: center; gap: 5px;
-    }
-    details.sources ul li::before { content: "📄"; font-size: 0.68rem; }
-    details.sources.web ul li { color: #38bdf8; }
-    details.sources.web ul li::before { content: "🌐"; font-size: 0.68rem; }
-    details.sources.web ul li a {
-      color: #38bdf8; text-decoration: none;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 300px;
-    }
-    details.sources.web ul li a:hover { text-decoration: underline; }
+    .sources-panel .web-link:hover { opacity: 1; text-decoration: underline; }
 
     .debug-pill {
       display: none;
@@ -770,7 +787,16 @@
     }
     .settings-nav-item:hover { background: var(--surface2); color: var(--text); }
     .settings-nav-item.active { background: var(--accent-glow); color: var(--accent); font-weight: 600; }
-    .settings-nav-divider { height: 1px; background: var(--border); margin: 6px 4px; }
+    .settings-nav-label {
+      font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--text-faint);
+      padding: 10px 12px 3px; user-select: none;
+    }
+    .settings-nav-item .nav-sub {
+      display: block; font-size: 0.65rem; font-weight: 400;
+      color: var(--text-faint); opacity: 0.7; margin-top: 1px;
+    }
+    .settings-nav-item.active .nav-sub { opacity: 1; color: var(--accent); }
     #settings-content {
       flex: 1;
       overflow-y: auto;
@@ -850,6 +876,12 @@
     .color-swatch.active { border-color: var(--text); }
     .logo-upload-row { display: flex; gap: 8px; align-items: center; }
     .logo-preview { width: 28px; height: 28px; border-radius: 6px; object-fit: cover; }
+    .logo-upload-target { position:relative; cursor:pointer; border-radius:8px; background:var(--surface2); border:2px solid var(--border); display:flex; align-items:center; justify-content:center; overflow:hidden; }
+    .logo-upload-target:hover .logo-upload-overlay { display:flex; }
+    .logo-upload-overlay { position:absolute; inset:0; background:rgba(0,0,0,0.45); display:none; align-items:center; justify-content:center; pointer-events:none; }
+    .logo-reset-badge { display:none; position:absolute; bottom:3px; right:3px; width:16px; height:16px; border-radius:50%; background:var(--surface3); border:1px solid var(--border); color:var(--text-dim); font-size:0.55rem; cursor:pointer; line-height:1; align-items:center; justify-content:center; }
+    .logo-upload-target:hover .logo-reset-badge { display:flex; }
+    .logo-upload-label { font-size:0.7rem; color:var(--text-faint); text-align:center; }
     input[type=range] {
       width: 100%;
       accent-color: var(--accent);
@@ -1220,7 +1252,7 @@
     .source-link {
       background: none; border: none; color: var(--accent);
       cursor: pointer; font-size: 0.75rem; text-align: left;
-      padding: 0; text-decoration: underline dotted;
+      padding: 0; text-decoration: none;
     }
     .source-link:hover { color: var(--text); }
 
@@ -1228,15 +1260,21 @@
     #chat-window::-webkit-scrollbar,
     #conv-list::-webkit-scrollbar,
     #settings-content::-webkit-scrollbar,
-    #vault-file-list::-webkit-scrollbar { width: 4px; }
+    #vault-file-list::-webkit-scrollbar,
+    #file-modal-content::-webkit-scrollbar,
+    #file-modal-inner::-webkit-scrollbar { width: 4px; }
     #chat-window::-webkit-scrollbar-track,
     #conv-list::-webkit-scrollbar-track,
     #settings-content::-webkit-scrollbar-track,
-    #vault-file-list::-webkit-scrollbar-track { background: transparent; }
+    #vault-file-list::-webkit-scrollbar-track,
+    #file-modal-content::-webkit-scrollbar-track,
+    #file-modal-inner::-webkit-scrollbar-track { background: transparent; }
     #chat-window::-webkit-scrollbar-thumb,
     #conv-list::-webkit-scrollbar-thumb,
     #settings-content::-webkit-scrollbar-thumb,
-    #vault-file-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+    #vault-file-list::-webkit-scrollbar-thumb,
+    #file-modal-content::-webkit-scrollbar-thumb,
+    #file-modal-inner::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
 
     /* ── Auth screens ── */
     .auth-screen {
@@ -1276,9 +1314,9 @@
       outline: none;
       transition: border-color 0.15s;
     }
-    .auth-field input:focus { border-color: var(--accent); }
+    .auth-field input:focus { border-color: var(--auth-accent, var(--accent)); }
     .auth-btn {
-      background: var(--accent);
+      background: var(--auth-accent, var(--accent));
       color: #fff;
       border: none;
       border-radius: 8px;
@@ -1296,10 +1334,12 @@
       min-height: 18px;
     }
     .auth-logo {
-      display: flex; align-items: center; gap: 10px; margin-bottom: 4px;
+      display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 4px;
     }
-    .auth-logo .logo { width: 36px; height: 36px; font-size: 18px; border-radius: 10px; }
+    .auth-logo .logo { width: 36px; height: 36px; font-size: 18px; border-radius: 10px; flex-shrink: 0; background: var(--auth-accent, var(--accent)); }
     .auth-logo span { font-size: 1.1rem; font-weight: 700; color: var(--text); }
+    .auth-logo.has-wide-logo { flex-direction: column; align-items: center; gap: 6px; }
+    .auth-logo-img-wide { max-width: 280px; max-height: 60px; width: auto; height: auto; object-fit: contain; border-radius: 6px; display: block; margin: 0 auto; }
 
     /* ── Admin panel in settings ── */
     .admin-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; table-layout: fixed; }
@@ -1384,7 +1424,7 @@
     <!-- Logo -->
     <div id="sidebar-logo">
       <div class="logo" id="logo-letter">D</div>
-      <img id="logo-img" style="display:none;width:28px;height:28px;border-radius:6px;object-fit:cover;" />
+      <img id="logo-img" style="display:none;max-width:280px;max-height:32px;width:auto;height:auto;object-fit:contain;border-radius:4px;" />
       <span id="sidebar-title">Dave-in-a-Box</span>
     </div>
 
@@ -1462,20 +1502,22 @@
     </div>
 
     <div id="input-area">
-      <div id="ctx-bar-wrap" style="display:none;align-items:center;justify-content:flex-end;gap:6px;padding:0 6px 4px;font-size:0.7rem;color:var(--text-faint);">
-        <svg id="ctx-pie" width="16" height="16" viewBox="0 0 16 16" style="flex-shrink:0;transform:rotate(-90deg);">
-          <circle cx="8" cy="8" r="6" fill="none" stroke="var(--surface3)" stroke-width="3"/>
-          <circle id="ctx-pie-arc" cx="8" cy="8" r="6" fill="none" stroke="var(--accent)" stroke-width="3"
-            stroke-dasharray="0 37.7" stroke-linecap="round" style="transition:stroke-dasharray 0.4s,stroke 0.4s;"/>
-        </svg>
-        <span id="ctx-label">0%</span>
-      </div>
       <div id="topic-crumb">
-        <svg width="11" height="11" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
-          <path d="M1.5 3.5C1.5 2.948 1.948 2.5 2.5 2.5H6.086a1 1 0 0 1 .707.293L7.914 3.914A1 1 0 0 0 8.621 4.2H13.5c.552 0 1 .448 1 1v7.3c0 .552-.448 1-1 1h-11c-.552 0-1-.448-1-1V3.5z" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"/>
-        </svg>
-        <span id="topic-crumb-name"></span>
-        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.5;"><polyline points="6 9 12 15 18 9"/></svg>
+        <span id="topic-crumb-trigger" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;">
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
+            <path d="M1.5 3.5C1.5 2.948 1.948 2.5 2.5 2.5H6.086a1 1 0 0 1 .707.293L7.914 3.914A1 1 0 0 0 8.621 4.2H13.5c.552 0 1 .448 1 1v7.3c0 .552-.448 1-1 1h-11c-.552 0-1-.448-1-1V3.5z"/>
+          </svg>
+          <span id="topic-crumb-name"></span>
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.5;"><polyline points="6 9 12 15 18 9"/></svg>
+        </span>
+        <div id="ctx-bar-wrap" style="display:none;align-items:center;gap:5px;margin-left:auto;padding-left:10px;font-size:0.7rem;color:var(--text-faint);">
+          <svg id="ctx-pie" width="14" height="14" viewBox="0 0 16 16" style="flex-shrink:0;transform:rotate(-90deg);">
+            <circle cx="8" cy="8" r="6" fill="none" stroke="var(--surface3)" stroke-width="3"/>
+            <circle id="ctx-pie-arc" cx="8" cy="8" r="6" fill="none" stroke="var(--accent)" stroke-width="3"
+              stroke-dasharray="0 37.7" stroke-linecap="round" style="transition:stroke-dasharray 0.4s,stroke 0.4s;"/>
+          </svg>
+          <span id="ctx-label">0%</span>
+        </div>
       </div>
       <div id="topic-crumb-menu"></div>
       <div id="input-box">
@@ -1522,15 +1564,17 @@
 
       <!-- Left nav -->
       <div id="settings-nav">
+        <div class="settings-nav-label">My Settings</div>
         <div class="settings-nav-item active" data-pane="general">Profile</div>
         <div class="settings-nav-item" data-pane="ai">AI</div>
         <div class="settings-nav-item" data-pane="appearance">Appearance</div>
         <div class="settings-nav-item" data-pane="voice">Voice</div>
-        <div class="settings-nav-divider"></div>
-        <div class="settings-nav-item" data-pane="admin" id="admin-nav-item" style="display:none;">Users</div>
-        <div class="settings-nav-item" data-pane="interface" id="interface-nav-item" style="display:none;">Interface</div>
-        <div class="settings-nav-item" data-pane="defaults" id="defaults-nav-item" style="display:none;">Defaults</div>
-        <div class="settings-nav-item" data-pane="developer" id="developer-nav-item" style="display:none;">Developer</div>
+        <div id="admin-nav-divider" style="display:none;height:1px;background:var(--border);margin:8px 4px;"></div>
+        <div class="settings-nav-label" id="admin-nav-label" style="display:none;">Administration</div>
+        <div class="settings-nav-item" data-pane="admin" id="admin-nav-item" style="display:none;">Users<span class="nav-sub">Manage accounts &amp; roles</span></div>
+        <div class="settings-nav-item" data-pane="interface" id="interface-nav-item" style="display:none;">Platform<span class="nav-sub">Branding &amp; global config</span></div>
+        <div class="settings-nav-item" data-pane="defaults" id="defaults-nav-item" style="display:none;">Defaults<span class="nav-sub">Applied to new accounts</span></div>
+        <div class="settings-nav-item" data-pane="developer" id="developer-nav-item" style="display:none;">Developer<span class="nav-sub">Debug &amp; diagnostics</span></div>
       </div>
 
       <!-- Right content -->
@@ -1550,6 +1594,7 @@
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               </div>
               <input type="file" id="avatar-file-input" accept="image/*" style="display:none;" />
+              <button id="avatar-reset-btn" style="display:none;position:absolute;bottom:0;right:0;width:20px;height:20px;border-radius:50%;background:var(--surface3);border:1px solid var(--border);color:var(--text-dim);font-size:0.65rem;cursor:pointer;line-height:1;display:none;align-items:center;justify-content:center;" title="Remove avatar">✕</button>
             </div>
             <div style="flex:1;display:flex;flex-direction:column;gap:8px;">
               <div class="setting-label"><span>Display Name</span></div>
@@ -1694,7 +1739,7 @@
         <div class="settings-pane" id="pane-voice">
           <div class="setting-group">
             <div class="setting-label">
-              <span>Auto-play TTS</span>
+              <span>Auto-play Text-to-Speech (TTS)</span>
               <label class="toggle-switch">
                 <input type="checkbox" id="tts-toggle" />
                 <span class="toggle-slider"></span>
@@ -1704,11 +1749,14 @@
           </div>
           <div class="setting-group">
             <div class="setting-label"><span>TTS Voice</span></div>
-            <div style="display:flex;gap:8px;align-items:center;">
-              <select id="voice-select" style="flex:1;"><option value="af_heart">af_heart (loading…)</option></select>
-              <button id="voice-preview-btn" class="accent-btn" style="flex-shrink:0;">Preview</button>
+            <select id="voice-select"><option value="af_heart">af_heart (loading…)</option></select>
+            <div id="voice-desc" style="font-size:0.78rem;color:var(--text-dim);margin-top:2px;font-style:italic;"></div>
+            <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
+              <input type="text" id="voice-preview-text" class="setting-input" placeholder="Type something to preview…" style="flex:1;" />
+              <button id="voice-preview-btn" class="accent-btn icon-btn" style="flex-shrink:0;width:30px;height:30px;padding:0;display:flex;align-items:center;justify-content:center;" title="Play preview">
+                <svg id="voice-preview-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><polygon points="4,2 13,8 4,14"/></svg>
+              </button>
             </div>
-            <div id="voice-desc" style="font-size:0.78rem;color:var(--text-dim);margin-top:4px;font-style:italic;"></div>
             <div class="setting-desc">Voice used for text-to-speech playback.</div>
           </div>
         </div>
@@ -1758,31 +1806,131 @@
 
         <!-- Interface (admin only) -->
         <div class="settings-pane" id="pane-interface">
+
+          <!-- App Name card -->
           <div class="setting-group">
             <div class="setting-label"><span>App Name</span></div>
-            <input type="text" id="app-name-input" class="setting-input" placeholder="Dave-in-a-Box" />
-            <div class="setting-desc">Displayed in the sidebar and browser tab.</div>
-          </div>
-          <div class="setting-group">
-            <div class="setting-label"><span>Logo</span></div>
-            <div class="logo-upload-row">
-              <button id="logo-upload-btn" class="accent-btn">Upload image…</button>
-              <button id="logo-reset-btn" class="hbtn" style="display:none;">Reset</button>
-              <img id="logo-preview" class="logo-preview" style="display:none;" />
+            <input type="text" id="app-name-input" class="setting-input" placeholder="WoozleBox" />
+            <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:2px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 12px;background:var(--surface2);">
+                <span style="font-size:0.82rem;color:var(--text-dim);">Show name in sidebar</span>
+                <label class="toggle-switch"><input type="checkbox" id="sidebar-name-toggle" checked /><span class="toggle-slider"></span></label>
+              </div>
+              <div style="height:1px;background:var(--border);"></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 12px;background:var(--surface2);">
+                <span style="font-size:0.82rem;color:var(--text-dim);">Show name on login screen</span>
+                <label class="toggle-switch"><input type="checkbox" id="login-name-toggle" checked /><span class="toggle-slider"></span></label>
+              </div>
             </div>
-            <input type="file" id="logo-file-input" accept="image/*" style="display:none;" />
-            <div class="setting-desc">Replace the sidebar logo. PNG, JPG, or SVG. Recommended size: 160 × 40 px.</div>
           </div>
+
+          <!-- Logos, Avatar & Favicon -->
           <div class="setting-group">
-            <div class="setting-label"><span>Favicon</span></div>
-            <div class="logo-upload-row">
-              <button id="favicon-upload-btn" class="accent-btn">Upload image…</button>
-              <button id="favicon-reset-btn" class="hbtn" style="display:none;">Reset</button>
-              <img id="favicon-preview" class="logo-preview" style="display:none;" />
+            <div class="setting-label"><span>Logos &amp; Icons</span></div>
+            <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:nowrap;">
+
+              <!-- Sidebar Logo -->
+              <div style="display:flex;flex-direction:column;align-items:center;gap:5px;">
+                <div id="logo-upload-wrap" class="logo-upload-target" style="width:160px;height:56px;" title="Upload sidebar logo">
+                  <div id="logo-letter-preview" style="font-size:1.5rem;font-weight:700;color:var(--accent);">D</div>
+                  <img id="logo-preview" style="display:none;max-width:100%;max-height:100%;object-fit:contain;" />
+                  <div id="logo-upload-overlay" class="logo-upload-overlay">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  </div>
+                  <button id="logo-reset-btn" class="logo-reset-badge" title="Remove">✕</button>
+                </div>
+                <span class="logo-upload-label">Sidebar<br><span style="font-size:0.6rem;opacity:0.6;">280×56 · 56×56</span></span>
+                <input type="file" id="logo-file-input" accept="image/*" style="display:none;" />
+              </div>
+
+              <!-- Login Logo -->
+              <div style="display:flex;flex-direction:column;align-items:center;gap:5px;">
+                <div id="login-logo-upload-wrap" class="logo-upload-target" style="width:160px;height:56px;" title="Upload login logo">
+                  <div id="login-logo-letter-preview" style="font-size:1.5rem;font-weight:700;color:var(--accent);">D</div>
+                  <img id="login-logo-preview" style="display:none;max-width:100%;max-height:100%;object-fit:contain;" />
+                  <div id="login-logo-upload-overlay" class="logo-upload-overlay">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  </div>
+                  <button id="login-logo-reset-btn" class="logo-reset-badge" title="Remove">✕</button>
+                </div>
+                <span class="logo-upload-label">Login<br><span style="font-size:0.6rem;opacity:0.6;">280×56 · 56×56</span></span>
+                <input type="file" id="login-logo-file-input" accept="image/*" style="display:none;" />
+              </div>
+
+              <!-- AI Avatar -->
+              <div style="display:flex;flex-direction:column;align-items:center;gap:5px;">
+                <div id="ai-avatar-upload-wrap" class="logo-upload-target" style="width:56px;height:56px;border-radius:50%;" title="Upload AI avatar">
+                  <div id="ai-avatar-letter" style="font-size:1.2rem;font-weight:700;color:var(--accent);">D</div>
+                  <img id="ai-avatar-preview" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%;" />
+                  <div id="ai-avatar-upload-overlay" class="logo-upload-overlay" style="border-radius:50%;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  </div>
+                  <button id="ai-avatar-reset-btn" class="logo-reset-badge" style="width:13px;height:13px;font-size:0.45rem;" title="Remove">✕</button>
+                </div>
+                <span class="logo-upload-label">Avatar<br><span style="font-size:0.6rem;opacity:0.6;">56×56</span></span>
+                <input type="file" id="ai-avatar-file-input" accept="image/*" style="display:none;" />
+              </div>
+
+              <!-- Favicon -->
+              <div style="display:flex;flex-direction:column;align-items:center;gap:5px;">
+                <div id="favicon-upload-wrap" class="logo-upload-target" style="width:56px;height:56px;" title="Upload favicon">
+                  <div id="favicon-letter" style="font-size:1.2rem;font-weight:700;color:var(--accent);">D</div>
+                  <img id="favicon-preview" style="display:none;width:100%;height:100%;object-fit:cover;" />
+                  <div id="favicon-upload-overlay" class="logo-upload-overlay">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  </div>
+                  <button id="favicon-reset-btn" class="logo-reset-badge" style="width:13px;height:13px;font-size:0.45rem;" title="Remove">✕</button>
+                </div>
+                <span class="logo-upload-label">Favicon<br><span style="font-size:0.6rem;opacity:0.6;">56×56</span></span>
+                <input type="file" id="favicon-file-input" accept="image/png,image/x-icon,image/svg+xml" style="display:none;" />
+              </div>
+
             </div>
-            <input type="file" id="favicon-file-input" accept="image/png,image/x-icon,image/svg+xml" style="display:none;" />
-            <div class="setting-desc">Browser tab icon. PNG or ICO recommended. 32 × 32 px.</div>
           </div>
+
+          <div class="setting-group">
+            <div class="setting-label"><span>Login Theme</span></div>
+            <div class="theme-presets" id="platform-theme-presets">
+              <div class="theme-preset" data-platform-theme="dark" title="Dark (default)">
+                <div class="theme-preset-swatch"><span style="background:#1a1a2e;"></span><span style="background:#7c6af7;"></span></div>
+                <div class="theme-preset-label">Dark</div>
+              </div>
+              <div class="theme-preset" data-platform-theme="midnight" title="Midnight">
+                <div class="theme-preset-swatch"><span style="background:#0d1117;"></span><span style="background:#58a6ff;"></span></div>
+                <div class="theme-preset-label">Midnight</div>
+              </div>
+              <div class="theme-preset" data-platform-theme="slate" title="Slate">
+                <div class="theme-preset-swatch"><span style="background:#1e2433;"></span><span style="background:#64748b;"></span></div>
+                <div class="theme-preset-label">Slate</div>
+              </div>
+              <div class="theme-preset" data-platform-theme="forest" title="Forest">
+                <div class="theme-preset-swatch"><span style="background:#0d1f12;"></span><span style="background:#22c55e;"></span></div>
+                <div class="theme-preset-label">Forest</div>
+              </div>
+              <div class="theme-preset" data-platform-theme="rose" title="Rose">
+                <div class="theme-preset-swatch"><span style="background:#1c0e14;"></span><span style="background:#f43f5e;"></span></div>
+                <div class="theme-preset-label">Rose</div>
+              </div>
+              <div class="theme-preset" data-platform-theme="light" title="Light">
+                <div class="theme-preset-swatch"><span style="background:#f0f0f5;border:1px solid #d4d4de;"></span><span style="background:#7c6af7;"></span></div>
+                <div class="theme-preset-label">Light</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="setting-group">
+            <div class="setting-label"><span>Login Accent Color</span></div>
+            <div class="color-swatches" id="platform-color-swatches">
+              <div class="color-swatch" data-platform-color="#7c6af7" style="background:#7c6af7;" title="Purple (default)"></div>
+              <div class="color-swatch" data-platform-color="#3b82f6" style="background:#3b82f6;" title="Blue"></div>
+              <div class="color-swatch" data-platform-color="#10b981" style="background:#10b981;" title="Green"></div>
+              <div class="color-swatch" data-platform-color="#f59e0b" style="background:#f59e0b;" title="Amber"></div>
+              <div class="color-swatch" data-platform-color="#ef4444" style="background:#ef4444;" title="Red"></div>
+              <div class="color-swatch" data-platform-color="#ec4899" style="background:#ec4899;" title="Pink"></div>
+              <input type="color" id="platform-accent-custom" title="Custom color" style="width:28px;height:28px;border-radius:50%;border:2px solid var(--border);cursor:pointer;padding:0;background:none;" />
+            </div>
+          </div>
+
         </div>
 
         <!-- Defaults (admin only) -->
@@ -1922,7 +2070,7 @@
   <div class="auth-card">
     <div class="auth-logo">
       <div class="logo" id="auth-logo-letter-setup"><span>D</span></div>
-      <img id="auth-logo-img-setup" style="display:none;width:36px;height:36px;border-radius:10px;object-fit:cover;" />
+      <img id="auth-logo-img-setup" class="auth-logo-img-wide" style="display:none;" />
       <span id="auth-app-name-setup">Dave-in-a-Box</span>
     </div>
     <h1>Create administrator account</h1>
@@ -1940,10 +2088,9 @@
   <div class="auth-card">
     <div class="auth-logo">
       <div class="logo" id="auth-logo-letter-login"><span>D</span></div>
-      <img id="auth-logo-img-login" style="display:none;width:36px;height:36px;border-radius:10px;object-fit:cover;" />
+      <img id="auth-logo-img-login" class="auth-logo-img-wide" style="display:none;" />
       <span id="auth-app-name-login">Dave-in-a-Box</span>
     </div>
-    <h1>Sign in</h1>
     <div class="auth-field"><label>Username</label><input id="login-username" type="text" autocomplete="username" /></div>
     <div class="auth-field"><label>Password</label><input id="login-password" type="password" autocomplete="current-password" /></div>
     <button class="auth-btn" id="login-submit-btn">Sign In</button>
@@ -2065,8 +2212,6 @@
 
 <div id="file-modal" style="display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;">
   <div id="file-modal-inner" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:860px;max-width:92vw;height:90vh;display:flex;flex-direction:column;overflow:hidden;position:relative;">
-    <div class="modal-resize-e"  id="modal-resize-e"></div>
-    <div class="modal-resize-s"  id="modal-resize-s"></div>
     <div class="modal-resize-se" id="modal-resize-se"></div>
     <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);">
       <span id="file-modal-title" style="font-size:0.9rem;font-weight:600;color:var(--text)"></span>
@@ -2134,6 +2279,8 @@ function applyUserSession(user) {
   logoutBtn.title = `Log out ${user.username}`;
   // Show admin section if admin
   if (user.role === "admin") {
+    document.getElementById("admin-nav-divider").style.display = "";
+    document.getElementById("admin-nav-label").style.display = "";
     document.getElementById("admin-nav-item").style.display = "";
     document.getElementById("interface-nav-item").style.display = "";
     document.getElementById("defaults-nav-item").style.display = "";
@@ -2145,6 +2292,10 @@ function applyUserSession(user) {
       const s = JSON.parse(user.settings);
       const skip = new Set(["diab_token"]);
       Object.entries(s).forEach(([k, v]) => { if (!skip.has(k)) localStorage.setItem(k, typeof v === "object" ? JSON.stringify(v) : v); });
+      // Re-apply brand so DOM reflects any server-side values (e.g. showLoginName toggle)
+      applyBrand();
+      applyLogo(localStorage.getItem(LOGO_KEY));
+      applyLoginLogo(localStorage.getItem(LOGIN_LOGO_KEY));
     } catch {}
   }
 }
@@ -2168,6 +2319,33 @@ function scheduleSettingsSync() {
 }
 
 async function initApp() {
+  // Apply branding immediately so login/setup screens look correct.
+  // First try server brand (works for any browser), fall back to localStorage.
+  // Apply localStorage brand first (instant), then patch with server values
+  applyLogo(localStorage.getItem(LOGO_KEY));
+  applyLoginLogo(localStorage.getItem(LOGIN_LOGO_KEY));
+  applyFavicon(localStorage.getItem(FAVICON_KEY));
+  applyBrand();
+  const _t = localStorage.getItem(THEME_KEY);
+  if (_t && THEMES[_t]) applyTheme(_t, true);
+  else { const _a = localStorage.getItem(ACCENT_KEY); if (_a) applyAccent(_a); }
+  // Fetch server brand in background — patches login screen if admin customised it
+  fetch(`${API}/auth/brand`).then(r => r.json()).then(br => {
+    if (br.login_logo) applyLoginLogo(br.login_logo);
+    if (br.logo)       applyLogo(br.logo);
+    if (br.theme && THEMES[br.theme]) applyTheme(br.theme, true);
+    if (br.accent) applyPlatformAccent(br.accent);
+    else if (br.accent) applyAccent(br.accent);
+    const showLoginName = br.show_login_name !== false;
+    ["auth-app-name-setup", "auth-app-name-login"].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (br.name) el.textContent = br.name;
+      el.style.display = showLoginName ? "" : "none";
+    });
+    if (br.name) document.title = br.name;
+  }).catch(() => {});
+
   let status;
   try {
     const res = await apiFetch(`/auth/status`);
@@ -2206,12 +2384,14 @@ async function loadApp() {
   loadSettings();
   loadProfile();
   applyLogo(localStorage.getItem(LOGO_KEY));
+  applyLoginLogo(localStorage.getItem(LOGIN_LOGO_KEY));
   applyFavicon(localStorage.getItem(FAVICON_KEY));
   const savedTheme = localStorage.getItem(THEME_KEY);
   if (savedTheme && THEMES[savedTheme]) applyTheme(savedTheme, true);
   else { const savedAccent = localStorage.getItem(ACCENT_KEY); if (savedAccent) applyAccent(savedAccent); }
   applyTextSize(localStorage.getItem(TEXT_SIZE_KEY) || "medium");
   loadModels();
+  loadVoices();
   await loadConversations();
 }
 
@@ -2272,7 +2452,7 @@ function loadSettings() {
     if (s.top_k       !== undefined) topkSlider.value    = s.top_k;
     if (s.history     !== undefined) historySlider.value  = s.history;
     if (s.compact     !== undefined) compactSlider.value  = s.compact;
-    if (s.voice       !== undefined) voiceSelect.value   = s.voice;
+    // voice restored in loadVoices() after options are populated
     if (s.default_prompt !== undefined) document.getElementById("default-prompt-input").value = s.default_prompt;
   } catch {}
   updateSettingLabels();
@@ -2307,18 +2487,28 @@ const PROFILE_KEY = "diab_profile";
 const AVATAR_KEY  = "diab_avatar";
 
 function applyAvatar(dataUrl) {
-  const initials = document.getElementById("profile-avatar-initials");
-  const img      = document.getElementById("profile-avatar-img");
+  const initials  = document.getElementById("profile-avatar-initials");
+  const img       = document.getElementById("profile-avatar-img");
+  const resetBtn  = document.getElementById("avatar-reset-btn");
   if (dataUrl) {
     initials.style.display = "none";
     img.src = dataUrl; img.style.display = "";
+    if (resetBtn) resetBtn.style.display = "flex";
   } else {
     img.style.display = "none";
     initials.style.display = "";
-    // Set initials from current name
+    if (resetBtn) resetBtn.style.display = "none";
     const name = document.getElementById("profile-name").value.trim();
     initials.textContent = name ? name.charAt(0).toUpperCase() : (currentUser?.username?.charAt(0).toUpperCase() || "?");
   }
+  // Update all existing user chat bubbles live
+  const p = JSON.parse(localStorage.getItem(PROFILE_KEY) || "{}");
+  const name = p.name || currentUser?.username || "";
+  const fallbackInitials = name.trim().split(/\s+/).map(w => w[0]).join("").toUpperCase().slice(0, 2) || "?";
+  const inner = dataUrl
+    ? `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`
+    : fallbackInitials;
+  document.querySelectorAll("#chat-window .user-avatar-bubble").forEach(el => { el.innerHTML = inner; });
 }
 
 function loadProfile() {
@@ -2390,88 +2580,213 @@ avatarInput.addEventListener("change", e => {
   reader.readAsDataURL(file);
 });
 
+document.getElementById("avatar-reset-btn").addEventListener("click", e => {
+  e.stopPropagation();
+  localStorage.removeItem(AVATAR_KEY);
+  avatarInput.value = "";
+  applyAvatar(null);
+  scheduleSettingsSync();
+});
+
 // ── Logo customization ──
 const LOGO_KEY = "diab_logo";
 function applyLogo(dataUrl) {
-  const letter = document.getElementById("logo-letter");
-  const img    = document.getElementById("logo-img");
-  const prev   = document.getElementById("logo-preview");
-  const reset  = document.getElementById("logo-reset-btn");
-  // Auth screens
-  const authLetters = ["auth-logo-letter-setup", "auth-logo-letter-login"].map(id => document.getElementById(id));
-  const authImgs    = ["auth-logo-img-setup",    "auth-logo-img-login"   ].map(id => document.getElementById(id));
+  const letter     = document.getElementById("logo-letter");
+  const img        = document.getElementById("logo-img");
+  const title      = document.getElementById("sidebar-title");
+  const prev       = document.getElementById("logo-preview");
+  const prevLetter = document.getElementById("logo-letter-preview");
+  const reset      = document.getElementById("logo-reset-btn");
   if (dataUrl) {
     letter.style.display = "none";
     img.src = dataUrl; img.style.display = "";
+    // Hide the text name when a logo image is present — wide logos act as the wordmark
+    if (title) title.style.display = "none";
     if (prev) { prev.src = dataUrl; prev.style.display = ""; }
-    if (reset) reset.style.display = "";
-    authLetters.forEach(el => { if (el) el.style.display = "none"; });
-    authImgs.forEach(el => { if (el) { el.src = dataUrl; el.style.display = ""; } });
+    if (prevLetter) prevLetter.style.display = "none";
+    if (reset) reset.style.display = "flex";
   } else {
     letter.style.display = "";
     img.style.display = "none";
+    // Restore title visibility based on brand preference
+    if (title) {
+      const showSidebarName = (JSON.parse(localStorage.getItem("diab_brand") || "{}").showSidebarName !== false);
+      title.style.display = showSidebarName ? "" : "none";
+    }
     if (prev) prev.style.display = "none";
+    if (prevLetter) prevLetter.style.display = "";
+    if (reset) reset.style.display = "none";
+  }
+}
+
+const LOGIN_LOGO_KEY = "diab_login_logo";
+function applyLoginLogo(dataUrl) {
+  const prev       = document.getElementById("login-logo-preview");
+  const prevLetter = document.getElementById("login-logo-letter-preview");
+  const reset      = document.getElementById("login-logo-reset-btn");
+  const authLetters = ["auth-logo-letter-setup", "auth-logo-letter-login"].map(id => document.getElementById(id));
+  const authImgs    = ["auth-logo-img-setup",    "auth-logo-img-login"   ].map(id => document.getElementById(id));
+  const authNames   = ["auth-app-name-setup",    "auth-app-name-login"   ].map(id => document.getElementById(id));
+  if (dataUrl) {
+    if (prev) { prev.src = dataUrl; prev.style.display = ""; }
+    if (prevLetter) prevLetter.style.display = "none";
+    if (reset) reset.style.display = "flex";
+    authLetters.forEach(el => { if (el) el.style.display = "none"; });
+    authImgs.forEach(el => { if (el) { el.src = dataUrl; el.style.display = ""; } });
+    // Hide app name on login screen when a logo image is present
+    authNames.forEach(el => { if (el) el.style.display = "none"; });
+  } else {
+    if (prev) prev.style.display = "none";
+    if (prevLetter) prevLetter.style.display = "";
     if (reset) reset.style.display = "none";
     authLetters.forEach(el => { if (el) el.style.display = ""; });
     authImgs.forEach(el => { if (el) { el.src = ""; el.style.display = "none"; } });
+    // Restore name visibility based on brand preference
+    const showLoginName = (JSON.parse(localStorage.getItem("diab_brand") || "{}").showLoginName !== false);
+    authNames.forEach(el => { if (el) el.style.display = showLoginName ? "" : "none"; });
   }
 }
-document.getElementById("logo-upload-btn").addEventListener("click", () => {
-  document.getElementById("logo-file-input").click();
-});
-document.getElementById("logo-file-input").addEventListener("change", e => {
-  const file = e.target.files[0];
-  if (!file) return;
+// Logo hover + click
+const logoWrap = document.getElementById("logo-upload-wrap");
+const logoOverlay = document.getElementById("logo-upload-overlay");
+const logoInput = document.getElementById("logo-file-input");
+logoWrap.addEventListener("mouseenter", () => logoOverlay.style.display = "flex");
+logoWrap.addEventListener("mouseleave", () => logoOverlay.style.display = "none");
+logoWrap.addEventListener("click", () => logoInput.click());
+logoInput.addEventListener("change", e => {
+  const file = e.target.files[0]; if (!file) return;
   const reader = new FileReader();
-  reader.onload = ev => {
-    localStorage.setItem(LOGO_KEY, ev.target.result);
-    applyLogo(ev.target.result);
-    scheduleSettingsSync();
-  };
+  reader.onload = ev => { localStorage.setItem(LOGO_KEY, ev.target.result); applyLogo(ev.target.result); scheduleSettingsSync(); };
   reader.readAsDataURL(file);
 });
-document.getElementById("logo-reset-btn").addEventListener("click", () => {
+document.getElementById("logo-reset-btn").addEventListener("click", e => {
+  e.stopPropagation();
   localStorage.removeItem(LOGO_KEY);
   applyLogo(null);
-  document.getElementById("logo-file-input").value = "";
+  logoInput.value = "";
+  scheduleSettingsSync();
+});
+
+// Login logo hover + click
+const loginLogoWrap    = document.getElementById("login-logo-upload-wrap");
+const loginLogoOverlay = document.getElementById("login-logo-upload-overlay");
+const loginLogoInput   = document.getElementById("login-logo-file-input");
+loginLogoWrap.addEventListener("mouseenter", () => loginLogoOverlay.style.display = "flex");
+loginLogoWrap.addEventListener("mouseleave", () => loginLogoOverlay.style.display = "none");
+loginLogoWrap.addEventListener("click", () => loginLogoInput.click());
+loginLogoInput.addEventListener("change", e => {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => { localStorage.setItem(LOGIN_LOGO_KEY, ev.target.result); applyLoginLogo(ev.target.result); scheduleSettingsSync(); };
+  reader.readAsDataURL(file);
+});
+document.getElementById("login-logo-reset-btn").addEventListener("click", e => {
+  e.stopPropagation();
+  localStorage.removeItem(LOGIN_LOGO_KEY);
+  applyLoginLogo(null);
+  loginLogoInput.value = "";
   scheduleSettingsSync();
 });
 
 // ── Favicon customization ──
 const FAVICON_KEY = "diab_favicon";
+function makeFaviconFromLetter(ch) {
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 64;
+  const ctx = canvas.getContext("2d");
+  const accent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#7c6af7";
+  ctx.fillStyle = accent;
+  ctx.beginPath(); ctx.roundRect(0, 0, 64, 64, 14); ctx.fill();
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 36px -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText(ch, 32, 34);
+  return canvas.toDataURL("image/png");
+}
 function applyFavicon(dataUrl) {
   let link = document.querySelector("link[rel~='icon']");
   if (!link) { link = document.createElement("link"); link.rel = "icon"; document.head.appendChild(link); }
   const prev   = document.getElementById("favicon-preview");
+  const letter = document.getElementById("favicon-letter");
   const reset  = document.getElementById("favicon-reset-btn");
   if (dataUrl) {
     link.href = dataUrl;
-    prev.src = dataUrl; prev.style.display = "";
-    reset.style.display = "";
+    if (prev)   { prev.src = dataUrl; prev.style.display = ""; }
+    if (letter) letter.style.display = "none";
+    if (reset)  reset.style.display = "flex";
   } else {
-    link.href = "/favicon.ico";
-    prev.style.display = "none";
-    reset.style.display = "none";
+    const ch = (JSON.parse(localStorage.getItem(BRAND_KEY) || "{}").name || "D").trim().charAt(0).toUpperCase();
+    link.href = makeFaviconFromLetter(ch);
+    if (prev)   prev.style.display = "none";
+    if (letter) letter.style.display = "";
+    if (reset)  reset.style.display = "none";
   }
 }
-document.getElementById("favicon-upload-btn").addEventListener("click", () => {
-  document.getElementById("favicon-file-input").click();
-});
-document.getElementById("favicon-file-input").addEventListener("change", e => {
-  const file = e.target.files[0];
-  if (!file) return;
+// Favicon hover + click
+const faviconWrap = document.getElementById("favicon-upload-wrap");
+const faviconOverlay = document.getElementById("favicon-upload-overlay");
+const faviconInput = document.getElementById("favicon-file-input");
+faviconWrap.addEventListener("mouseenter", () => faviconOverlay.style.display = "flex");
+faviconWrap.addEventListener("mouseleave", () => faviconOverlay.style.display = "none");
+faviconWrap.addEventListener("click", () => faviconInput.click());
+faviconInput.addEventListener("change", e => {
+  const file = e.target.files[0]; if (!file) return;
   const reader = new FileReader();
-  reader.onload = ev => {
-    localStorage.setItem(FAVICON_KEY, ev.target.result);
-    applyFavicon(ev.target.result);
-    scheduleSettingsSync();
-  };
+  reader.onload = ev => { localStorage.setItem(FAVICON_KEY, ev.target.result); applyFavicon(ev.target.result); scheduleSettingsSync(); };
   reader.readAsDataURL(file);
 });
-document.getElementById("favicon-reset-btn").addEventListener("click", () => {
+document.getElementById("favicon-reset-btn").addEventListener("click", e => {
+  e.stopPropagation();
   localStorage.removeItem(FAVICON_KEY);
   applyFavicon(null);
-  document.getElementById("favicon-file-input").value = "";
+  faviconInput.value = "";
+  scheduleSettingsSync();
+});
+// ── AI Avatar ──
+const AI_AVATAR_KEY = "diab_ai_avatar";
+function applyAIAvatar(dataUrl) {
+  // Update settings widget
+  const letter  = document.getElementById("ai-avatar-letter");
+  const preview = document.getElementById("ai-avatar-preview");
+  const reset   = document.getElementById("ai-avatar-reset-btn");
+  if (dataUrl) {
+    if (letter)  letter.style.display = "none";
+    if (preview) { preview.src = dataUrl; preview.style.display = ""; }
+    if (reset)   reset.style.display = "flex";
+  } else {
+    if (letter)  letter.style.display = "";
+    if (preview) { preview.src = ""; preview.style.display = "none"; }
+    if (reset)   reset.style.display = "none";
+  }
+  // Update all existing chat bubbles live
+  const fallbackLetter = (JSON.parse(localStorage.getItem("diab_brand") || "{}").name || "D").trim().charAt(0).toUpperCase();
+  const inner = dataUrl
+    ? `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`
+    : fallbackLetter;
+  document.querySelectorAll("#chat-window .ai-avatar-bubble").forEach(el => { el.innerHTML = inner; });
+}
+applyAIAvatar(localStorage.getItem(AI_AVATAR_KEY));
+const aiAvatarWrap    = document.getElementById("ai-avatar-upload-wrap");
+const aiAvatarOverlay = document.getElementById("ai-avatar-upload-overlay");
+const aiAvatarInput   = document.getElementById("ai-avatar-file-input");
+if (aiAvatarWrap) {
+  aiAvatarWrap.addEventListener("mouseenter", () => aiAvatarOverlay.style.display = "flex");
+  aiAvatarWrap.addEventListener("mouseleave", () => aiAvatarOverlay.style.display = "none");
+  aiAvatarWrap.addEventListener("click", () => aiAvatarInput.click());
+}
+if (aiAvatarInput) {
+  aiAvatarInput.addEventListener("change", e => {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => { localStorage.setItem(AI_AVATAR_KEY, ev.target.result); applyAIAvatar(ev.target.result); scheduleSettingsSync(); };
+    reader.readAsDataURL(file);
+  });
+}
+document.getElementById("ai-avatar-reset-btn")?.addEventListener("click", e => {
+  e.stopPropagation();
+  localStorage.removeItem(AI_AVATAR_KEY);
+  applyAIAvatar(null);
+  if (aiAvatarInput) aiAvatarInput.value = "";
   scheduleSettingsSync();
 });
 
@@ -2588,9 +2903,9 @@ function updateTopicCrumb() {
   document.getElementById("topic-crumb-name").textContent = p ? p.name : "";
 }
 
-document.getElementById("topic-crumb").addEventListener("click", e => {
+document.getElementById("topic-crumb-trigger").addEventListener("click", e => {
   e.stopPropagation();
-  const crumb = document.getElementById("topic-crumb");
+  const crumb = document.getElementById("topic-crumb-name");
   const menu = document.getElementById("topic-crumb-menu");
   const isOpen = menu.classList.contains("open");
   menu.innerHTML = "";
@@ -2598,7 +2913,10 @@ document.getElementById("topic-crumb").addEventListener("click", e => {
     const item = document.createElement("div");
     item.className = "crumb-menu-item" + (p.id === activeTopicId ? " active" : "");
     const isActive = p.id === activeTopicId;
-    item.innerHTML = `<svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;"><path d="M1.5 3.5C1.5 2.948 1.948 2.5 2.5 2.5H6.086a1 1 0 0 1 .707.293L7.914 3.914A1 1 0 0 0 8.621 4.2H13.5c.552 0 1 .448 1 1v7.3c0 .552-.448 1-1 1h-11c-.552 0-1-.448-1-1V3.5z" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"/></svg><span style="flex:1;">${esc(p.name)}</span>${isActive ? `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polyline points="20 6 9 17 4 12"/></svg>` : ``}`;
+    const folderSvg = isActive
+      ? `<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" style="flex-shrink:0;"><path d="M1.5 3.5C1.5 2.948 1.948 2.5 2.5 2.5H6.086a1 1 0 0 1 .707.293L7.914 3.914A1 1 0 0 0 8.621 4.2H13.5c.552 0 1 .448 1 1v7.3c0 .552-.448 1-1 1h-11c-.552 0-1-.448-1-1V3.5z"/></svg>`
+      : `<svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;"><path d="M1.5 3.5C1.5 2.948 1.948 2.5 2.5 2.5H6.086a1 1 0 0 1 .707.293L7.914 3.914A1 1 0 0 0 8.621 4.2H13.5c.552 0 1 .448 1 1v7.3c0 .552-.448 1-1 1h-11c-.552 0-1-.448-1-1V3.5z" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"/></svg>`;
+    item.innerHTML = `${folderSvg}<span style="flex:1;">${esc(p.name)}</span>`;
     item.addEventListener("click", e => {
       e.stopPropagation();
       activeTopicId = p.id;
@@ -2611,7 +2929,7 @@ document.getElementById("topic-crumb").addEventListener("click", e => {
     menu.appendChild(item);
   });
   if (!isOpen) {
-    const rect = crumb.getBoundingClientRect();
+    const rect = document.getElementById("topic-crumb-trigger").getBoundingClientRect();
     menu.style.left = rect.left + "px";
     menu.style.top = (rect.top - 8) + "px";
     menu.style.transform = "translateY(-100%)";
@@ -2959,13 +3277,86 @@ function updateVoiceDesc() {
   const desc = document.getElementById("voice-desc");
   if (desc) desc.textContent = VOICE_DESCRIPTIONS[voiceSelect.value] || "";
 }
+const VOICE_NAMES = {
+  // American English — Female
+  af_heart:       "American Female – Heart",
+  af_bella:       "American Female – Bella",
+  af_nicole:      "American Female – Nicole",
+  af_aoede:       "American Female – Aoede",
+  af_kore:        "American Female – Kore",
+  af_sarah:       "American Female – Sarah",
+  af_alloy:       "American Female – Alloy",
+  af_nova:        "American Female – Nova",
+  af_sky:         "American Female – Sky",
+  af_jessica:     "American Female – Jessica",
+  af_river:       "American Female – River",
+  // American English — Male
+  am_fenrir:      "American Male – Fenrir",
+  am_michael:     "American Male – Michael",
+  am_puck:        "American Male – Puck",
+  am_echo:        "American Male – Echo",
+  am_eric:        "American Male – Eric",
+  am_liam:        "American Male – Liam",
+  am_onyx:        "American Male – Onyx",
+  am_santa:       "American Male – Santa",
+  am_adam:        "American Male – Adam",
+  // British English — Female
+  bf_emma:        "British Female – Emma",
+  bf_isabella:    "British Female – Isabella",
+  bf_alice:       "British Female – Alice",
+  bf_lily:        "British Female – Lily",
+  // British English — Male
+  bm_fable:       "British Male – Fable",
+  bm_george:      "British Male – George",
+  bm_lewis:       "British Male – Lewis",
+  bm_daniel:      "British Male – Daniel",
+  // Japanese — Female
+  jf_alpha:       "Japanese Female – Alpha",
+  jf_gongitsune:  "Japanese Female – Gongitsune",
+  jf_tebukuro:    "Japanese Female – Tebukuro",
+  jf_nezumi:      "Japanese Female – Nezumi",
+  // Japanese — Male
+  jm_kumo:        "Japanese Male – Kumo",
+  // Mandarin Chinese — Female
+  zf_xiaobei:     "Chinese Female – Xiaobei",
+  zf_xiaoni:      "Chinese Female – Xiaoni",
+  zf_xiaoxiao:    "Chinese Female – Xiaoxiao",
+  zf_xiaoyi:      "Chinese Female – Xiaoyi",
+  // Mandarin Chinese — Male
+  zm_yunjian:     "Chinese Male – Yunjian",
+  zm_yunxi:       "Chinese Male – Yunxi",
+  zm_yunxia:      "Chinese Male – Yunxia",
+  zm_yunyang:     "Chinese Male – Yunyang",
+  // Spanish — Female
+  ef_dora:        "Spanish Female – Dora",
+  // Spanish — Male
+  em_alex:        "Spanish Male – Alex",
+  em_santa:       "Spanish Male – Santa",
+  // French — Female
+  ff_siwis:       "French Female – Siwis",
+  // Hindi — Female
+  hf_alpha:       "Hindi Female – Alpha",
+  hf_beta:        "Hindi Female – Beta",
+  // Hindi — Male
+  hm_omega:       "Hindi Male – Omega",
+  hm_psi:         "Hindi Male – Psi",
+  // Italian — Female
+  if_sara:        "Italian Female – Sara",
+  // Italian — Male
+  im_nicola:      "Italian Male – Nicola",
+  // Brazilian Portuguese — Female
+  pf_dora:        "Portuguese Female – Dora",
+  // Brazilian Portuguese — Male
+  pm_alex:        "Portuguese Male – Alex",
+  pm_santa:       "Portuguese Male – Santa",
+};
 async function loadVoices() {
   try {
     const res = await apiFetch(`/tts/voices`);
     const data = await res.json();
     const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}").voice || data.default;
     voiceSelect.innerHTML = data.voices.map(v =>
-      `<option value="${v}"${v === saved ? " selected" : ""}>${v}</option>`
+      `<option value="${v}"${v === saved ? " selected" : ""}>${VOICE_NAMES[v] || v}</option>`
     ).join("");
     voicesLoaded = true;
     updateVoiceDesc();
@@ -2976,20 +3367,41 @@ async function loadVoices() {
 voiceSelect.addEventListener("change", updateVoiceDesc);
 
 // Voice preview
-document.getElementById("voice-preview-btn")?.addEventListener("click", async () => {
+const PLAY_ICON = `<polygon points="4,2 13,8 4,14"/>`;
+const STOP_ICON = `<rect x="3" y="3" width="10" height="10" rx="1"/>`;
+let _previewAudio = null;
+
+function setPreviewBtn(state) {
+  const icon = document.getElementById("voice-preview-icon");
   const btn = document.getElementById("voice-preview-btn");
-  btn.disabled = true; btn.textContent = "Playing…";
+  if (!icon || !btn) return;
+  if (state === "play")  { icon.innerHTML = PLAY_ICON; btn.title = "Play preview";  btn.disabled = false; }
+  if (state === "stop")  { icon.innerHTML = STOP_ICON; btn.title = "Stop preview";  btn.disabled = false; }
+  if (state === "loading") { btn.disabled = true; }
+}
+
+document.getElementById("voice-preview-btn")?.addEventListener("click", async () => {
+  if (_previewAudio) {
+    _previewAudio.pause();
+    _previewAudio = null;
+    setPreviewBtn("play");
+    return;
+  }
+  setPreviewBtn("loading");
   try {
-    const params = new URLSearchParams({ text: "Hello, this is a preview of the selected voice.", voice: voiceSelect.value });
+    const previewText = document.getElementById("voice-preview-text")?.value.trim() || "Hello, this is a preview of the selected voice.";
+    const params = new URLSearchParams({ text: previewText, voice: voiceSelect.value });
     const res = await apiFetch(`/tts?${params}`);
     if (!res.ok) throw new Error();
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const audio = new Audio(url);
-    audio.onended = () => { URL.revokeObjectURL(url); btn.disabled = false; btn.textContent = "Preview"; };
-    audio.onerror = () => { btn.disabled = false; btn.textContent = "Preview"; };
+    _previewAudio = audio;
+    setPreviewBtn("stop");
+    audio.onended = () => { URL.revokeObjectURL(url); _previewAudio = null; setPreviewBtn("play"); };
+    audio.onerror = () => { _previewAudio = null; setPreviewBtn("play"); };
     audio.play();
-  } catch { btn.disabled = false; btn.textContent = "Preview"; }
+  } catch { _previewAudio = null; setPreviewBtn("play"); }
 });
 
 // ── Debug toggle ──
@@ -3106,19 +3518,19 @@ applyTextSize(localStorage.getItem(TEXT_SIZE_KEY) || "medium");
 // ── Themes ──
 const THEME_KEY = "diab_theme";
 const THEMES = {
-  dark:     { "--bg": "#12121e", "--surface": "#1a1a2e", "--surface2": "#1f1f33", "--surface3": "#26263a", "--border": "#2e2e45", "--text": "#e8e8f0", "--text-dim": "#888898", "--accent": "#7c6af7" },
-  midnight: { "--bg": "#0d1117", "--surface": "#161b22", "--surface2": "#1c2230", "--surface3": "#21283a", "--border": "#30363d", "--text": "#e6edf3", "--text-dim": "#7d8590", "--accent": "#58a6ff" },
-  slate:    { "--bg": "#0f1117", "--surface": "#1e2433", "--surface2": "#252c3d", "--surface3": "#2c3347", "--border": "#363d50", "--text": "#e2e5ed", "--text-dim": "#7a8394", "--accent": "#94a3b8" },
-  forest:   { "--bg": "#0a150c", "--surface": "#0d1f12", "--surface2": "#122418", "--surface3": "#182e1e", "--border": "#1e3824", "--text": "#e8f5ea", "--text-dim": "#92b89a", "--accent": "#22c55e" },
-  rose:     { "--bg": "#130810", "--surface": "#1c0e14", "--surface2": "#23111b", "--surface3": "#2b1523", "--border": "#381a28", "--text": "#faedf2", "--text-dim": "#c08898", "--accent": "#f43f5e" },
-  light:    { "--bg": "#f0f0f5", "--surface": "#ffffff", "--surface2": "#f4f4f8", "--surface3": "#e8e8ef", "--border": "#d4d4de", "--text": "#1a1a2e", "--text-dim": "#555568", "--accent": "#7c6af7" },
+  dark:     { "--bg": "#12121e", "--surface": "#1a1a2e", "--surface2": "#1f1f33", "--surface3": "#26263a", "--border": "#2e2e45", "--text": "#e8e8f0", "--text-dim": "#888898", "--accent": "#7c6af7", "--user-bubble": "#1e1a40", "--ai-bubble": "#1a1a24" },
+  midnight: { "--bg": "#0d1117", "--surface": "#161b22", "--surface2": "#1c2230", "--surface3": "#21283a", "--border": "#30363d", "--text": "#e6edf3", "--text-dim": "#7d8590", "--accent": "#58a6ff", "--user-bubble": "#161d2e", "--ai-bubble": "#13181f" },
+  slate:    { "--bg": "#0f1117", "--surface": "#1e2433", "--surface2": "#252c3d", "--surface3": "#2c3347", "--border": "#363d50", "--text": "#e2e5ed", "--text-dim": "#7a8394", "--accent": "#94a3b8", "--user-bubble": "#202840", "--ai-bubble": "#1a2030" },
+  forest:   { "--bg": "#0a150c", "--surface": "#0d1f12", "--surface2": "#122418", "--surface3": "#182e1e", "--border": "#1e3824", "--text": "#e8f5ea", "--text-dim": "#92b89a", "--accent": "#22c55e", "--user-bubble": "#0f2916", "--ai-bubble": "#0c1e10" },
+  rose:     { "--bg": "#130810", "--surface": "#1c0e14", "--surface2": "#23111b", "--surface3": "#2b1523", "--border": "#381a28", "--text": "#faedf2", "--text-dim": "#c08898", "--accent": "#f43f5e", "--user-bubble": "#2a0e1c", "--ai-bubble": "#1c0c14" },
+  light:    { "--bg": "#f0f0f5", "--surface": "#ffffff", "--surface2": "#f4f4f8", "--surface3": "#e8e8ef", "--border": "#d4d4de", "--text": "#1a1a2e", "--text-dim": "#555568", "--accent": "#7c6af7", "--user-bubble": "#ebe8ff", "--ai-bubble": "#f4f4f8" },
 };
 function applyTheme(name, skipAccent = false) {
   const t = THEMES[name];
   if (!t) return;
   Object.entries(t).forEach(([k, v]) => {
     if (k === "--accent") return; // always handled by applyAccent
-    document.documentElement.style.setProperty(k, v);
+    document.documentElement.style.setProperty(k, v);  // includes --user-bubble, --ai-bubble
   });
   if (!skipAccent) {
     applyAccent(t["--accent"]);
@@ -3141,27 +3553,126 @@ if (savedTheme && THEMES[savedTheme]) applyTheme(savedTheme, true);
 
 // ── App name / branding ──
 const BRAND_KEY = "diab_brand";
+function saveBrand(patch) {
+  const saved = JSON.parse(localStorage.getItem(BRAND_KEY) || "{}");
+  localStorage.setItem(BRAND_KEY, JSON.stringify({ ...saved, ...patch }));
+  scheduleSettingsSync();
+}
 function applyBrand() {
   const saved = JSON.parse(localStorage.getItem(BRAND_KEY) || "{}");
   const name = saved.name || "";
-  if (name) {
-    document.getElementById("sidebar-title").textContent = name;
-    document.title = name;
-    ["auth-app-name-setup", "auth-app-name-login"].forEach(id => {
-      const el = document.getElementById(id); if (el) el.textContent = name;
-    });
+  const showSidebarName = saved.showSidebarName !== false;
+  const showLoginName   = saved.showLoginName   !== false;
+
+  // Browser tab always uses name
+  if (name) document.title = name;
+
+  // Update logo letter to match first character of app name
+  applyLogoLetter(name);
+
+  // Sidebar title visibility
+  const sidebarTitle = document.getElementById("sidebar-title");
+  if (sidebarTitle) {
+    if (name) sidebarTitle.textContent = name;
+    sidebarTitle.style.display = showSidebarName ? "" : "none";
   }
+
+  // Login/setup name visibility
+  ["auth-app-name-setup", "auth-app-name-login"].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (name) el.textContent = name;
+    el.style.display = showLoginName ? "" : "none";
+  });
+
+  // Restore inputs
   const inp = document.getElementById("app-name-input");
   if (inp) inp.value = name;
+  const snt = document.getElementById("sidebar-name-toggle");
+  if (snt) snt.checked = showSidebarName;
+  const lnt = document.getElementById("login-name-toggle");
+  if (lnt) lnt.checked = showLoginName;
+
+  // Restore platform theme picker active state
+  document.querySelectorAll("#platform-theme-presets [data-platform-theme]").forEach(el => {
+    el.classList.toggle("active", el.dataset.platformTheme === (saved.theme || "dark"));
+  });
+  // Restore platform accent picker active state
+  document.querySelectorAll("#platform-color-swatches [data-platform-color]").forEach(el => {
+    el.classList.toggle("active", el.dataset.platformColor === saved.accent);
+  });
+  const customPicker = document.getElementById("platform-accent-custom");
+  if (customPicker && saved.accent) customPicker.value = saved.accent;
+  // Apply platform accent to login/setup screens
+  if (saved.accent) applyPlatformAccent(saved.accent);
+}
+function applyLogoLetter(name) {
+  const letter = (name || "D").trim().charAt(0).toUpperCase();
+  const els = [
+    document.getElementById("logo-letter"),
+    document.getElementById("logo-letter-preview"),
+    document.getElementById("login-logo-letter-preview"),
+    document.getElementById("ai-avatar-letter"),
+    document.getElementById("favicon-letter"),
+  ];
+  els.forEach(el => { if (el) el.textContent = letter; });
+  ["auth-logo-letter-setup", "auth-logo-letter-login"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { const sp = el.querySelector("span"); if (sp) sp.textContent = letter; else el.textContent = letter; }
+  });
+  // Regenerate letter favicon if no custom one is set
+  if (!localStorage.getItem(FAVICON_KEY)) applyFavicon(null);
 }
 document.getElementById("app-name-input")?.addEventListener("input", e => {
-  const name = e.target.value.trim() || "Dave-in-a-Box";
-  localStorage.setItem(BRAND_KEY, JSON.stringify({ name }));
-  document.getElementById("sidebar-title").textContent = name;
+  const name = e.target.value.trim() || "WoozleBox";
+  saveBrand({ name });
+  const sidebarTitle = document.getElementById("sidebar-title");
+  if (sidebarTitle) sidebarTitle.textContent = name;
   document.title = name;
   ["auth-app-name-setup", "auth-app-name-login"].forEach(id => {
     const el = document.getElementById(id); if (el) el.textContent = name;
   });
+  applyLogoLetter(name);
+});
+document.getElementById("sidebar-name-toggle")?.addEventListener("change", e => {
+  saveBrand({ showSidebarName: e.target.checked });
+  const sidebarTitle = document.getElementById("sidebar-title");
+  if (sidebarTitle) sidebarTitle.style.display = e.target.checked ? "" : "none";
+});
+document.getElementById("login-name-toggle")?.addEventListener("change", e => {
+  saveBrand({ showLoginName: e.target.checked });
+  ["auth-app-name-setup", "auth-app-name-login"].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = e.target.checked ? "" : "none";
+  });
+});
+function applyPlatformAccent(color) {
+  if (!color) return;
+  ["login-screen", "setup-screen"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.setProperty("--auth-accent", color);
+  });
+}
+// Platform theme picker
+document.querySelectorAll("#platform-theme-presets [data-platform-theme]").forEach(el => {
+  el.addEventListener("click", () => {
+    document.querySelectorAll("#platform-theme-presets [data-platform-theme]").forEach(e => e.classList.remove("active"));
+    el.classList.add("active");
+    saveBrand({ theme: el.dataset.platformTheme });
+  });
+});
+// Platform accent picker
+document.querySelectorAll("#platform-color-swatches [data-platform-color]").forEach(el => {
+  el.addEventListener("click", () => {
+    document.querySelectorAll("#platform-color-swatches [data-platform-color]").forEach(e => e.classList.remove("active"));
+    el.classList.add("active");
+    saveBrand({ accent: el.dataset.platformColor });
+    applyPlatformAccent(el.dataset.platformColor);
+  });
+});
+document.getElementById("platform-accent-custom")?.addEventListener("input", e => {
+  document.querySelectorAll("#platform-color-swatches [data-platform-color]").forEach(el => el.classList.remove("active"));
+  saveBrand({ accent: e.target.value });
+  applyPlatformAccent(e.target.value);
 });
 applyBrand();
 
@@ -3498,7 +4009,7 @@ document.getElementById("setup-submit-btn").addEventListener("click", async () =
 });
 
 document.getElementById("logout-btn").addEventListener("click", async () => {
-  const ok = await showConfirm({ title: "Log out", message: "Are you sure you want to log out?", okLabel: "Log out", okClass: "primary" });
+  const ok = await showConfirm({ title: "Log out", message: "Are you sure you want to log out?", okLabel: "Log out", okClass: "danger" });
   if (!ok) return;
   try { await apiFetch("/auth/logout", { method: "POST" }); } catch {}
   clearSession();
@@ -3515,15 +4026,20 @@ async function loadAdminUsers() {
     list.innerHTML = "";
     users.forEach(u => {
       let profileName = "";
+      let userAvatarUrl = "";
       try {
         const s = JSON.parse(u.settings || "{}");
         const p = JSON.parse(s.diab_profile || "{}");
         profileName = p.name || "";
+        userAvatarUrl = s.diab_avatar || "";
       } catch {}
       const initials = profileName ? profileName.trim().split(/\s+/).map(w => w[0]).join("").toUpperCase().slice(0, 2) : u.username[0].toUpperCase();
+      const adminAvatarInner = userAvatarUrl
+        ? `<img src="${userAvatarUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`
+        : esc(initials);
       const row = document.createElement("tr");
       row.innerHTML = `
-        <td><div class="admin-avatar">${esc(initials)}</div></td>
+        <td><div class="admin-avatar">${adminAvatarInner}</div></td>
         <td class="admin-user-name">${esc(u.username)}</td>
         <td style="color:var(--text-dim);font-size:0.8rem;">${esc(profileName)}</td>
         <td><span class="role-badge ${u.role}">${u.role}</span></td>
@@ -3977,9 +4493,7 @@ makePanelResizable("vault-panel", "vault-resize-handle", "diab_vault_w", 320);
     document.addEventListener("mousemove", onMove);
     document.addEventListener("mouseup", onUp);
   }
-  document.getElementById("modal-resize-e") .addEventListener("mousedown", e => startResize(e, true,  false));
-  document.getElementById("modal-resize-s") .addEventListener("mousedown", e => startResize(e, false, true));
-  document.getElementById("modal-resize-se").addEventListener("mousedown", e => startResize(e, true,  true));
+  document.getElementById("modal-resize-se").addEventListener("mousedown", e => startResize(e, true, true));
 })();
 
 async function loadVaultFiles() {
@@ -4049,8 +4563,15 @@ function makeFileItem(f) {
   const el = document.createElement("div");
   el.className = "vault-file-item";
   const chunkLabel = f.chunk_count ? `${f.chunk_count} chunks` : "not indexed";
+  const ext = f.name.slice(f.name.lastIndexOf(".") + 1).toLowerCase();
+  const fileIconColor = ext === "pdf" ? "#ef4444" : ext === "md" ? "#7c6af7" : "#60a5fa";
+  const fileIconSvg = ext === "pdf"
+    ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${fileIconColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>`
+    : ext === "md"
+    ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${fileIconColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M10 13l-1 4"/><path d="M14 13l1 4"/><path d="M8.5 15.5l3.5-2 3.5 2"/></svg>`
+    : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${fileIconColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>`;
   el.innerHTML = `
-    <span style="flex-shrink:0">📄</span>
+    ${fileIconSvg}
     <span class="vault-file-name" title="${esc(f.path)}">${esc(f.name)}</span>
     <span class="vault-chunk-count">${chunkLabel}</span>
     <button class="vault-rename-btn" title="Rename"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
@@ -4244,17 +4765,28 @@ function appendUserBubble(text) {
   document.getElementById("welcome-msg")?.remove();
   const row = document.createElement("div");
   row.className = "message-row user";
+  // Build avatar from profile name or username
+  let avatarInitials = "?";
+  let avatarDataUrl = localStorage.getItem(AVATAR_KEY) || "";
+  try {
+    const p = JSON.parse(localStorage.getItem("diab_profile") || "{}");
+    const name = p.name || currentUser?.username || "";
+    avatarInitials = name.trim().split(/\s+/).map(w => w[0]).join("").toUpperCase().slice(0, 2) || "?";
+  } catch {}
+  const avatarInner = avatarDataUrl
+    ? `<img src="${avatarDataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`
+    : avatarInitials;
   row.innerHTML = `
     <div class="bubble-wrap">
+      <div class="user-avatar-bubble">${avatarInner}</div>
       <div class="bubble">${esc(text)}</div>
-      <div class="bubble-footer">
-        <div class="bubble-footer-left"></div>
+      <div class="msg-meta">
+        <span class="timestamp">${ts()}</span>
         <span class="bubble-actions">
           <button class="tts-btn bubble-action-btn" title="Read aloud"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></button>
           <button class="copy-btn bubble-action-btn" title="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
         </span>
       </div>
-      <div class="msg-meta"><span class="timestamp">${ts()}</span></div>
     </div>
   `;
 
@@ -4414,21 +4946,38 @@ function appendAIBubble(text, sources, webSources, modelUsed, debugData, stepRow
   const row = document.createElement("div");
   row.className = "message-row ai";
 
+  // AI avatar html
+  const aiAvatarDataUrl = localStorage.getItem(AI_AVATAR_KEY) || "";
+  const aiAvatarLetter = (JSON.parse(localStorage.getItem(BRAND_KEY) || "{}").name || "D").trim().charAt(0).toUpperCase();
+  const aiAvatarInner = aiAvatarDataUrl
+    ? `<img src="${aiAvatarDataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`
+    : aiAvatarLetter;
+
   // Sources HTML
-  let sourcesHtml = "";
-  if (!sources.length && !webSources.length) {
-    sourcesHtml = "";
-  } else {
-    sourcesHtml = `<div class="sources-wrap">`;
+  let sourcesToggle = "";
+  let sourcesPanelHtml = "";
+  const totalSources = sources.length + webSources.length;
+  if (totalSources > 0) {
+    const parts = [];
+    if (sources.length) parts.push(`${sources.length} vault source${sources.length>1?"s":""}`);
+    if (webSources.length) parts.push(`${webSources.length} web result${webSources.length>1?"s":""}`);
+    const label = parts.join(", ");
+    sourcesToggle = `<button class="sources-toggle" title="Show sources"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>${label}</button>`;
+    let panelItems = "";
     if (sources.length) {
-      const items = sources.map(s => `<li><button class="source-link" data-path="${esc(s)}">${esc(s)}</button></li>`).join("");
-      sourcesHtml += `<details class="sources"><summary>${sources.length} vault source${sources.length>1?"s":""}</summary><ul>${items}</ul></details>`;
+      panelItems += `<div class="sources-panel-label">Vault</div>`;
+      sources.forEach(s => {
+        const name = s.split("/").pop();
+        panelItems += `<button class="source-link" data-path="${esc(s)}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>${esc(name)}</button>`;
+      });
     }
     if (webSources.length) {
-      const items = webSources.map(s => `<li><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title||s.url)}</a></li>`).join("");
-      sourcesHtml += `<details class="sources web"><summary>${webSources.length} web result${webSources.length>1?"s":""}</summary><ul>${items}</ul></details>`;
+      panelItems += `<div class="sources-panel-label" style="margin-top:4px;">Web</div>`;
+      webSources.forEach(s => {
+        panelItems += `<a class="web-link" href="${esc(s.url)}" target="_blank" rel="noopener"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>${esc(s.title||s.url)}</a>`;
+      });
     }
-    sourcesHtml += `</div>`;
+    sourcesPanelHtml = `<div class="sources-panel">${panelItems}</div>`;
   }
 
   // Debug pill
@@ -4441,19 +4990,19 @@ function appendAIBubble(text, sources, webSources, modelUsed, debugData, stepRow
 
   row.innerHTML = `
     <div class="bubble-wrap">
+      <div class="ai-avatar-bubble">${aiAvatarInner}</div>
       <div class="bubble">${renderMarkdown(text)}</div>
-      <div class="bubble-footer">
-        <div class="bubble-footer-left">${sourcesHtml}</div>
-        <span class="bubble-actions">
-          <button class="tts-btn bubble-action-btn" title="Read aloud"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></button>
+      <div class="msg-meta">
+        <span class="timestamp">${ts()}</span>
+        ${modelUsed ? `<span class="meta-sep">·</span>${modelTag}` : ""}
+        ${debugHtml}
+        ${sourcesToggle ? `<span class="meta-sep">·</span>${sourcesToggle}` : ""}
+        <span class="bubble-actions" style="margin-left:auto;">
+          <button class="tts-btn bubble-action-btn" title="Play"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></button>
           <button class="copy-btn bubble-action-btn" title="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
         </span>
       </div>
-      <div class="msg-meta">
-        <span class="timestamp">${ts()}</span>
-        ${modelTag}
-        ${debugHtml}
-      </div>
+      ${sourcesPanelHtml}
     </div>
   `;
 
@@ -4478,6 +5027,16 @@ function appendAIBubble(text, sources, webSources, modelUsed, debugData, stepRow
       speakText(text, getVoice(), playBtn);
     }
   });
+
+  // Sources toggle
+  const toggle = row.querySelector(".sources-toggle");
+  if (toggle) {
+    const panel = row.querySelector(".sources-panel");
+    toggle.addEventListener("click", () => {
+      const open = panel.classList.toggle("open");
+      toggle.classList.toggle("open", open);
+    });
+  }
 
   chatWindow.appendChild(row);
   scrollBottom();
@@ -4562,10 +5121,19 @@ function createStatusSteps() {
 function createStreamingBubble() {
   const row = document.createElement("div");
   row.className = "message-row ai";
+  const aiAvatarDataUrl = localStorage.getItem(AI_AVATAR_KEY) || "";
+  const aiAvatarLetterS = (JSON.parse(localStorage.getItem(BRAND_KEY) || "{}").name || "D").trim().charAt(0).toUpperCase();
+  const aiAvatarInnerS = aiAvatarDataUrl
+    ? `<img src="${aiAvatarDataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`
+    : aiAvatarLetterS;
+  const wrap = document.createElement("div");
+  wrap.className = "bubble-wrap";
+  wrap.innerHTML = `<div class="ai-avatar-bubble">${aiAvatarInnerS}</div>`;
   const bubble = document.createElement("div");
   bubble.className = "bubble";
   bubble.innerHTML = `<span class="stream-cursor"></span>`;
-  row.appendChild(bubble);
+  wrap.appendChild(bubble);
+  row.appendChild(wrap);
   chatWindow.appendChild(row);
   scrollBottom();
 

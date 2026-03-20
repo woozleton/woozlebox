@@ -50,10 +50,42 @@ NOT_FOUND_MSG     = "I couldn't find that in your vault."
 SUPPORTED_UPLOAD_EXTENSIONS = {".md", ".txt", ".pdf"}
 
 KOKORO_VOICES = [
-    "af_heart", "af_bella", "af_nicole", "af_sarah", "af_sky",
-    "am_adam", "am_michael",
-    "bf_emma", "bf_isabella",
-    "bm_george", "bm_lewis",
+    # American English — Female
+    "af_heart", "af_bella", "af_nicole", "af_aoede", "af_kore",
+    "af_sarah", "af_alloy", "af_nova", "af_sky", "af_jessica", "af_river",
+    # American English — Male
+    "am_fenrir", "am_michael", "am_puck", "am_echo", "am_eric",
+    "am_liam", "am_onyx", "am_santa", "am_adam",
+    # British English — Female
+    "bf_emma", "bf_isabella", "bf_alice", "bf_lily",
+    # British English — Male
+    "bm_fable", "bm_george", "bm_lewis", "bm_daniel",
+    # Japanese — Female
+    "jf_alpha", "jf_gongitsune", "jf_tebukuro", "jf_nezumi",
+    # Japanese — Male
+    "jm_kumo",
+    # Mandarin Chinese — Female
+    "zf_xiaobei", "zf_xiaoni", "zf_xiaoxiao", "zf_xiaoyi",
+    # Mandarin Chinese — Male
+    "zm_yunjian", "zm_yunxi", "zm_yunxia", "zm_yunyang",
+    # Spanish — Female
+    "ef_dora",
+    # Spanish — Male
+    "em_alex", "em_santa",
+    # French — Female
+    "ff_siwis",
+    # Hindi — Female
+    "hf_alpha", "hf_beta",
+    # Hindi — Male
+    "hm_omega", "hm_psi",
+    # Italian — Female
+    "if_sara",
+    # Italian — Male
+    "im_nicola",
+    # Brazilian Portuguese — Female
+    "pf_dora",
+    # Brazilian Portuguese — Male
+    "pm_alex", "pm_santa",
 ]
 
 pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -587,6 +619,27 @@ async def search_proxy(q: str, user: dict = Depends(get_current_user)):
 @app.get("/auth/status")
 def auth_status():
     return {"has_users": db.has_users()}
+
+
+@app.get("/auth/brand")
+def auth_brand():
+    """Public endpoint — returns admin's brand settings for the login screen."""
+    for user in db.list_users():
+        if user.get("role") == "admin":
+            try:
+                s = json.loads(user.get("settings") or "{}")
+                b = json.loads(s.get("diab_brand") or "{}")
+                return {
+                    "name":            b.get("name", ""),
+                    "logo":            s.get("diab_logo", ""),
+                    "login_logo":      s.get("diab_login_logo", ""),
+                    "theme":           b.get("theme", ""),
+                    "accent":          b.get("accent", ""),
+                    "show_login_name": b.get("showLoginName", True),
+                }
+            except Exception:
+                break
+    return {"name": "", "logo": "", "theme": "", "accent": ""}
 
 
 @app.post("/auth/login")
