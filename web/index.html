@@ -766,6 +766,55 @@
     #send-btn.stopping { background: var(--surface3); color: var(--danger); }
     #send-btn.stopping:hover { background: rgba(249,115,22,0.15); }
 
+    #mic-btn { background: none; color: var(--text-faint); }
+    #mic-btn:hover { background: var(--surface3); color: var(--accent); }
+    #mic-btn.recording { color: #ef4444; background: rgba(239,68,68,0.12); animation: mic-pulse 1s ease-in-out infinite; }
+    @keyframes mic-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.3); } 50% { box-shadow: 0 0 0 6px rgba(239,68,68,0); } }
+
+    /* Vision image attachment */
+    #image-preview-bar { display: none; align-items: center; gap: 6px; padding: 4px 8px; border-bottom: 1px solid var(--border); }
+    #image-preview-bar.has-images { display: flex; flex-wrap: wrap; }
+    .image-preview-thumb { position: relative; width: 48px; height: 48px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border); flex-shrink: 0; }
+    .image-preview-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .image-preview-thumb .remove-img { position: absolute; top: -2px; right: -2px; width: 16px; height: 16px; border-radius: 50%; background: var(--danger); color: #fff; border: none; font-size: 10px; line-height: 16px; text-align: center; cursor: pointer; padding: 0; }
+    #vision-indicator { display: none; font-size: 0.6rem; padding: 2px 6px; border-radius: 8px; background: rgba(34,197,94,0.12); color: #22c55e; white-space: nowrap; align-self: center; margin-left: 4px; }
+    #vision-indicator.no-vision { background: rgba(249,115,22,0.12); color: var(--danger); }
+    #attach-btn { background: none; color: var(--text-faint); }
+    #attach-btn:hover { background: var(--surface3); color: var(--accent); }
+
+    /* Wild theme special effects */
+    body[data-wild-theme="cyber"] { text-shadow: 0 0 1px rgba(0,255,242,0.3); }
+    body[data-wild-theme="cyber"] .bubble { border: 1px solid rgba(255,0,255,0.15); box-shadow: 0 0 12px rgba(255,0,255,0.08), inset 0 0 12px rgba(0,255,242,0.03); }
+    body[data-wild-theme="cyber"] #sidebar { border-right: 1px solid rgba(0,255,242,0.15); box-shadow: 2px 0 20px rgba(0,255,242,0.05); }
+    body[data-wild-theme="cyber"] .logo { box-shadow: 0 0 10px rgba(255,0,255,0.4); }
+    body[data-wild-theme="cyber"] #input-box { border-color: rgba(0,255,242,0.2); box-shadow: 0 0 15px rgba(255,0,255,0.06); }
+    body[data-wild-theme="cyber"] #header { border-bottom: 1px solid rgba(0,255,242,0.12); }
+    body[data-wild-theme="cyber"] .message-row.user .bubble { border-color: rgba(255,0,255,0.25); }
+
+    body[data-wild-theme="matrix"] { font-family: "Courier New", monospace !important; }
+    body[data-wild-theme="matrix"] .bubble { border: 1px solid rgba(0,255,0,0.12); text-shadow: 0 0 2px rgba(0,255,0,0.5); }
+    body[data-wild-theme="matrix"] #sidebar { border-right: 1px solid rgba(0,255,0,0.1); }
+    body[data-wild-theme="matrix"] .logo { box-shadow: 0 0 8px rgba(0,255,0,0.4); }
+    body[data-wild-theme="matrix"] #input-box { border-color: rgba(0,255,0,0.15); }
+
+    body[data-wild-theme="underwater"] .bubble { border: 1px solid rgba(0,212,255,0.1); box-shadow: 0 2px 15px rgba(0,100,180,0.1); }
+    body[data-wild-theme="underwater"] #sidebar { border-right: 1px solid rgba(0,212,255,0.1); }
+    body[data-wild-theme="underwater"] .logo { box-shadow: 0 0 10px rgba(0,212,255,0.3); }
+
+    body[data-wild-theme="neon"] .bubble { border: 1px solid rgba(255,0,255,0.12); box-shadow: 0 0 10px rgba(255,255,0,0.04); }
+    body[data-wild-theme="neon"] .logo { box-shadow: 0 0 12px rgba(255,255,0,0.4); }
+    body[data-wild-theme="neon"] #input-box { border-color: rgba(255,0,255,0.2); }
+    body[data-wild-theme="neon"] .message-row.user .bubble { border-color: rgba(255,255,0,0.15); }
+
+    body[data-wild-theme="aurora"] .bubble { border: 1px solid rgba(80,255,128,0.08); }
+    body[data-wild-theme="aurora"] .logo { box-shadow: 0 0 10px rgba(80,255,128,0.3); }
+
+    body[data-wild-theme="volcano"] .bubble { border: 1px solid rgba(255,60,0,0.1); box-shadow: 0 2px 10px rgba(255,60,0,0.05); }
+    body[data-wild-theme="volcano"] .logo { box-shadow: 0 0 10px rgba(255,60,0,0.4); }
+
+    body[data-wild-theme="sunset"] .bubble { border: 1px solid rgba(255,69,0,0.08); }
+    body[data-wild-theme="sunset"] .logo { box-shadow: 0 0 10px rgba(255,69,0,0.3); }
+
     /* ═══════════════════════════════════════
        SETTINGS PANEL
     ═══════════════════════════════════════ */
@@ -1915,8 +1964,17 @@
         </div>
       </div>
       <div id="topic-crumb-menu"></div>
+      <div id="image-preview-bar"></div>
       <div id="input-box">
         <textarea id="message-input" placeholder="Ask something…" rows="1" autocomplete="off"></textarea>
+        <button class="input-btn" id="attach-btn" title="Attach image">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        </button>
+        <input type="file" id="image-file-input" accept="image/*" multiple style="display:none;" />
+        <span id="vision-indicator"></span>
+        <button class="input-btn" id="mic-btn" title="Voice input">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        </button>
         <button class="input-btn" id="web-btn" title="Toggle web search">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
         </button>
@@ -2012,13 +2070,19 @@
 
           <!-- Memory -->
           <div class="setting-group" style="gap:8px;">
-            <div class="setting-label"><span>Memory</span></div>
+            <div class="setting-label">
+              <span>Memory</span>
+              <label class="toggle-switch" title="Auto-save memories from conversations">
+                <input type="checkbox" id="auto-memory-toggle" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="setting-desc">When enabled, the AI automatically remembers important details from your conversations. When off, only saves when you explicitly ask it to remember something. You can also bookmark any AI response to save it.</div>
             <div class="memory-add-row">
-              <input type="text" id="memory-input" class="setting-input" placeholder="Add a fact…" />
+              <input type="text" id="memory-input" class="setting-input" placeholder="Add a fact..." />
               <button id="memory-add-btn">Add</button>
             </div>
             <div id="memory-list" class="memory-list"></div>
-            <div class="setting-desc">Facts the AI knows about you, injected into every conversation.</div>
           </div>
 
           <!-- Change Password -->
@@ -2125,7 +2189,50 @@
                 <div class="theme-preset-label">Light</div>
               </div>
             </div>
-            <div class="setting-desc">Preset themes. Customize individual colors below.</div>
+            <div class="setting-label" style="margin-top:10px;"><span>Wild Themes</span></div>
+            <div class="theme-presets" id="wild-theme-presets">
+              <div class="theme-preset" data-theme="cyber" title="Cyber">
+                <div class="theme-preset-swatch"><span style="background:#0a0a0f;"></span><span style="background:#ff00ff;"></span></div>
+                <div class="theme-preset-label">Cyber</div>
+              </div>
+              <div class="theme-preset" data-theme="beach" title="Beach">
+                <div class="theme-preset-swatch"><span style="background:#fef9f0;border:1px solid #e0c998;"></span><span style="background:#ff6b35;"></span></div>
+                <div class="theme-preset-label">Beach</div>
+              </div>
+              <div class="theme-preset" data-theme="underwater" title="Underwater">
+                <div class="theme-preset-swatch"><span style="background:#020e1a;"></span><span style="background:#00d4ff;"></span></div>
+                <div class="theme-preset-label">Underwater</div>
+              </div>
+              <div class="theme-preset" data-theme="neon" title="Neon">
+                <div class="theme-preset-swatch"><span style="background:#0a000a;"></span><span style="background:#ffff00;"></span></div>
+                <div class="theme-preset-label">Neon</div>
+              </div>
+              <div class="theme-preset" data-theme="aurora" title="Aurora">
+                <div class="theme-preset-swatch"><span style="background:#040812;"></span><span style="background:#50ff80;"></span></div>
+                <div class="theme-preset-label">Aurora</div>
+              </div>
+              <div class="theme-preset" data-theme="sunset" title="Sunset">
+                <div class="theme-preset-swatch"><span style="background:#1a0a0a;"></span><span style="background:#ff4500;"></span></div>
+                <div class="theme-preset-label">Sunset</div>
+              </div>
+              <div class="theme-preset" data-theme="arctic" title="Arctic">
+                <div class="theme-preset-swatch"><span style="background:#f0f7ff;border:1px solid #b0d0f0;"></span><span style="background:#0088ff;"></span></div>
+                <div class="theme-preset-label">Arctic</div>
+              </div>
+              <div class="theme-preset" data-theme="matrix" title="Matrix">
+                <div class="theme-preset-swatch"><span style="background:#000800;"></span><span style="background:#00ff00;"></span></div>
+                <div class="theme-preset-label">Matrix</div>
+              </div>
+              <div class="theme-preset" data-theme="lavender" title="Lavender">
+                <div class="theme-preset-swatch"><span style="background:#f4f0ff;border:1px solid #c8b8ee;"></span><span style="background:#8b5cf6;"></span></div>
+                <div class="theme-preset-label">Lavender</div>
+              </div>
+              <div class="theme-preset" data-theme="volcano" title="Volcano">
+                <div class="theme-preset-swatch"><span style="background:#120800;"></span><span style="background:#ff3c00;"></span></div>
+                <div class="theme-preset-label">Volcano</div>
+              </div>
+            </div>
+            <div class="setting-desc">Wild themes include special visual effects. Customize individual colors below.</div>
           </div>
           <div class="setting-group">
             <div class="setting-label"><span>Accent Color</span></div>
@@ -2820,6 +2927,11 @@ const input           = document.getElementById("message-input");
 
 const sendBtn         = document.getElementById("send-btn");
 const webBtn          = document.getElementById("web-btn");
+const micBtn          = document.getElementById("mic-btn");
+const attachBtn       = document.getElementById("attach-btn");
+const imageFileInput  = document.getElementById("image-file-input");
+const imagePreviewBar = document.getElementById("image-preview-bar");
+const visionIndicator = document.getElementById("vision-indicator");
 const modelSelect     = document.getElementById("model-select");
 const settingsBtn     = document.getElementById("settings-btn");
 const settingsPanel   = document.getElementById("settings-panel");
@@ -2873,6 +2985,7 @@ function loadSettings() {
     if (s.compact     !== undefined) compactSlider.value  = s.compact;
     // voice restored in loadVoices() after options are populated
     if (s.default_prompt !== undefined) document.getElementById("default-prompt-input").value = s.default_prompt;
+    if (s.auto_memory !== undefined) document.getElementById("auto-memory-toggle").checked = s.auto_memory;
   } catch {}
   updateSettingLabels();
 }
@@ -2885,6 +2998,7 @@ function saveSettings() {
     compact:         parseInt(compactSlider.value),
     voice:           voiceSelect.value,
     default_prompt:  document.getElementById("default-prompt-input").value.trim(),
+    auto_memory:     document.getElementById("auto-memory-toggle").checked,
   }));
 }
 function updateSettingLabels() {
@@ -2900,6 +3014,7 @@ function updateSettingLabels() {
 });
 voiceSelect.addEventListener("change", () => { saveSettings(); scheduleSettingsSync(); });
 document.getElementById("default-prompt-input").addEventListener("input", () => { saveSettings(); scheduleSettingsSync(); });
+document.getElementById("auto-memory-toggle").addEventListener("change", () => { saveSettings(); scheduleSettingsSync(); });
 
 // ── Profile (localStorage) ──
 const PROFILE_KEY = "diab_profile";
@@ -3919,6 +4034,14 @@ function showToast(msg, type = "error") {
   toastTimer = setTimeout(() => { toast.style.display = "none"; }, 4000);
 }
 
+function showMemoryToast(msg) {
+  toast.innerHTML = `<span style="display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> ${msg}</span>`;
+  toast.className = "success";
+  toast.style.display = "block";
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { toast.style.display = "none"; }, 3000);
+}
+
 // ── Health check ──
 async function updateContextBar(convId) {
   if (!convId) return;
@@ -4038,7 +4161,19 @@ const THEMES = {
   rose:     { "--bg": "#180a12", "--surface": "#221020", "--surface2": "#2c1428", "--surface3": "#371830", "--border": "#4d2040", "--text": "#f9e4ef", "--text-dim": "#c07898", "--accent": "#fb7185", "--user-bubble": "#30101e", "--ai-bubble": "#200c18" },
   parchment: { "--bg": "#f5f0e1", "--surface": "#faf6eb", "--surface2": "#efe9d8", "--surface3": "#e6dfc9", "--border": "#d5ccb0", "--text": "#3b3527", "--text-dim": "#7a7262", "--accent": "#a0782a", "--user-bubble": "#ece5cf", "--ai-bubble": "#f2edd9" },
   light:    { "--bg": "#f0f0f5", "--surface": "#ffffff", "--surface2": "#f4f4f8", "--surface3": "#e8e8ef", "--border": "#d4d4de", "--text": "#1a1a2e", "--text-dim": "#555568", "--accent": "#7c6af7", "--user-bubble": "#ebe8ff", "--ai-bubble": "#f4f4f8" },
+  // Wild themes
+  cyber:      { "--bg": "#0a0a0f", "--surface": "#0d0d18", "--surface2": "#111122", "--surface3": "#16162e", "--border": "#00fff230", "--text": "#00fff2", "--text-dim": "#0088aa", "--accent": "#ff00ff", "--user-bubble": "#1a002a", "--ai-bubble": "#0a0a18" },
+  beach:      { "--bg": "#fef9f0", "--surface": "#fff8eb", "--surface2": "#ffefd0", "--surface3": "#ffe4b5", "--border": "#e0c998", "--text": "#3b2e1a", "--text-dim": "#8b7355", "--accent": "#ff6b35", "--user-bubble": "#fff0d6", "--ai-bubble": "#fef5e7" },
+  underwater: { "--bg": "#020e1a", "--surface": "#041628", "--surface2": "#061e35", "--surface3": "#082640", "--border": "#0a4070", "--text": "#b8e8ff", "--text-dim": "#4a90b8", "--accent": "#00d4ff", "--user-bubble": "#0a2038", "--ai-bubble": "#041822" },
+  neon:       { "--bg": "#0a000a", "--surface": "#120012", "--surface2": "#1a001a", "--surface3": "#220022", "--border": "#ff00ff30", "--text": "#ff88ff", "--text-dim": "#aa44aa", "--accent": "#ffff00", "--user-bubble": "#200030", "--ai-bubble": "#100018" },
+  aurora:     { "--bg": "#040812", "--surface": "#081020", "--surface2": "#0c1830", "--surface3": "#102040", "--border": "#1a3855", "--text": "#d0f0e8", "--text-dim": "#5aaa90", "--accent": "#50ff80", "--user-bubble": "#0a2020", "--ai-bubble": "#061418" },
+  sunset:     { "--bg": "#1a0a0a", "--surface": "#241010", "--surface2": "#2e1515", "--surface3": "#381a1a", "--border": "#5a2020", "--text": "#ffd8c8", "--text-dim": "#c08060", "--accent": "#ff4500", "--user-bubble": "#301818", "--ai-bubble": "#200e0e" },
+  arctic:     { "--bg": "#f0f7ff", "--surface": "#ffffff", "--surface2": "#e8f2ff", "--surface3": "#d8eaff", "--border": "#b0d0f0", "--text": "#1a2a40", "--text-dim": "#5577aa", "--accent": "#0088ff", "--user-bubble": "#dce8ff", "--ai-bubble": "#eaf2ff" },
+  matrix:     { "--bg": "#000800", "--surface": "#001000", "--surface2": "#001800", "--surface3": "#002000", "--border": "#00ff0025", "--text": "#00ff00", "--text-dim": "#008800", "--accent": "#00ff00", "--user-bubble": "#002200", "--ai-bubble": "#000e00" },
+  lavender:   { "--bg": "#f4f0ff", "--surface": "#faf7ff", "--surface2": "#ede6ff", "--surface3": "#e0d6ff", "--border": "#c8b8ee", "--text": "#2d2245", "--text-dim": "#7a6aaa", "--accent": "#8b5cf6", "--user-bubble": "#e8deff", "--ai-bubble": "#f2ecff" },
+  volcano:    { "--bg": "#120800", "--surface": "#1a0e04", "--surface2": "#221408", "--surface3": "#2e1a0a", "--border": "#5a3010", "--text": "#ffd0a0", "--text-dim": "#aa7040", "--accent": "#ff3c00", "--user-bubble": "#2a1508", "--ai-bubble": "#1a0c02" },
 };
+const WILD_THEMES = new Set(["cyber", "beach", "underwater", "neon", "aurora", "sunset", "arctic", "matrix", "lavender", "volcano"]);
 function applyTheme(name, skipAccent = false) {
   const t = THEMES[name];
   if (!t) return;
@@ -4053,6 +4188,9 @@ function applyTheme(name, skipAccent = false) {
     const savedAccent = localStorage.getItem(ACCENT_KEY);
     if (savedAccent) applyAccent(savedAccent);
   }
+  // Set wild theme data attribute for special CSS effects
+  if (WILD_THEMES.has(name)) document.body.setAttribute("data-wild-theme", name);
+  else document.body.removeAttribute("data-wild-theme");
   localStorage.setItem(THEME_KEY, name);
   document.querySelectorAll(".theme-preset").forEach(p => p.classList.toggle("active", p.dataset.theme === name));
 }
@@ -5563,7 +5701,7 @@ function setLoading(v) {
 }
 
 // ── Append user bubble ──
-function appendUserBubble(text) {
+function appendUserBubble(text, images) {
   document.getElementById("welcome-msg")?.remove();
   document.getElementById("chat-window")?.classList.remove("welcome-only");
   const row = document.createElement("div");
@@ -5579,10 +5717,11 @@ function appendUserBubble(text) {
   const avatarInner = avatarDataUrl
     ? `<img src="${avatarDataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`
     : avatarInitials;
+  const imagesHtml = (images && images.length) ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px;">${images.map(src => `<img src="${src}" style="max-width:180px;max-height:140px;border-radius:8px;border:1px solid var(--border);cursor:pointer;" onclick="window.open(this.src)" />`).join("")}</div>` : "";
   row.innerHTML = `
     <div class="bubble-wrap">
       <div class="user-avatar-bubble">${avatarInner}</div>
-      <div class="bubble">${esc(text)}</div>
+      <div class="bubble">${imagesHtml}${esc(text)}</div>
       <div class="msg-meta">
         <span class="timestamp">${ts()}</span>
         <span class="bubble-actions">
@@ -5802,6 +5941,7 @@ function appendAIBubble(text, sources, webSources, modelUsed, debugData, stepRow
         ${debugHtml}
         ${sourcesToggle ? `<span class="meta-sep">·</span>${sourcesToggle}` : ""}
         <span class="bubble-actions" style="margin-left:auto;">
+          <button class="mem-btn bubble-action-btn" title="Save to memory"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>
           <button class="tts-btn bubble-action-btn" title="Play"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></button>
           <button class="copy-btn bubble-action-btn" title="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
         </span>
@@ -5809,6 +5949,32 @@ function appendAIBubble(text, sources, webSources, modelUsed, debugData, stepRow
       ${sourcesPanelHtml}
     </div>
   `;
+
+  // Memory bookmark button
+  row.querySelector(".mem-btn").addEventListener("click", async function() {
+    const btn = this;
+    btn.disabled = true;
+    btn.style.color = "var(--accent)";
+    try {
+      const res = await apiFetch("/chat/extract-memory", {
+        method: "POST",
+        body: JSON.stringify({ text }),
+      });
+      const data = await res.json();
+      if (data.saved) {
+        showMemoryToast("Saved to memory: " + data.fact);
+        btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="var(--accent)" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>';
+      } else {
+        showToast(data.reason || "Nothing to save.", "success");
+        btn.style.color = "";
+        btn.disabled = false;
+      }
+    } catch (e) {
+      showToast("Failed to save memory.");
+      btn.style.color = "";
+      btn.disabled = false;
+    }
+  });
 
   // Copy button
   row.querySelector(".copy-btn").addEventListener("click", function() {
@@ -5994,7 +6160,7 @@ function createStreamingBubble() {
 
     const meta = document.createElement("div");
     meta.className = "msg-meta";
-    meta.innerHTML = `<span class="timestamp">${ts()}</span>${modelUsed ? `<span class="meta-sep">·</span>${modelTag}` : ""}${debugHtml}${sourcesToggle ? `<span class="meta-sep">·</span>${sourcesToggle}` : ""}<span class="bubble-actions" style="margin-left:auto;"><button class="tts-btn bubble-action-btn" title="Play"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></button><button class="copy-btn bubble-action-btn" title="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></span>`;
+    meta.innerHTML = `<span class="timestamp">${ts()}</span>${modelUsed ? `<span class="meta-sep">·</span>${modelTag}` : ""}${debugHtml}${sourcesToggle ? `<span class="meta-sep">·</span>${sourcesToggle}` : ""}<span class="bubble-actions" style="margin-left:auto;"><button class="mem-btn bubble-action-btn" title="Save to memory"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button><button class="tts-btn bubble-action-btn" title="Play"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></button><button class="copy-btn bubble-action-btn" title="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></span>`;
     wrap.appendChild(meta);
     if (sourcesPanelHtml) { const sp = document.createElement("div"); sp.innerHTML = sourcesPanelHtml; wrap.appendChild(sp.firstChild); }
 
@@ -6022,6 +6188,32 @@ function createStreamingBubble() {
     // Wire vault source links
     wrap.querySelectorAll(".source-link").forEach(btn => { btn.addEventListener("click", () => openVaultFile(btn.dataset.path)); });
 
+    // Wire memory bookmark button
+    meta.querySelector(".mem-btn").addEventListener("click", async function() {
+      const btn = this;
+      btn.disabled = true;
+      btn.style.color = "var(--accent)";
+      try {
+        const res = await apiFetch("/chat/extract-memory", {
+          method: "POST",
+          body: JSON.stringify({ text: fullText }),
+        });
+        const data = await res.json();
+        if (data.saved) {
+          showMemoryToast("Saved to memory: " + data.fact);
+          btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="var(--accent)" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>';
+        } else {
+          showToast(data.reason || "Nothing to save.", "success");
+          btn.style.color = "";
+          btn.disabled = false;
+        }
+      } catch (e) {
+        showToast("Failed to save memory.");
+        btn.style.color = "";
+        btn.disabled = false;
+      }
+    });
+
     scrollBottom();
   }
 
@@ -6034,13 +6226,18 @@ async function sendMessage() {
   if (!text || isLoading) return;
   if (!activeTopicId || topics.length === 0) return;
 
+  // Capture any attached images before clearing
+  const attachedImages = [...pendingImages];
+  pendingImages = [];
+  renderImagePreviews();
+
   messageHistory.push(text);
   historyIndex = -1;
   input.value = "";
   input.style.height = "44px";
   setLoading(true);
   stopSpeaking();
-  appendUserBubble(text);
+  appendUserBubble(text, attachedImages);
 
   const steps = createStatusSteps();
   let currentStep = null;
@@ -6061,6 +6258,8 @@ async function sendMessage() {
     compact_threshold: parseInt(compactSlider.value),
     user_context: getProfileContext(),
     default_prompt: document.getElementById("default-prompt-input").value.trim() || null,
+    auto_memory: document.getElementById("auto-memory-toggle").checked,
+    images: attachedImages.map(d => d.replace(/^data:image\/[^;]+;base64,/, "")),
   };
 
   chatAbortController = new AbortController();
@@ -6110,13 +6309,22 @@ async function sendMessage() {
           }
           fullAnswer += event.text;
           streamBubble.appendToken(event.text);
+        } else if (event.type === "memory_saved") {
+          (event.facts || []).forEach(f => {
+            showMemoryToast("Saved to memory: " + f.fact);
+          });
+        } else if (event.type === "memory_deleted") {
+          (event.facts || []).forEach(f => {
+            showMemoryToast("Removed from memory: " + f.fact);
+          });
         } else if (event.type === "done") {
           convId = event.conversation_id || convId;
           activeConvId = convId;
           const stepRows = [steps.container];
+          // Use clean answer from server (tags stripped) if available
           const answerText = event.answer || fullAnswer;
           if (streamBubble) {
-            streamBubble.finalize(fullAnswer, event.sources || [], event.web_sources || [], event.model_used, event.debug, stepRows, event.web_search_query || "");
+            streamBubble.finalize(answerText, event.sources || [], event.web_sources || [], event.model_used, event.debug, stepRows, event.web_search_query || "");
           } else {
             // Vault miss - no streaming occurred
             stepRows.forEach(r => r.remove());
@@ -6147,6 +6355,124 @@ async function sendMessage() {
     input.focus();
   }
 }
+
+// ── Speech-to-Text (Mic Button) ──
+let sttRecognition = null;
+let sttActive = false;
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (SpeechRecognition) {
+  sttRecognition = new SpeechRecognition();
+  sttRecognition.continuous = false;
+  sttRecognition.interimResults = true;
+  sttRecognition.lang = "en-US";
+  let finalTranscript = "";
+  sttRecognition.onstart = () => { sttActive = true; micBtn.classList.add("recording"); micBtn.title = "Listening... click to stop"; };
+  sttRecognition.onend = () => { sttActive = false; micBtn.classList.remove("recording"); micBtn.title = "Voice input"; input.value = input.value.replace(/\u200B[\s\S]*$/, ""); };
+  sttRecognition.onerror = (e) => { if (e.error !== "aborted") showToast("Mic error: " + e.error); sttActive = false; micBtn.classList.remove("recording"); };
+  sttRecognition.onresult = (e) => {
+    let interim = "";
+    finalTranscript = "";
+    for (let i = 0; i < e.results.length; i++) {
+      if (e.results[i].isFinal) finalTranscript += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    // Show interim in input as preview
+    const before = input.value.replace(/\u200B[\s\S]*$/, "");
+    input.value = before + (finalTranscript || "") + (interim ? "\u200B" + interim : "");
+    input.style.height = "auto";
+    input.style.height = Math.min(input.scrollHeight, 160) + "px";
+  };
+  micBtn.addEventListener("click", () => {
+    if (sttActive) { sttRecognition.stop(); return; }
+    // Clean any leftover interim text marker
+    input.value = input.value.replace(/\u200B[\s\S]*$/, "");
+    sttRecognition.start();
+  });
+} else {
+  micBtn.style.display = "none"; // Browser doesn't support speech recognition
+}
+
+// ── Vision / Image Attachment ──
+let pendingImages = []; // Array of {dataUrl, file}
+let currentModelSupportsVision = false;
+
+function updateVisionIndicator() {
+  if (!visionIndicator) return;
+  if (currentModelSupportsVision) {
+    visionIndicator.textContent = "Vision";
+    visionIndicator.className = "";
+    visionIndicator.style.display = "inline-block";
+  } else if (pendingImages.length > 0) {
+    visionIndicator.textContent = "No vision";
+    visionIndicator.className = "no-vision";
+    visionIndicator.style.display = "inline-block";
+  } else {
+    visionIndicator.style.display = "none";
+  }
+}
+
+async function checkVisionSupport(modelName) {
+  try {
+    const res = await apiFetch(`/models/info?model=${encodeURIComponent(modelName)}`);
+    if (res.ok) {
+      const data = await res.json();
+      currentModelSupportsVision = !!data.vision;
+    } else {
+      currentModelSupportsVision = false;
+    }
+  } catch { currentModelSupportsVision = false; }
+  updateVisionIndicator();
+}
+
+function addImageToPreview(dataUrl) {
+  pendingImages.push(dataUrl);
+  renderImagePreviews();
+}
+
+function renderImagePreviews() {
+  imagePreviewBar.innerHTML = "";
+  if (pendingImages.length === 0) { imagePreviewBar.classList.remove("has-images"); updateVisionIndicator(); return; }
+  imagePreviewBar.classList.add("has-images");
+  pendingImages.forEach((dataUrl, i) => {
+    const thumb = document.createElement("div");
+    thumb.className = "image-preview-thumb";
+    thumb.innerHTML = `<img src="${dataUrl}" /><button class="remove-img" title="Remove">&times;</button>`;
+    thumb.querySelector(".remove-img").addEventListener("click", () => { pendingImages.splice(i, 1); renderImagePreviews(); });
+    imagePreviewBar.appendChild(thumb);
+  });
+  updateVisionIndicator();
+}
+
+// Attach button
+attachBtn.addEventListener("click", () => imageFileInput.click());
+imageFileInput.addEventListener("change", () => {
+  for (const file of imageFileInput.files) {
+    const reader = new FileReader();
+    reader.onload = (e) => addImageToPreview(e.target.result);
+    reader.readAsDataURL(file);
+  }
+  imageFileInput.value = "";
+});
+
+// Paste images directly into chat
+input.addEventListener("paste", (e) => {
+  const items = e.clipboardData?.items;
+  if (!items) return;
+  for (const item of items) {
+    if (item.type.startsWith("image/")) {
+      e.preventDefault();
+      const file = item.getAsFile();
+      const reader = new FileReader();
+      reader.onload = (ev) => addImageToPreview(ev.target.result);
+      reader.readAsDataURL(file);
+    }
+  }
+});
+
+// Check vision on model change
+modelSelect.addEventListener("change", () => { checkVisionSupport(modelSelect.value); });
+// Initial check
+if (selectedModel) checkVisionSupport(selectedModel);
 
 // ── iOS / Mobile fixes ──
 // Prevent body scroll bounce on iOS Safari

@@ -11,6 +11,7 @@ Chat flow (streaming SSE):
 """
 
 import os
+import re
 import json
 import logging
 import asyncio
@@ -275,6 +276,8 @@ class ChatRequest(BaseModel):
     compact_threshold: int = 75  # % of context at which to auto-compact
     user_context: Optional[str] = None  # profile name/role/preferences
     default_prompt: Optional[str] = None  # global default system prompt from settings
+    auto_memory: bool = False  # whether the LLM should auto-save memory facts
+    images: list[str] = []  # base64-encoded images for vision models
 
 class ConversationPatch(BaseModel):
     title: str
@@ -497,8 +500,11 @@ async def chat_stream(request: ChatRequest, user_id: str) -> AsyncGenerator[str,
     context_text = "\n\n" + "\n\n".join(context_parts)
     source_instruction = "Use the vault context as your primary source." if relevant and web_sources else ""
 
-    # Build system prompt — topic override, memory, user profile
+    # Build system prompt - topic override, memory, user profile
+    now = datetime.now().astimezone()
+    date_str = now.strftime("%A, %B %-d, %Y at %-I:%M %p %Z")
     base_instructions = request.default_prompt or "You are a personal AI assistant. When relevant context from the user's vault is provided, prioritize it in your answer. Otherwise, answer using your general knowledge."
+    base_instructions += f"\n\nCurrent date and time: {date_str}"
 
     # Use topic system prompt if provided (overrides default)
     if request.topic_id:
@@ -528,7 +534,29 @@ async def chat_stream(request: ChatRequest, user_id: str) -> AsyncGenerator[str,
         else:
             web_instruction = "\n\nWeb search was performed but the pages could not be fully retrieved (JavaScript-rendered or blocked). Summarize what you can from the snippets and titles. Do not tell the user to visit a website — tell them the pages weren't fully accessible and share what little was retrieved."
 
-    system_prompt = f"""{base_instructions}{memory_section}{user_section}{' ' + source_instruction if source_instruction else ''}{context_block}{web_instruction}
+    # Memory tool instructions
+    memory_instruction = ""
+    if request.auto_memory:
+        memory_instruction = """
+
+MEMORY TOOL: You can save important facts about the user for future conversations.
+When the user shares personal details, preferences, or information worth remembering, include this tag in your response:
+[SAVE_MEMORY: the fact to remember]
+Examples: [SAVE_MEMORY: User's dog is named Max] or [SAVE_MEMORY: User prefers Python over JavaScript]
+Only save durable, useful facts. Do not save trivial or temporary information.
+Do not mention the SAVE_MEMORY tag to the user. Just naturally confirm you'll remember it.
+To remove an outdated fact, use: [DELETE_MEMORY: the outdated fact]"""
+    else:
+        memory_instruction = """
+
+MEMORY TOOL: You can save facts about the user when they explicitly ask you to remember something.
+When the user says "remember that...", "save this...", "don't forget...", or similar, include this tag in your response:
+[SAVE_MEMORY: the fact to remember]
+Only use this when the user explicitly asks you to remember something.
+Do not mention the SAVE_MEMORY tag to the user. Just naturally confirm you'll remember it.
+To remove an outdated fact when asked, use: [DELETE_MEMORY: the outdated fact]"""
+
+    system_prompt = f"""{base_instructions}{memory_section}{user_section}{' ' + source_instruction if source_instruction else ''}{context_block}{web_instruction}{memory_instruction}
 
 Answer concisely."""
 
@@ -580,9 +608,12 @@ Answer concisely."""
         if conv:
             for msg in conv["messages"][-request.history_limit:]:
                 messages.append({"role": msg["role"] if msg["role"] != "assistant" else "assistant", "content": msg["content"]})
-    messages.append({"role": "user", "content": request.message})
+    user_msg = {"role": "user", "content": request.message}
+    if request.images:
+        user_msg["images"] = request.images
+    messages.append(user_msg)
 
-    logger.info(f"Sending {len(relevant)} vault chunks + {len(web_sources)} web results to LLM ({len(context_text)} chars), {len(messages)} messages in history")
+    logger.info(f"Sending {len(relevant)} vault chunks + {len(web_sources)} web results to LLM ({len(context_text)} chars), {len(messages)} messages in history, {len(request.images)} images")
 
     # Step 6: Stream LLM response
     ctx_kb = round(len(context_text) / 1024, 1)
@@ -621,16 +652,59 @@ Answer concisely."""
             yield sse({"type": "error", "text": f"LLM unavailable: {e}"})
         return
 
-    # Step 7: Save to DB
+    # Step 7: Extract and process memory tool calls
+    saved_memories = []
+    deleted_memories = []
+    clean_answer = full_answer
+
+    # Extract [SAVE_MEMORY: ...] tags
+    save_pattern = re.compile(r'\[SAVE_MEMORY:\s*(.+?)\]', re.IGNORECASE)
+    for match in save_pattern.finditer(full_answer):
+        fact = match.group(1).strip()
+        if fact:
+            try:
+                mid = db.add_memory_fact(fact, user_id)
+                saved_memories.append({"id": mid, "fact": fact})
+                logger.info(f"Memory saved for {user_id}: {fact}")
+            except Exception as e:
+                logger.warning(f"Failed to save memory: {e}")
+    clean_answer = save_pattern.sub("", clean_answer)
+
+    # Extract [DELETE_MEMORY: ...] tags
+    delete_pattern = re.compile(r'\[DELETE_MEMORY:\s*(.+?)\]', re.IGNORECASE)
+    for match in delete_pattern.finditer(full_answer):
+        fact_text = match.group(1).strip()
+        if fact_text:
+            # Find matching fact by text similarity
+            existing = db.list_memory(user_id)
+            for m in existing:
+                if fact_text.lower() in m["fact"].lower() or m["fact"].lower() in fact_text.lower():
+                    db.delete_memory_fact(m["id"], user_id)
+                    deleted_memories.append({"id": m["id"], "fact": m["fact"]})
+                    logger.info(f"Memory deleted for {user_id}: {m['fact']}")
+                    break
+    clean_answer = delete_pattern.sub("", clean_answer)
+
+    # Clean up any leftover whitespace from tag removal
+    clean_answer = re.sub(r'\n{3,}', '\n\n', clean_answer).strip()
+
+    # Notify frontend of memory changes
+    if saved_memories:
+        yield sse({"type": "memory_saved", "facts": saved_memories})
+    if deleted_memories:
+        yield sse({"type": "memory_deleted", "facts": deleted_memories})
+
+    # Step 8: Save to DB
     conv_id = request.conversation_id
     if not conv_id:
         conv_id = db.create_conversation(user_id=user_id, topic_id=request.topic_id)
     db.auto_title(conv_id, user_id, request.message)
     db.add_message(conv_id, "user", request.message)
-    db.add_message(conv_id, "assistant", full_answer.strip(), sources=sources, web_sources=web_sources, model_used=model)
+    db.add_message(conv_id, "assistant", clean_answer, sources=sources, web_sources=web_sources, model_used=model)
 
     yield sse({
         "type": "done",
+        "answer": clean_answer,
         "from_vault": bool(relevant),
         "sources": sources,
         "web_sources": web_sources,
@@ -754,6 +828,36 @@ def list_models():
         raise HTTPException(status_code=503, detail=f"Ollama unavailable: {e}")
 
 
+@app.get("/models/info")
+async def model_info(model: str = None, user: dict = Depends(get_current_user)):
+    """Check model capabilities like vision support."""
+    use_model = model or LLM_MODEL
+    vision = False
+    try:
+        async with httpx.AsyncClient(timeout=5) as client:
+            r = await client.post(f"{OLLAMA_BASE_URL}/api/show", json={"model": use_model})
+            data = r.json()
+            # Check model families or projector architecture for vision
+            families = []
+            info = data.get("model_info", {})
+            for key, val in info.items():
+                if "families" in key.lower() and isinstance(val, list):
+                    families.extend(val)
+            template = data.get("template", "")
+            # Vision models typically have "clip" projector or vision family
+            if any("clip" in str(v).lower() for v in info.values()):
+                vision = True
+            if any(f in families for f in ["clip", "mllama"]):
+                vision = True
+            # Also check if the modelfile mentions image/vision
+            modelfile = data.get("modelfile", "")
+            if "image" in modelfile.lower() or "vision" in modelfile.lower():
+                vision = True
+    except Exception as e:
+        logger.warning(f"Could not check model info for {use_model}: {e}")
+    return {"model": use_model, "vision": vision}
+
+
 @app.get("/context-info")
 async def context_info(model: str = None, conversation_id: str = None, user: dict = Depends(get_current_user)):
     use_model = model or LLM_MODEL
@@ -792,6 +896,42 @@ async def chat(request: ChatRequest, user: dict = Depends(get_current_user)):
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+class ExtractMemoryRequest(BaseModel):
+    text: str  # The AI message text to extract a memory from
+
+@app.post("/chat/extract-memory")
+async def extract_memory(request: ExtractMemoryRequest, user: dict = Depends(get_current_user)):
+    """Use the LLM to extract a memory-worthy fact from an AI response, then save it."""
+    if not request.text.strip():
+        raise HTTPException(status_code=400, detail="Text cannot be empty")
+
+    model = LLM_MODEL
+    try:
+        resp = httpx.post(
+            f"{OLLAMA_BASE_URL}/api/chat",
+            json={
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": "Extract the single most important, memorable fact or takeaway from the following AI response. Output ONLY the fact as a short sentence. If there is nothing worth remembering, respond with exactly: NOTHING"},
+                    {"role": "user", "content": request.text},
+                ],
+                "options": {"temperature": 0.1, "num_predict": 100},
+                "think": False,
+                "stream": False,
+            },
+            timeout=30,
+        )
+        fact = resp.json().get("message", {}).get("content", "").strip()
+        if not fact or fact.upper() == "NOTHING":
+            return {"saved": False, "reason": "Nothing worth remembering in this message."}
+
+        mid = db.add_memory_fact(fact, user["id"])
+        return {"saved": True, "id": mid, "fact": fact}
+    except Exception as e:
+        logger.error(f"Extract memory failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/index", response_model=IndexResponse)
