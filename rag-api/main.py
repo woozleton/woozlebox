@@ -114,31 +114,117 @@ def require_admin(user: dict = Depends(get_current_user)) -> dict:
 
 # --- Vault helpers ---
 
-def user_vault_path(user_id: str) -> Path:
-    p = Path(VAULT_PATH) / user_id
+def user_vault_path(username: str) -> Path:
+    p = Path(VAULT_PATH) / username
     p.mkdir(parents=True, exist_ok=True)
     return p
 
 
-def _migrate_vault_files(admin_id: str):
-    """Move any files/dirs at the vault root (not in a UUID subdir) into /vault/{admin_id}/."""
+def _migrate_vault_files(admin_username: str):
+    """Move any files/dirs at the vault root (not in a user subdir) into /vault/{admin_username}/."""
     vault = Path(VAULT_PATH)
     if not vault.exists():
         return
-    dest = vault / admin_id
+    dest = vault / admin_username
     dest.mkdir(parents=True, exist_ok=True)
-    import re
-    uuid_re = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
     for item in list(vault.iterdir()):
-        if item.name == admin_id:
+        if item.name == admin_username:
             continue
-        if item.is_dir() and uuid_re.match(item.name):
-            continue  # already a user subdir
+        if item.is_dir():
+            continue  # skip existing user subdirs
         try:
             shutil.move(str(item), str(dest / item.name))
-            logger.info(f"Vault migration: moved {item.name} → {admin_id}/")
+            logger.info(f"Vault migration: moved {item.name} → {admin_username}/")
         except Exception as e:
             logger.warning(f"Vault migration: could not move {item.name}: {e}")
+
+
+# --- Index status tracking ---
+# Maps user_id -> {"running": bool, "queued": bool}
+_index_status: dict[str, dict] = {}
+_index_status_lock = __import__("threading").Lock()
+
+def _set_index_status(user_id: str, running: bool, queued: bool = False):
+    with _index_status_lock:
+        _index_status[user_id] = {"running": running, "queued": queued}
+
+def _get_index_status(user_id: str) -> dict:
+    with _index_status_lock:
+        return _index_status.get(user_id, {"running": False, "queued": False})
+
+
+# --- Vault file watcher ---
+def _start_vault_watcher():
+    """Watch the vault directory and trigger incremental re-index when files change."""
+    import threading
+    import time
+    from watchdog.observers.polling import PollingObserver
+    from watchdog.events import FileSystemEventHandler
+
+    SUPPORTED = {".md", ".txt", ".pdf"}
+    DEBOUNCE_SECONDS = 3  # wait for burst of changes to settle
+
+    # Per-user debounce timers
+    _timers: dict[str, threading.Timer] = {}
+    _lock = threading.Lock()
+
+    def _reindex_user(username: str):
+        user = db.get_user_by_username(username)
+        if not user:
+            return
+        user_id = user["id"]
+        _set_index_status(user_id, running=True, queued=False)
+        try:
+            result = index_vault(VAULT_PATH, user_id, EMBED_MODEL, OLLAMA_BASE_URL, username=username)
+            logger.info(f"Auto-index for {username}: {result['files_processed']} new, {result.get('files_skipped',0)} skipped")
+        except Exception as e:
+            logger.warning(f"Auto-index failed for {username}: {e}")
+        finally:
+            _set_index_status(user_id, running=False)
+
+    def _schedule_reindex(username: str):
+        with _lock:
+            if username in _timers:
+                _timers[username].cancel()
+            t = threading.Timer(DEBOUNCE_SECONDS, _reindex_user, args=[username])
+            t.daemon = True
+            _timers[username] = t
+            t.start()
+        # Set status using user_id for the frontend poll
+        user = db.get_user_by_username(username)
+        if user:
+            _set_index_status(user["id"], running=False, queued=True)
+
+    class VaultHandler(FileSystemEventHandler):
+        def _handle(self, path: str):
+            from pathlib import Path as P
+            p = P(path)
+            if p.suffix.lower() not in SUPPORTED:
+                return
+            # Derive username from path: VAULT_PATH/{username}/...
+            try:
+                rel = p.relative_to(VAULT_PATH)
+                username = rel.parts[0]
+                _schedule_reindex(username)
+            except Exception:
+                pass
+
+        def on_created(self, event):
+            if not event.is_directory: self._handle(event.src_path)
+        def on_deleted(self, event):
+            if not event.is_directory: self._handle(event.src_path)
+        def on_moved(self, event):
+            if not event.is_directory:
+                self._handle(event.src_path)
+                self._handle(event.dest_path)
+        def on_modified(self, event):
+            if not event.is_directory: self._handle(event.src_path)
+
+    observer = PollingObserver(timeout=5)
+    observer.schedule(VaultHandler(), path=VAULT_PATH, recursive=True)
+    observer.daemon = True
+    observer.start()
+    logger.info(f"Vault watcher started on {VAULT_PATH}")
 
 
 # --- Lifespan ---
@@ -150,7 +236,7 @@ async def lifespan(app: FastAPI):
     users = db.list_users()
     admins = [u for u in users if u["role"] == "admin"]
     if admins:
-        _migrate_vault_files(admins[0]["id"])
+        _migrate_vault_files(admins[0]["username"])
 
     # Index vault for each active user
     logger.info("Starting up — indexing vaults...")
@@ -159,11 +245,14 @@ async def lifespan(app: FastAPI):
         if user.get("is_active"):
             try:
                 result = await loop.run_in_executor(
-                    None, index_vault, VAULT_PATH, user["id"], EMBED_MODEL, OLLAMA_BASE_URL
+                    None, lambda: index_vault(VAULT_PATH, user["id"], EMBED_MODEL, OLLAMA_BASE_URL, username=user["username"])
                 )
                 logger.info(f"Indexed vault for user {user['username']}: {result}")
             except Exception as e:
                 logger.warning(f"Vault index failed for {user['username']}: {e}")
+
+    # Start vault file watcher
+    _start_vault_watcher()
 
     yield
 
@@ -208,6 +297,7 @@ class MemoryFactCreate(BaseModel):
 
 class IndexResponse(BaseModel):
     files_processed: int
+    files_skipped: int = 0
     chunks_upserted: int
     errors: list[str]
 
@@ -500,18 +590,28 @@ Answer concisely."""
 
     full_answer = ""
     try:
-        client = ollama_client.Client(host=OLLAMA_BASE_URL)
-        stream = client.chat(
-            model=model,
-            messages=messages,
-            options={"temperature": request.temperature},
-            stream=True,
-        )
-        for chunk in stream:
-            token = chunk["message"]["content"]
-            if token:
-                full_answer += token
-                yield sse({"type": "token", "text": token})
+        async with httpx.AsyncClient(timeout=None) as hc:
+            async with hc.stream(
+                "POST",
+                f"{OLLAMA_BASE_URL}/api/chat",
+                json={
+                    "model": model,
+                    "messages": messages,
+                    "options": {"temperature": request.temperature},
+                    "stream": True,
+                },
+            ) as resp:
+                if resp.status_code != 200:
+                    body = await resp.aread()
+                    raise Exception(f"Ollama returned {resp.status_code}: {body.decode()}")
+                async for line in resp.aiter_lines():
+                    if not line.strip():
+                        continue
+                    chunk = json.loads(line)
+                    token = chunk.get("message", {}).get("content", "")
+                    if token:
+                        full_answer += token
+                        yield sse({"type": "token", "text": token})
     except Exception as e:
         logger.error(f"LLM streaming failed: {e}")
         err_str = str(e)
@@ -699,6 +799,49 @@ async def trigger_reindex(user: dict = Depends(get_current_user)):
     loop = asyncio.get_event_loop()
     result = await loop.run_in_executor(None, index_vault, VAULT_PATH, user["id"], EMBED_MODEL, OLLAMA_BASE_URL)
     return IndexResponse(**result)
+
+
+@app.get("/index/status")
+async def index_status(user: dict = Depends(get_current_user)):
+    return _get_index_status(user["id"])
+
+
+@app.get("/index/stream")
+async def stream_reindex(user: dict = Depends(get_current_user)):
+    """SSE endpoint that streams per-file progress during indexing."""
+    import queue as queue_mod
+    q: queue_mod.Queue = queue_mod.Queue()
+
+    def progress_cb(done: int, total: int, filename: str):
+        q.put({"done": done, "total": total, "file": filename})
+
+    def run():
+        try:
+            result = index_vault(VAULT_PATH, user["id"], EMBED_MODEL, OLLAMA_BASE_URL, progress_cb=progress_cb, username=user["username"])
+            q.put({"complete": True,
+                   "new": result["files_processed"],
+                   "skipped": result.get("files_skipped", 0),
+                   "chunks": result["chunks_upserted"],
+                   "errors": result["errors"]})
+        except Exception as e:
+            q.put({"error": str(e)})
+
+    import threading
+    threading.Thread(target=run, daemon=True).start()
+
+    async def event_stream():
+        loop = asyncio.get_event_loop()
+        while True:
+            try:
+                msg = await loop.run_in_executor(None, lambda: q.get(timeout=120))
+                yield f"data: {json.dumps(msg)}\n\n"
+                if msg.get("complete") or msg.get("error"):
+                    break
+            except Exception:
+                break
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
 @app.get("/suggestions")
@@ -1087,7 +1230,7 @@ def _get_chunk_counts(user_id: str) -> dict[str, int]:
 
 @app.get("/vault/files")
 def list_vault_files(user: dict = Depends(get_current_user)):
-    vault = user_vault_path(user["id"])
+    vault = user_vault_path(user["username"])
     if not vault.exists():
         raise HTTPException(status_code=503, detail="Vault path not found")
 
@@ -1131,7 +1274,7 @@ async def upload_vault_file(
     if suffix not in SUPPORTED_UPLOAD_EXTENSIONS:
         raise HTTPException(status_code=400, detail=f"Unsupported file type: {suffix}")
 
-    vault = user_vault_path(user["id"])
+    vault = user_vault_path(user["username"])
     safe_sub = Path(subfolder.strip("/").strip()) if subfolder.strip() else Path("")
     for part in safe_sub.parts:
         if part in (".", ".."):
@@ -1144,12 +1287,26 @@ async def upload_vault_file(
     with dest.open("wb") as out:
         shutil.copyfileobj(file.file, out)
 
+    # Trigger immediate background index (no watcher debounce)
+    import threading
+    user_id, uname = user["id"], user["username"]
+    _set_index_status(user_id, running=False, queued=True)
+    def _bg():
+        _set_index_status(user_id, running=True, queued=False)
+        try:
+            index_vault(VAULT_PATH, user_id, EMBED_MODEL, OLLAMA_BASE_URL, username=uname)
+        except Exception as e:
+            logger.warning(f"Post-upload index failed: {e}")
+        finally:
+            _set_index_status(user_id, running=False)
+    threading.Thread(target=_bg, daemon=True).start()
+
     return {"ok": True, "path": str((safe_sub / file.filename)).replace("\\", "/")}
 
 
 @app.delete("/vault/files")
 def delete_vault_file(body: VaultDeleteRequest, user: dict = Depends(get_current_user)):
-    vault = user_vault_path(user["id"])
+    vault = user_vault_path(user["username"])
     target = (vault / body.path).resolve()
     try:
         vault_resolved = vault.resolve()
@@ -1168,7 +1325,7 @@ def delete_vault_file(body: VaultDeleteRequest, user: dict = Depends(get_current
 
 @app.post("/vault/rename")
 def rename_vault_file(body: VaultRenameRequest, user: dict = Depends(get_current_user)):
-    vault = user_vault_path(user["id"])
+    vault = user_vault_path(user["username"])
     target = (vault / body.path).resolve()
     try:
         target.relative_to(vault.resolve())
@@ -1186,7 +1343,7 @@ def rename_vault_file(body: VaultRenameRequest, user: dict = Depends(get_current
 
 @app.post("/vault/folder")
 def create_vault_folder(body: VaultFolderRequest, user: dict = Depends(get_current_user)):
-    vault = user_vault_path(user["id"])
+    vault = user_vault_path(user["username"])
     safe = Path(body.folder.strip("/").strip())
     for part in safe.parts:
         if part in (".", ".."):
@@ -1202,7 +1359,7 @@ def create_vault_folder(body: VaultFolderRequest, user: dict = Depends(get_curre
 
 @app.delete("/vault/folder")
 def delete_vault_folder(body: VaultFolderRequest, user: dict = Depends(get_current_user)):
-    vault = user_vault_path(user["id"])
+    vault = user_vault_path(user["username"])
     safe = Path(body.folder.strip("/").strip())
     target = (vault / safe).resolve()
     try:
@@ -1219,7 +1376,7 @@ def delete_vault_folder(body: VaultFolderRequest, user: dict = Depends(get_curre
 
 @app.post("/vault/move")
 def move_vault_file(body: VaultMoveRequest, user: dict = Depends(get_current_user)):
-    vault = user_vault_path(user["id"])
+    vault = user_vault_path(user["username"])
     src = (vault / body.path).resolve()
     try:
         src.relative_to(vault.resolve())
@@ -1246,7 +1403,7 @@ def move_vault_file(body: VaultMoveRequest, user: dict = Depends(get_current_use
 
 @app.post("/vault/folder/rename")
 def rename_vault_folder(body: VaultRenameRequest, user: dict = Depends(get_current_user)):
-    vault = user_vault_path(user["id"])
+    vault = user_vault_path(user["username"])
     target = (vault / body.path).resolve()
     try:
         target.relative_to(vault.resolve())
@@ -1264,7 +1421,7 @@ def rename_vault_folder(body: VaultRenameRequest, user: dict = Depends(get_curre
 
 @app.get("/vault/file")
 def vault_file(path: str, user: dict = Depends(get_current_user)):
-    vault = user_vault_path(user["id"])
+    vault = user_vault_path(user["username"])
     full_path = os.path.realpath(os.path.join(str(vault), path))
     vault_real = os.path.realpath(str(vault))
     if not full_path.startswith(vault_real + os.sep) and full_path != vault_real:

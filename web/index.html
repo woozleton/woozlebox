@@ -611,6 +611,50 @@
     }
     body.debug-on .debug-pill { display: inline-block; }
 
+    /* ── Skeleton loader ── */
+    .skel-row {
+      height: 14px; border-radius: 6px;
+      background: linear-gradient(90deg, var(--surface3) 25%, var(--border) 50%, var(--surface3) 75%);
+      background-size: 200% 100%;
+      animation: skel-shimmer 1.4s ease-in-out infinite;
+      margin: 5px 0;
+    }
+    @keyframes skel-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+    /* ── Typing dots (LLM thinking) ── */
+    .typing-dots {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 10px 14px;
+    }
+    .typing-dots span {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--text-faint);
+      animation: typing-bounce 1.2s ease-in-out infinite;
+    }
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typing-bounce {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+      30% { transform: translateY(-6px); opacity: 1; }
+    }
+
+    /* ── Web search caution banner ── */
+    #input-box { position: relative; }
+    #web-caution {
+      display: none;
+      position: absolute;
+      top: calc(100% + 4px);
+      right: 0;
+      align-items: center; gap: 5px;
+      font-size: 0.67rem; color: #f59e0b;
+      letter-spacing: 0.01em; opacity: 0.75;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 10;
+    }
+    #web-caution.visible { display: flex; }
+    #web-caution svg { flex-shrink: 0; }
+
     /* ── Status steps ── */
     .status-steps {
       display: flex;
@@ -1127,7 +1171,8 @@
       position: relative;
       right: auto;
       top: auto;
-      height: auto;
+      height: 100%;
+      align-self: stretch;
       z-index: 1;
       display: flex;
     }
@@ -1155,17 +1200,18 @@
     #vault-close:hover { color: var(--text); }
 
     #vault-meta {
-      padding: 0;
+      padding: 8px 12px;
       font-size: 0.72rem; color: var(--text-dim);
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
-      line-height: 1.6;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
     }
 
     #vault-file-list {
-      flex: 1;
+      flex: 0 1 auto;
       overflow-y: auto;
       padding: 4px 0 4px;
+      min-height: 0;
     }
 
     .vault-folder {
@@ -1216,20 +1262,23 @@
     /* Vault root drop target */
     #vault-file-list.drag-over-root { background: var(--accent-glow); }
     .vault-meta-info {
-      font-size: 0.72rem; color: var(--text-dim); padding: 8px 16px 6px;
+      font-size: 0.7rem; color: var(--text-faint); line-height: 1.5;
+      min-width: 0;
     }
+    .vault-meta-info span { color: var(--text-dim); }
     .vault-meta-actions {
-      display: flex; gap: 6px; padding: 0 16px 10px; justify-content: center;
+      display: flex; gap: 4px; flex-shrink: 0;
     }
     .vault-action-btn {
-      display: flex; align-items: center; justify-content: center; gap: 5px;
-      background: var(--surface3); border: 1px solid var(--border);
-      color: var(--text-dim); border-radius: 999px; padding: 4px 10px;
-      font-size: 0.7rem; font-family: inherit; cursor: pointer; white-space: nowrap;
-      transition: border-color 0.15s, color 0.15s;
+      display: flex; align-items: center; justify-content: center;
+      background: none; border: none;
+      color: var(--text-faint); padding: 3px;
+      cursor: pointer;
+      transition: color 0.15s;
+      border-radius: 4px;
     }
-    .vault-action-btn:hover { border-color: var(--accent); color: var(--accent); }
-    .vault-action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .vault-action-btn:hover { color: var(--accent); }
+    .vault-action-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
     /* inline new-folder row */
     .vault-new-folder-row {
@@ -1253,34 +1302,54 @@
     /* Upload area */
     #vault-upload-area {
       border-top: 1px solid var(--border);
-      padding: 12px 16px;
+      padding: 8px 12px 10px;
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
-      gap: 8px;
     }
     #vault-drop-zone {
-      border: 1px dashed var(--border);
+      border: 1.5px dashed var(--border);
       border-radius: var(--radius);
-      padding: 14px;
       text-align: center;
-      font-size: 0.78rem; color: var(--text-dim);
+      font-size: 0.75rem; color: var(--text-dim);
       cursor: pointer;
-      transition: border-color 0.15s, background 0.15s;
+      transition: border-color 0.15s, background 0.15s, color 0.15s;
+      display: flex; align-items: center; justify-content: center;
+      padding: 12px 8px;
     }
-    #vault-drop-zone.dragover { border-color: var(--accent); background: var(--accent-glow); }
+    #vault-drop-zone:hover { border-color: var(--accent); color: var(--text); }
+    #vault-drop-zone.dragover,
+    #vault-panel.drag-over #vault-drop-zone {
+      border-color: var(--accent); background: var(--accent-glow); color: var(--accent);
+    }
     #vault-drop-zone label { color: var(--accent); cursor: pointer; text-decoration: underline; }
     #vault-file-input { display: none; }
+
+    /* Folder drop highlight for external files */
+    .vault-folder-header.file-drop-over {
+      background: var(--accent-glow); outline: 1px dashed var(--accent); color: var(--accent);
+    }
+    /* Full-panel drag overlay */
+    #vault-panel.drag-over #vault-file-list {
+      position: relative;
+    }
+    #vault-panel.drag-over .vault-folder-header {
+      transition: background 0.1s, outline 0.1s;
+    }
 
     #vault-banner {
       padding: 0 16px;
       font-size: 0.76rem;
       flex-shrink: 0;
     }
+    .vault-indexing-msg {
+      display: flex; align-items: center; gap: 6px;
+      color: var(--accent); font-size: 0.74rem;
+      padding: 6px 0 2px;
+    }
     .vault-banner-msg {
-      background: #1a1a0a; border: 1px solid var(--warning);
-      color: var(--warning); border-radius: 6px;
-      padding: 6px 10px; margin: 8px 0;
+      color: var(--text-dim); border-radius: 4px;
+      padding: 4px 0 2px; font-size: 0.72rem;
     }
 
     /* Voice select in settings */
@@ -1598,6 +1667,10 @@
         <button class="input-btn" id="send-btn" title="Send (Enter)">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
+        <div id="web-caution">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          CAUTION: Your query will be sent to the Internet
+        </div>
       </div>
     </div>
   </div>
@@ -1616,7 +1689,7 @@
     <div id="vault-file-list"></div>
     <div id="vault-upload-area">
       <div id="vault-drop-zone">
-        <div id="vault-drop-hint">Drop files here or <label for="vault-file-input">browse</label></div>
+        <div id="vault-drop-hint"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;opacity:0.5;margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Drop files here or <label for="vault-file-input">browse</label> <span style="opacity:0.4;margin-left:4px;">.md .txt .pdf</span></div>
         <input type="file" id="vault-file-input" accept=".md,.txt,.pdf" multiple />
       </div>
     </div>
@@ -1763,25 +1836,33 @@
           <div class="setting-group">
             <div class="setting-label"><span>Theme</span></div>
             <div class="theme-presets" id="theme-presets">
-              <div class="theme-preset active" data-theme="dark" title="Dark (default)">
-                <div class="theme-preset-swatch"><span style="background:#1a1a2e;"></span><span style="background:#7c6af7;"></span></div>
-                <div class="theme-preset-label">Dark</div>
-              </div>
               <div class="theme-preset" data-theme="midnight" title="Midnight">
                 <div class="theme-preset-swatch"><span style="background:#0d1117;"></span><span style="background:#58a6ff;"></span></div>
                 <div class="theme-preset-label">Midnight</div>
               </div>
               <div class="theme-preset" data-theme="slate" title="Slate">
-                <div class="theme-preset-swatch"><span style="background:#1e2433;"></span><span style="background:#64748b;"></span></div>
+                <div class="theme-preset-swatch"><span style="background:#1e2433;"></span><span style="background:#94a3b8;"></span></div>
                 <div class="theme-preset-label">Slate</div>
               </div>
               <div class="theme-preset" data-theme="forest" title="Forest">
-                <div class="theme-preset-swatch"><span style="background:#0d1f12;"></span><span style="background:#22c55e;"></span></div>
+                <div class="theme-preset-swatch"><span style="background:#122018;"></span><span style="background:#4ade80;"></span></div>
                 <div class="theme-preset-label">Forest</div>
               </div>
+              <div class="theme-preset active" data-theme="dark" title="Dark (default)">
+                <div class="theme-preset-swatch"><span style="background:#1a1a2e;"></span><span style="background:#7c6af7;"></span></div>
+                <div class="theme-preset-label">Dark</div>
+              </div>
+              <div class="theme-preset" data-theme="ember" title="Ember">
+                <div class="theme-preset-swatch"><span style="background:#211508;"></span><span style="background:#f97316;"></span></div>
+                <div class="theme-preset-label">Ember</div>
+              </div>
               <div class="theme-preset" data-theme="rose" title="Rose">
-                <div class="theme-preset-swatch"><span style="background:#1c0e14;"></span><span style="background:#f43f5e;"></span></div>
+                <div class="theme-preset-swatch"><span style="background:#221020;"></span><span style="background:#fb7185;"></span></div>
                 <div class="theme-preset-label">Rose</div>
+              </div>
+              <div class="theme-preset" data-theme="parchment" title="Parchment">
+                <div class="theme-preset-swatch"><span style="background:#faf6eb;border:1px solid #d5ccb0;"></span><span style="background:#a0782a;"></span></div>
+                <div class="theme-preset-label">Parchment</div>
               </div>
               <div class="theme-preset" data-theme="light" title="Light">
                 <div class="theme-preset-swatch"><span style="background:#f0f0f5;border:1px solid #d4d4de;"></span><span style="background:#7c6af7;"></span></div>
@@ -1844,7 +1925,10 @@
             <div class="setting-desc">Show distance/threshold/chunk counts on responses.</div>
           </div>
           <div class="setting-group" style="gap:6px;">
-            <div class="setting-label"><span>Containers</span></div>
+            <div class="setting-label">
+              <span>Containers</span>
+              <button id="dev-refresh-btn" title="Refresh" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--text-dim);cursor:pointer;font-size:0.72rem;padding:2px 8px;line-height:1.6;transition:color 0.15s,border-color 0.15s;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)';" onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)';">↺ Refresh</button>
+            </div>
             <div id="service-status-list" style="display:flex;flex-direction:column;gap:2px;font-size:0.78rem;color:var(--text-dim);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;max-width:380px;"></div>
           </div>
           <div class="setting-group" style="gap:6px;">
@@ -2364,7 +2448,7 @@ function applyUserSession(user) {
   if (user.settings && user.settings !== "{}") {
     try {
       const s = JSON.parse(user.settings);
-      const skip = new Set(["diab_token"]);
+      const skip = new Set(["diab_token", "diab_vault_pinned"]);
       Object.entries(s).forEach(([k, v]) => { if (!skip.has(k)) localStorage.setItem(k, typeof v === "object" ? JSON.stringify(v) : v); });
       // Re-apply brand so DOM reflects any server-side values (e.g. showLoginName toggle)
       applyBrand();
@@ -2467,6 +2551,11 @@ async function loadApp() {
   loadModels();
   loadVoices();
   await loadConversations();
+  applyVaultPin();
+  if (vaultPinned) {
+    await loadVaultFiles();
+    startIndexPolling();
+  }
 }
 
 // ── DOM refs ──
@@ -3334,6 +3423,7 @@ document.querySelectorAll(".settings-nav-item[data-pane]").forEach(item => {
     if (item.dataset.pane === "developer") checkHealth();
   });
 });
+document.getElementById("dev-refresh-btn")?.addEventListener("click", checkHealth);
 
 const VOICE_DESCRIPTIONS = {
   "af_heart":    "Warm, expressive American female. Friendly and natural.",
@@ -3487,10 +3577,12 @@ debugToggle.addEventListener("change", () => {
 });
 
 // ── Web search toggle ──
+const webCaution = document.getElementById("web-caution");
 webBtn.addEventListener("click", () => {
   webSearch = !webSearch;
   webBtn.classList.toggle("active", webSearch);
   webBtn.title = webSearch ? "Web search ON — click to disable" : "Toggle web search";
+  webCaution?.classList.toggle("visible", webSearch);
 });
 
 // ── Confirm modal ──
@@ -3549,10 +3641,21 @@ async function updateContextBar(convId) {
   } catch { /* silently ignore */ }
 }
 
+function showDevSkeleton() {
+  const SKEL = `<div class="skel-row" style="width:80%;"></div><div class="skel-row" style="width:65%;"></div><div class="skel-row" style="width:72%;"></div>`;
+  const list = document.getElementById("service-status-list");
+  const apiList = document.getElementById("api-status-list");
+  if (list) list.innerHTML = SKEL;
+  if (apiList) apiList.innerHTML = `<div class="skel-row" style="width:60%;"></div>`;
+}
+
 async function checkHealth() {
   const list = document.getElementById("service-status-list");
   const apiList = document.getElementById("api-status-list");
+  const refreshBtn = document.getElementById("dev-refresh-btn");
   const ROW = `display:grid;grid-template-columns:16px 1fr auto auto auto;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);`;
+  showDevSkeleton();
+  if (refreshBtn) { refreshBtn.disabled = true; refreshBtn.textContent = "…"; }
   if (list) {
     try {
       const res = await apiFetch(`/containers`);
@@ -3578,7 +3681,7 @@ async function checkHealth() {
       const apis = await res.json();
       apiList.innerHTML = apis.map(a => {
         const ok = a.online;
-        const dot = `<span class="dot ${ok ? 'green' : a.configured ? 'orange' : 'orange'}"></span>`;
+        const dot = `<span class="dot ${ok ? 'green' : 'orange'}"></span>`;
         const status = `<span style="font-size:0.7rem;color:${ok ? 'var(--success)' : 'var(--danger)'};text-align:right;">${ok ? 'Online' : a.configured ? 'Unreachable' : 'Not configured'}</span>`;
         return `<div style="display:grid;grid-template-columns:16px 1fr auto;align-items:center;gap:8px;">${dot}<span>${esc(a.name)}</span>${status}</div>`;
       }).join("");
@@ -3586,6 +3689,7 @@ async function checkHealth() {
       apiList.innerHTML = `<div style="color:var(--danger)">Unavailable</div>`;
     }
   }
+  if (refreshBtn) { refreshBtn.disabled = false; refreshBtn.textContent = "↺ Refresh"; }
 }
 
 async function restartContainer(name) {
@@ -3624,11 +3728,13 @@ applyTextSize(localStorage.getItem(TEXT_SIZE_KEY) || "medium");
 // ── Themes ──
 const THEME_KEY = "diab_theme";
 const THEMES = {
-  dark:     { "--bg": "#12121e", "--surface": "#1a1a2e", "--surface2": "#1f1f33", "--surface3": "#26263a", "--border": "#2e2e45", "--text": "#e8e8f0", "--text-dim": "#888898", "--accent": "#7c6af7", "--user-bubble": "#1e1a40", "--ai-bubble": "#1a1a24" },
   midnight: { "--bg": "#0d1117", "--surface": "#161b22", "--surface2": "#1c2230", "--surface3": "#21283a", "--border": "#30363d", "--text": "#e6edf3", "--text-dim": "#7d8590", "--accent": "#58a6ff", "--user-bubble": "#161d2e", "--ai-bubble": "#13181f" },
   slate:    { "--bg": "#0f1117", "--surface": "#1e2433", "--surface2": "#252c3d", "--surface3": "#2c3347", "--border": "#363d50", "--text": "#e2e5ed", "--text-dim": "#7a8394", "--accent": "#94a3b8", "--user-bubble": "#202840", "--ai-bubble": "#1a2030" },
-  forest:   { "--bg": "#0a150c", "--surface": "#0d1f12", "--surface2": "#122418", "--surface3": "#182e1e", "--border": "#1e3824", "--text": "#e8f5ea", "--text-dim": "#92b89a", "--accent": "#22c55e", "--user-bubble": "#0f2916", "--ai-bubble": "#0c1e10" },
-  rose:     { "--bg": "#130810", "--surface": "#1c0e14", "--surface2": "#23111b", "--surface3": "#2b1523", "--border": "#381a28", "--text": "#faedf2", "--text-dim": "#c08898", "--accent": "#f43f5e", "--user-bubble": "#2a0e1c", "--ai-bubble": "#1c0c14" },
+  forest:   { "--bg": "#0d1a10", "--surface": "#122018", "--surface2": "#182b1e", "--surface3": "#1f3626", "--border": "#2a4a35", "--text": "#dff0e4", "--text-dim": "#7daa89", "--accent": "#4ade80", "--user-bubble": "#132b1a", "--ai-bubble": "#101e14" },
+  dark:     { "--bg": "#12121e", "--surface": "#1a1a2e", "--surface2": "#1f1f33", "--surface3": "#26263a", "--border": "#2e2e45", "--text": "#e8e8f0", "--text-dim": "#888898", "--accent": "#7c6af7", "--user-bubble": "#1e1a40", "--ai-bubble": "#1a1a24" },
+  ember:    { "--bg": "#160e08", "--surface": "#211508", "--surface2": "#2a1c0e", "--surface3": "#352414", "--border": "#4a3018", "--text": "#f5e8d0", "--text-dim": "#b08060", "--accent": "#f97316", "--user-bubble": "#2e1a08", "--ai-bubble": "#1c1008" },
+  rose:     { "--bg": "#180a12", "--surface": "#221020", "--surface2": "#2c1428", "--surface3": "#371830", "--border": "#4d2040", "--text": "#f9e4ef", "--text-dim": "#c07898", "--accent": "#fb7185", "--user-bubble": "#30101e", "--ai-bubble": "#200c18" },
+  parchment: { "--bg": "#f5f0e1", "--surface": "#faf6eb", "--surface2": "#efe9d8", "--surface3": "#e6dfc9", "--border": "#d5ccb0", "--text": "#3b3527", "--text-dim": "#7a7262", "--accent": "#a0782a", "--user-bubble": "#ece5cf", "--ai-bubble": "#f2edd9" },
   light:    { "--bg": "#f0f0f5", "--surface": "#ffffff", "--surface2": "#f4f4f8", "--surface3": "#e8e8ef", "--border": "#d4d4de", "--text": "#1a1a2e", "--text-dim": "#555568", "--accent": "#7c6af7", "--user-bubble": "#ebe8ff", "--ai-bubble": "#f4f4f8" },
 };
 function applyTheme(name, skipAccent = false) {
@@ -3816,15 +3922,49 @@ async function loadSuggestions() {
 
 // ── Re-index (shared logic) ──
 async function runReindex({ statusBtn, statusBtnLabel } = {}) {
-  if (statusBtn) { statusBtn.disabled = true; statusBtn.textContent = "Indexing…"; }
+  if (statusBtn) {
+    statusBtn.disabled = true;
+    statusBtn.innerHTML = `<span class="step-spinner" style="display:inline-block;width:10px;height:10px;margin-right:4px;vertical-align:middle;"></span>Starting…`;
+  }
   try {
-    const res = await apiFetch(`/index`, { method: "POST" });
-    await res.json();
-    if (vaultPanel.classList.contains("open") || vaultPanel.classList.contains("pinned")) loadVaultFiles();
-    checkHealth();
+    const res = await apiFetch(`/index/stream`, { method: "GET" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        let evt;
+        try { evt = JSON.parse(line.slice(6)); } catch { continue; }
+        if (evt.error) { showToast(`Re-index failed: ${evt.error}`); break; }
+        if (statusBtn) {
+          if (evt.complete) {
+            const doneMsg = evt.new === 0
+              ? `✓ Up to date`
+              : `✓ ${evt.new} new file${evt.new !== 1 ? "s" : ""} indexed`;
+            statusBtn.innerHTML = doneMsg;
+            setTimeout(() => {
+              statusBtn.disabled = false;
+              statusBtn.textContent = statusBtnLabel || "↺ Re-index";
+            }, 1800);
+          } else if (evt.total > 0) {
+            statusBtn.innerHTML = `<span class="step-spinner" style="display:inline-block;width:10px;height:10px;margin-right:4px;vertical-align:middle;"></span>${evt.done}/${evt.total} files`;
+          }
+        }
+        if (evt.complete) {
+          if (vaultPanel.classList.contains("open") || vaultPanel.classList.contains("pinned")) loadVaultFiles();
+          checkHealth();
+        }
+      }
+    }
   } catch (e) {
     showToast(`Re-index failed: ${e.message}`);
-  } finally {
     if (statusBtn) { statusBtn.disabled = false; statusBtn.textContent = statusBtnLabel || "↺ Re-index"; }
   }
 }
@@ -4479,13 +4619,18 @@ function stopSpeaking() {
 
 // ── Vault panel ──
 
-function applyVaultPin() {
+function applyVaultPin(fromToggle) {
   if (vaultPinned) {
     vaultPanel.classList.add("pinned", "open");
     overlay.classList.remove("show");
   } else {
-    vaultPanel.classList.remove("pinned", "open");
-    overlay.classList.remove("show");
+    vaultPanel.classList.remove("pinned");
+    if (fromToggle) {
+      // Unpinning — keep panel open as floating overlay
+      vaultPanel.classList.add("open");
+      overlay.classList.add("show");
+    }
+    // On startup (not a toggle), leave the panel closed
   }
   vaultPinBtn.style.color = vaultPinned ? "var(--accent)" : "var(--text-faint)";
   vaultPinBtn.title = vaultPinned ? "Unpin panel" : "Pin panel";
@@ -4497,11 +4642,13 @@ function openVaultPanel() {
   vaultPanel.classList.add("open");
   overlay.classList.add("show");
   loadVaultFiles();
+  startIndexPolling();
 }
 function closeVaultPanel() {
   if (vaultPinned) return;
   vaultPanel.classList.remove("open");
   overlay.classList.remove("show");
+  stopIndexPolling();
 }
 
 const SVG_THUMBTACK = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17z"/></svg>`;
@@ -4509,20 +4656,23 @@ vaultPinBtn.innerHTML = SVG_THUMBTACK;
 vaultPinBtn.addEventListener("click", () => {
   vaultPinned = !vaultPinned;
   localStorage.setItem(VAULT_PIN_KEY, vaultPinned);
-  applyVaultPin();
+  applyVaultPin(true);
   if (vaultPinned) loadVaultFiles();
+  scheduleSettingsSync();
 });
 
 vaultClose.addEventListener("click", () => {
-  if (vaultPinned) {
-    vaultPinned = false;
-    localStorage.setItem(VAULT_PIN_KEY, false);
-  }
-  applyVaultPin();
+  vaultPinned = false;
+  localStorage.setItem(VAULT_PIN_KEY, false);
+  vaultPanel.classList.remove("pinned", "open");
+  overlay.classList.remove("show");
+  vaultPinBtn.style.color = "var(--text-faint)";
+  vaultPinBtn.title = "Pin panel";
+  stopIndexPolling();
+  scheduleSettingsSync();
 });
 
-applyVaultPin();
-if (vaultPinned) loadVaultFiles();
+// applyVaultPin() is called in loadApp() after auth
 
 // ── Panel resize handles ──
 function makePanelResizable(panelId, handleId, storageKey, defaultWidth, minWidth = 220, maxWidth = 700) {
@@ -4646,13 +4796,15 @@ function renderVaultMeta(data) {
     const d = new Date(data.last_indexed);
     lastIndexed = d.toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
   }
-  const SVG_FOLDER_NEW = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`;
-  const SVG_REINDEX    = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>`;
+  const fileCount = data.files?.length || data.files_processed || 0;
+  const chunkCount = data.chunks_upserted || 0;
+  const SVG_FOLDER_NEW = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>`;
+  const SVG_REINDEX    = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>`;
   vaultMeta.innerHTML = `
-    <div class="vault-meta-info">Last indexed: <strong>${lastIndexed}</strong> &nbsp;·&nbsp; ${data.files_processed} file${data.files_processed !== 1 ? "s" : ""} · ${data.chunks_upserted} chunks</div>
+    <div class="vault-meta-info"><span>${fileCount}</span> file${fileCount !== 1 ? "s" : ""} · <span>${chunkCount}</span> chunks</div>
     <div class="vault-meta-actions">
-      <button id="vault-new-folder-btn" class="vault-action-btn" title="New folder">${SVG_FOLDER_NEW}<span>New Folder</span></button>
-      <button id="vault-reindex-btn"    class="vault-action-btn" title="Re-index vault">${SVG_REINDEX}<span>Re-index</span></button>
+      <button id="vault-new-folder-btn" class="vault-action-btn" title="New folder">${SVG_FOLDER_NEW}</button>
+      <button id="vault-reindex-btn"    class="vault-action-btn" title="Re-index vault">${SVG_REINDEX}</button>
     </div>`;
   document.getElementById("vault-reindex-btn").addEventListener("click", () => runReindex({ statusBtn: document.getElementById("vault-reindex-btn"), statusBtnLabel: "Re-index" }));
   document.getElementById("vault-new-folder-btn").addEventListener("click", () => {
@@ -4755,20 +4907,35 @@ function makeFolderEl(folder, items) {
     try {
       const res = await apiFetch(`/vault/folder`, { method:"DELETE", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ folder }) });
       if (!res.ok) throw new Error((await res.json()).detail);
-      showVaultBanner("Folder deleted — click Re-index to update search.");
+      showVaultBanner("Folder deleted — search index will update automatically.");
       loadVaultFiles();
     } catch(e) { showToast(`Delete failed: ${e.message}`); }
   });
 
-  // drag-over: files can be dropped onto folder header
-  header.addEventListener("dragover", (e) => { e.preventDefault(); e.stopPropagation(); header.classList.add("drag-over"); });
-  header.addEventListener("dragleave", () => header.classList.remove("drag-over"));
+  // drag-over: files can be dropped onto folder header (internal moves + external uploads)
+  let _folderDragTimer = null;
+  header.addEventListener("dragover", (e) => {
+    e.preventDefault(); e.stopPropagation();
+    header.classList.add("drag-over", "file-drop-over");
+    // Auto-expand folder after hovering 400ms
+    if (!_folderDragTimer && !folderEl.classList.contains("open")) {
+      _folderDragTimer = setTimeout(() => folderEl.classList.add("open"), 400);
+    }
+  });
+  header.addEventListener("dragleave", () => {
+    header.classList.remove("drag-over", "file-drop-over");
+    clearTimeout(_folderDragTimer); _folderDragTimer = null;
+  });
   header.addEventListener("drop", async (e) => {
     e.preventDefault(); e.stopPropagation();
-    header.classList.remove("drag-over");
+    header.classList.remove("drag-over", "file-drop-over");
+    clearTimeout(_folderDragTimer); _folderDragTimer = null;
+    // Internal vault file move
     const path = e.dataTransfer.getData("text/vault-path");
-    if (!path) return;
-    await moveVaultFile(path, folder);
+    if (path) { await moveVaultFile(path, folder); return; }
+    // External file drop — upload directly to this folder
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length) uploadFiles(files, folder);
   });
 
   const filesDiv = document.createElement("div");
@@ -4807,7 +4974,7 @@ async function moveVaultFile(path, destFolder) {
   try {
     const res = await apiFetch(`/vault/move`, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ path, dest_folder: destFolder }) });
     if (!res.ok) throw new Error((await res.json()).detail);
-    showVaultBanner("File moved — click Re-index to update search.");
+    showVaultBanner("File moved — search index will update automatically.");
     loadVaultFiles();
   } catch(e) { showToast(`Move failed: ${e.message}`); }
 }
@@ -4914,7 +5081,7 @@ async function deleteVaultFile(f) {
       body: JSON.stringify({ path: f.path }),
     });
     if (!res.ok) throw new Error(await res.text());
-    showVaultBanner("File deleted — click Re-index to update search.");
+    showVaultBanner("File deleted — search index will update automatically.");
     loadVaultFiles();
   } catch (e) {
     showToast(`Delete failed: ${e.message}`);
@@ -4922,8 +5089,43 @@ async function deleteVaultFile(f) {
 }
 
 function showVaultBanner(msg) {
-  vaultBanner.innerHTML = `<div class="vault-banner-msg">⚠ ${esc(msg)}</div>`;
-  setTimeout(() => { vaultBanner.innerHTML = ""; }, 8000);
+  vaultBanner.innerHTML = `<div class="vault-banner-msg">${esc(msg)}</div>`;
+}
+
+// ── Auto-index status polling ──
+let _indexPollTimer = null;
+let _lastIndexRunning = false;
+
+async function pollIndexStatus() {
+  try {
+    const res = await apiFetch("/index/status");
+    if (!res.ok) return;
+    const { running, queued } = await res.json();
+    const active = running || queued;
+    const reindexBtn = document.getElementById("vault-reindex-btn");
+
+    if (active) {
+      // Show indexing indicator while active
+      vaultBanner.innerHTML = `<div class="vault-indexing-msg"><span class="step-spinner" style="width:11px;height:11px;flex-shrink:0;"></span>Indexing new files…</div>`;
+      if (reindexBtn) { reindexBtn.disabled = true; reindexBtn.innerHTML = `<span class="step-spinner" style="display:inline-block;width:10px;height:10px;margin-right:4px;vertical-align:middle;"></span>Indexing…`; }
+    } else if (_lastIndexRunning) {
+      // Just finished — refresh file list, show brief done message
+      if (reindexBtn) { reindexBtn.disabled = false; reindexBtn.textContent = "↺ Re-index"; }
+      vaultBanner.innerHTML = `<div class="vault-banner-msg">Indexing complete.</div>`;
+      setTimeout(() => { vaultBanner.innerHTML = ""; }, 4000);
+      loadVaultFiles();
+    }
+    _lastIndexRunning = active;
+  } catch {}
+}
+
+function startIndexPolling() {
+  if (_indexPollTimer) return;
+  _indexPollTimer = setInterval(pollIndexStatus, 2000);
+}
+
+function stopIndexPolling() {
+  if (_indexPollTimer) { clearInterval(_indexPollTimer); _indexPollTimer = null; }
 }
 
 async function uploadFiles(files, subfolder) {
@@ -4948,15 +5150,19 @@ async function uploadFiles(files, subfolder) {
     } catch (e) { errors.push(`${file.name}: network error`); }
   }
   if (uploaded) {
-    showVaultBanner(`${uploaded} file${uploaded>1?"s":""} uploaded — click Re-index to update search.${errors.length ? ` ${errors.length} failed.` : ""}`);
+    showVaultBanner(`${uploaded} file${uploaded>1?"s":""} uploaded.${errors.length ? ` ${errors.length} failed.` : ""}`);
     loadVaultFiles();
+    startIndexPolling();
   }
   if (errors.length && !uploaded) {
     showToast(`Upload failed: ${errors[0]}`);
   }
 }
 
-// File picker
+// File picker — clicking drop zone opens picker (label handles itself)
+vaultDropZone.addEventListener("click", (e) => {
+  if (e.target === vaultDropZone || e.target.id === "vault-drop-hint") vaultFileInput.click();
+});
 vaultFileInput.addEventListener("change", () => {
   if (vaultFileInput.files.length) uploadFiles(Array.from(vaultFileInput.files), "");
   vaultFileInput.value = "";
@@ -4972,6 +5178,26 @@ vaultDropZone.addEventListener("drop", async (e) => {
   if (vaultPath) { await moveVaultFile(vaultPath, ""); return; }
   const files = Array.from(e.dataTransfer.files);
   if (files.length) uploadFiles(files, "");
+});
+
+// Panel-level drag detection — highlight when dragging external files over vault panel
+vaultPanel.addEventListener("dragenter", (e) => {
+  if (e.dataTransfer.types.includes("Files")) vaultPanel.classList.add("drag-over");
+});
+vaultPanel.addEventListener("dragleave", (e) => {
+  if (!vaultPanel.contains(e.relatedTarget)) vaultPanel.classList.remove("drag-over");
+});
+vaultPanel.addEventListener("dragover", (e) => {
+  if (e.dataTransfer.types.includes("Files")) e.preventDefault();
+});
+vaultPanel.addEventListener("drop", (e) => {
+  vaultPanel.classList.remove("drag-over");
+  // If dropped on the panel but NOT on a folder header or drop zone, upload to root
+  if (e.dataTransfer.types.includes("Files") && !e.defaultPrevented) {
+    e.preventDefault();
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length) uploadFiles(files, "");
+  }
 });
 
 
@@ -5405,13 +5631,22 @@ function createStreamingBubble() {
   wrap.innerHTML = `<div class="ai-avatar-bubble">${aiAvatarInnerS}</div>`;
   const bubble = document.createElement("div");
   bubble.className = "bubble";
-  bubble.innerHTML = `<span class="stream-cursor"></span>`;
+  // Show typing dots until first token arrives
+  bubble.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div>`;
   wrap.appendChild(bubble);
   row.appendChild(wrap);
   chatWindow.appendChild(row);
   scrollBottom();
 
+  let rawText = "";
+  let typingDotsRemoved = false;
+
   function appendToken(token) {
+    if (!typingDotsRemoved) {
+      bubble.innerHTML = `<span class="stream-cursor"></span>`;
+      typingDotsRemoved = true;
+    }
+    rawText += token;
     const cursor = bubble.querySelector(".stream-cursor");
     const textNode = document.createTextNode(token);
     bubble.insertBefore(textNode, cursor);
@@ -5419,8 +5654,66 @@ function createStreamingBubble() {
   }
 
   function finalize(fullText, sources, webSources, modelUsed, debugData, stepRows, webSearchQuery) {
-    row.remove();
-    appendAIBubble(fullText, sources, webSources, modelUsed, debugData, stepRows, webSearchQuery);
+    // Remove status steps
+    stepRows?.forEach(r => r.remove());
+
+    // Replace streaming bubble content with rendered markdown in-place (no DOM remove/re-add)
+    bubble.innerHTML = renderMarkdown(fullText);
+
+    // Build meta row
+    const totalSources = sources.length + webSources.length;
+    let sourcesToggle = "", sourcesPanelHtml = "";
+    if (totalSources > 0) {
+      const parts = [];
+      if (sources.length) parts.push(`${sources.length} vault source${sources.length>1?"s":""}`);
+      if (webSources.length) parts.push(`${webSources.length} web result${webSources.length>1?"s":""}`);
+      sourcesToggle = `<button class="sources-toggle" title="Show sources"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>${parts.join(", ")}</button>`;
+      let panelItems = "";
+      if (sources.length) {
+        panelItems += `<div class="sources-panel-label">Vault</div>`;
+        sources.forEach(s => { const name = s.split("/").pop(); panelItems += `<button class="source-link" data-path="${esc(s)}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>${esc(name)}</button>`; });
+      }
+      if (webSources.length) {
+        const webLabel = webSearchQuery ? `Web — <em style="opacity:0.6;font-style:normal;">${esc(webSearchQuery)}</em>` : "Web";
+        panelItems += `<div class="sources-panel-label" style="margin-top:4px;">${webLabel}</div>`;
+        webSources.forEach(s => { panelItems += `<a class="web-link" href="${esc(s.url)}" target="_blank" rel="noopener"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><span>${esc(s.title||s.url)}</span></a>`; });
+      }
+      sourcesPanelHtml = `<div class="sources-panel">${panelItems}</div>`;
+    }
+    const debugHtml = debugData ? `<span class="debug-pill">dist:${debugData.best_distance?.toFixed(3)} thr:${debugData.threshold} chunks:${debugData.chunks_used}/${debugData.chunks_retrieved}</span>` : "";
+    const modelTag = modelUsed ? `<span class="model-tag">${esc(modelUsed)}</span>` : "";
+
+    const meta = document.createElement("div");
+    meta.className = "msg-meta";
+    meta.innerHTML = `<span class="timestamp">${ts()}</span>${modelUsed ? `<span class="meta-sep">·</span>${modelTag}` : ""}${debugHtml}${sourcesToggle ? `<span class="meta-sep">·</span>${sourcesToggle}` : ""}<span class="bubble-actions" style="margin-left:auto;"><button class="tts-btn bubble-action-btn" title="Play"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></button><button class="copy-btn bubble-action-btn" title="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></span>`;
+    wrap.appendChild(meta);
+    if (sourcesPanelHtml) { const sp = document.createElement("div"); sp.innerHTML = sourcesPanelHtml; wrap.appendChild(sp.firstChild); }
+
+    // Wire copy button
+    meta.querySelector(".copy-btn").addEventListener("click", function() {
+      navigator.clipboard.writeText(fullText).then(() => {
+        this.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 18 4 13"/></svg>';
+        this.classList.add("copied");
+        setTimeout(() => { this.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>'; this.classList.remove("copied"); }, 2000);
+      });
+    });
+    // Wire TTS button
+    const playBtn = meta.querySelector(".tts-btn");
+    playBtn.addEventListener("click", () => { if (playBtn.classList.contains("playing")) { stopSpeaking(); } else { speakText(fullText, getVoice(), playBtn); } });
+    // Wire sources toggle
+    const toggle = meta.querySelector(".sources-toggle");
+    if (toggle) {
+      const panel = wrap.querySelector(".sources-panel");
+      toggle.addEventListener("click", () => {
+        const open = panel.classList.toggle("open");
+        toggle.classList.toggle("open", open);
+        if (open) setTimeout(() => { const pb = panel.getBoundingClientRect().bottom; const wb = chatWindow.getBoundingClientRect().bottom; if (pb > wb) chatWindow.scrollTop += pb - wb + 8; }, 50);
+      });
+    }
+    // Wire vault source links
+    wrap.querySelectorAll(".source-link").forEach(btn => { btn.addEventListener("click", () => openVaultFile(btn.dataset.path)); });
+
+    scrollBottom();
   }
 
   return { row, appendToken, finalize };
