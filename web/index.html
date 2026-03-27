@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Dave-in-a-Box</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -514,7 +516,7 @@
     .message-row.ai .bubble pre { background: var(--surface3); border-radius: 6px; padding: 10px 12px; overflow-x: auto; margin: 0.4em 0; }
     .message-row.ai .bubble pre code { background: none; padding: 0; }
 
-    /* Copy / TTS action buttons — sit below bubble in msg-meta row */
+    /* Copy / TTS action buttons - sit below bubble in msg-meta row */
     .bubble-action-btn {
       width: 20px; height: 20px;
       background: none;
@@ -984,7 +986,7 @@
     /* Icon-only header button override */
     .hbtn.icon-btn { padding: 4px 8px; font-size: 1rem; gap: 0; }
 
-    /* Sidebar collapsed — icon strip */
+    /* Sidebar collapsed - icon strip */
     body.sidebar-collapsed #sidebar { width: 52px; overflow: hidden; }
 
     /* Icon strip shown only when collapsed */
@@ -1547,12 +1549,266 @@
       padding: 12px 20px; border-top: 1px solid var(--border);
     }
     #admin-create-error { font-size: 0.78rem; color: var(--danger); min-height: 16px; }
+
+    /* ═══════════════════════════════════════
+       MOBILE HAMBURGER BUTTON
+    ═══════════════════════════════════════ */
+    #mobile-menu-btn {
+      display: none;
+      position: fixed;
+      top: calc(env(safe-area-inset-top, 0px) + 8px);
+      left: calc(env(safe-area-inset-left, 0px) + 8px);
+      z-index: 210;
+      width: 40px; height: 40px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-dim);
+      cursor: pointer;
+      align-items: center; justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.15s;
+    }
+    #mobile-menu-btn:active { background: var(--surface3); }
+    body.mobile-sidebar-open #mobile-menu-btn { display: none !important; }
+
+    /* Mobile sidebar overlay backdrop */
+    #mobile-sidebar-backdrop {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 195;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #mobile-sidebar-backdrop.show { display: block; }
+
+    /* ═══════════════════════════════════════
+       TABLET (≤1024px)
+    ═══════════════════════════════════════ */
+    @media (max-width: 1024px) {
+      #input-area { padding: 8px 40px 40px; }
+      .message-row { max-width: 90%; }
+
+      /* Settings dialog: wider on tablet */
+      #settings-dialog { min-width: 0; width: 95vw; height: 90vh; }
+
+      /* Vault panel: slightly narrower */
+      #vault-panel { width: 300px; right: -320px; }
+    }
+
+    /* ═══════════════════════════════════════
+       PHONE (≤768px)
+    ═══════════════════════════════════════ */
+    @media (max-width: 768px) {
+      /* Safe area padding */
+      body {
+        padding-top: env(safe-area-inset-top, 0px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        padding-left: env(safe-area-inset-left, 0px);
+        padding-right: env(safe-area-inset-right, 0px);
+      }
+
+      /* Show hamburger menu */
+      #mobile-menu-btn { display: flex; }
+
+      /* Sidebar: off-screen overlay on mobile */
+      #sidebar {
+        position: fixed !important;
+        left: -280px;
+        top: 0; bottom: 0;
+        width: 280px !important;
+        z-index: 200;
+        transition: left 0.25s ease;
+        border-right: 1px solid var(--border);
+      }
+      #sidebar.mobile-open {
+        left: 0;
+      }
+      /* Hide desktop sidebar collapse controls */
+      #sidebar-toggle { display: none !important; }
+      #sidebar-resize-handle { display: none !important; }
+      #sidebar-open-btn { display: none !important; }
+      /* Override collapsed state on mobile - always show full sidebar when open */
+      body.sidebar-collapsed #sidebar { width: 280px !important; }
+      body.sidebar-collapsed #sidebar-icon-strip { display: none; }
+      body.sidebar-collapsed #sidebar-top { display: flex; }
+      body.sidebar-collapsed #sidebar-logo { justify-content: flex-start; }
+      body.sidebar-collapsed #sidebar-title { display: inline; }
+      body.sidebar-collapsed #conv-search-wrap { display: block; }
+      body.sidebar-collapsed #conv-list { display: block; }
+      body.sidebar-collapsed #sidebar-bottom { display: flex; }
+      body.sidebar-collapsed #topics-section { display: block; }
+      body.sidebar-collapsed #topics-divider { display: block; }
+
+      /* Chat area: full width, reduced padding */
+      #chat-window { padding: 16px 10px 8px; }
+      #chat-window.welcome-only { padding-bottom: 10vh; }
+      .message-row { max-width: 100%; }
+      .message-row.user { padding-right: 6px; }
+      .message-row.ai { padding-left: 6px; }
+      .bubble { font-size: 0.88rem; padding: 9px 12px; }
+
+      /* Welcome screen */
+      .welcome { padding: 0 12px; }
+      .welcome h2 { font-size: 1.15rem; }
+      .welcome-avatar { width: 56px; height: 56px; }
+      #chat-suggestions { max-width: 100%; }
+      .suggestion-chip { padding: 8px 12px; font-size: 0.78rem; }
+
+      /* Input area: more bottom padding on mobile so caution text is visible */
+      #input-area {
+        padding: 6px 10px calc(env(safe-area-inset-bottom, 0px) + 28px);
+      }
+      #input-box { border-radius: 14px; padding: 0 6px 0 12px; }
+      #message-input { font-size: 16px; height: 42px; } /* 16px prevents iOS zoom */
+      /* Move web caution above the input box on mobile */
+      #web-caution {
+        top: auto;
+        bottom: calc(100% + 4px);
+        right: 8px;
+      }
+
+      /* Topic crumb: compact */
+      #topic-crumb { padding: 0 2px 6px; }
+      #ctx-bar-wrap { display: none !important; } /* hide context meter on phone */
+
+      /* Mobile header spacer for hamburger */
+      #chat-area { padding-top: 48px; }
+
+      /* Vault panel: full screen on mobile */
+      #vault-panel {
+        width: 100% !important;
+        right: -100% !important;
+        max-width: none;
+      }
+      #vault-panel.open { right: 0 !important; }
+      #vault-panel.pinned {
+        position: fixed !important;
+        right: 0 !important;
+        width: 100% !important;
+        top: 0; bottom: 0;
+        z-index: 200;
+      }
+      #vault-resize-handle { display: none !important; }
+
+      /* Settings: full screen on mobile */
+      #settings-dialog {
+        width: 100vw !important;
+        height: 100vh !important;
+        max-width: 100vw !important;
+        max-height: 100vh !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        border-radius: 0;
+        resize: none;
+      }
+      #settings-body { flex-direction: column; }
+      #settings-nav {
+        width: 100% !important;
+        flex-direction: row;
+        overflow-x: auto;
+        overflow-y: hidden;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        padding: 8px 10px 8px;
+        gap: 6px;
+        flex-shrink: 0;
+        -webkit-overflow-scrolling: touch;
+        align-items: center;
+      }
+      #settings-nav::-webkit-scrollbar { display: none; }
+      .settings-nav-item {
+        padding: 6px 14px;
+        white-space: nowrap;
+        flex-shrink: 0;
+        font-size: 0.78rem;
+        border-radius: 20px;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        text-align: center;
+      }
+      .settings-nav-item.active {
+        background: var(--accent-glow);
+        border-color: var(--accent-dim);
+      }
+      .settings-nav-item .nav-sub { display: none; } /* hide descriptions in pill tabs */
+      .settings-nav-label { display: none; }
+      #admin-nav-divider { display: none !important; }
+      #settings-content { padding: 16px 14px; }
+      #settings-header { padding: 14px 16px 12px; }
+      .settings-pane-title { font-size: 0.92rem; }
+
+      /* Auth cards: full width on mobile */
+      .auth-card {
+        width: 100%;
+        max-width: 340px;
+        padding: 28px 24px;
+      }
+      .auth-card h1 { font-size: 1.2rem; }
+
+      /* Modals: wider on mobile */
+      #confirm-modal-inner,
+      #add-user-modal-inner,
+      #topic-modal-inner { max-width: 96vw; }
+      #file-modal-inner { width: 100vw !important; height: 100vh !important; max-width: 100vw !important; border-radius: 0; }
+      #search-modal > div { max-width: 96vw; }
+
+      /* Admin table: scrollable on mobile */
+      #pane-admin .setting-group { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .admin-table { font-size: 0.75rem; min-width: 480px; }
+      .admin-table th, .admin-table td { padding: 8px 4px; }
+      .admin-avatar { width: 24px; height: 24px; font-size: 0.6rem; }
+
+      /* Logo upload row: wrap on mobile */
+      #pane-interface .setting-group > div[style*="flex-wrap:nowrap"] {
+        flex-wrap: wrap !important;
+      }
+
+      /* Touch-friendly targets */
+      .conv-item { padding: 8px 10px; min-height: 40px; }
+      .conv-menu-btn { opacity: 1; padding: 4px 8px; } /* Always visible on touch */
+      .topic-menu-btn { opacity: 1; }
+      .vault-folder-actions { opacity: 1; }
+      .bubble-actions { opacity: 1; pointer-events: auto; }
+      .strip-btn { width: 40px; height: 40px; }
+
+      /* Prevent text selection on interactive elements (mobile UX) */
+      button, .conv-item, .topic-row, .sidebar-row, .settings-nav-item {
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      /* Toast positioning */
+      #toast { bottom: calc(env(safe-area-inset-bottom, 8px) + 70px); }
+
+      /* Web caution: below input on mobile */
+      #web-caution { font-size: 0.62rem; }
+    }
+
+    /* ═══════════════════════════════════════
+       SMALL PHONE (≤390px, e.g. iPhone mini/SE)
+    ═══════════════════════════════════════ */
+    @media (max-width: 390px) {
+      #sidebar { width: 260px !important; left: -260px; }
+      #sidebar.mobile-open { left: 0; }
+      body.sidebar-collapsed #sidebar { width: 260px !important; }
+      .auth-card { padding: 24px 18px; }
+      #input-area { padding: 4px 6px calc(env(safe-area-inset-bottom, 6px) + 6px); }
+      .suggestion-chip { padding: 7px 10px; font-size: 0.75rem; }
+      .settings-nav-item { padding: 5px 10px; font-size: 0.75rem; }
+    }
   </style>
 </head>
 <body>
 
 <!-- hidden TTS btn kept for JS -->
 <button id="tts-btn" style="display:none">🔊</button>
+
+<!-- Mobile hamburger menu button -->
+<button id="mobile-menu-btn" aria-label="Open menu">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+</button>
+<!-- Mobile sidebar backdrop -->
+<div id="mobile-sidebar-backdrop"></div>
 
 <!-- MAIN -->
 <div id="main">
@@ -2192,17 +2448,17 @@
           <div class="setting-group">
             <div class="setting-label"><span>TTS Voice</span></div>
             <select id="admin-default-voice" class="setting-input">
-              <option value="af_heart">af_heart — Warm American female</option>
-              <option value="af_bella">af_bella — Clear American female</option>
-              <option value="af_nicole">af_nicole — Soft American female</option>
-              <option value="af_sarah">af_sarah — Bright American female</option>
-              <option value="af_sky">af_sky — Airy American female</option>
-              <option value="am_adam">am_adam — Neutral American male</option>
-              <option value="am_michael">am_michael — Deep American male</option>
-              <option value="bf_emma">bf_emma — Refined British female</option>
-              <option value="bf_isabella">bf_isabella — Warm British female</option>
-              <option value="bm_george">bm_george — Classic British male</option>
-              <option value="bm_lewis">bm_lewis — Crisp British male</option>
+              <option value="af_heart">af_heart - Warm American female</option>
+              <option value="af_bella">af_bella - Clear American female</option>
+              <option value="af_nicole">af_nicole - Soft American female</option>
+              <option value="af_sarah">af_sarah - Bright American female</option>
+              <option value="af_sky">af_sky - Airy American female</option>
+              <option value="am_adam">am_adam - Neutral American male</option>
+              <option value="am_michael">am_michael - Deep American male</option>
+              <option value="bf_emma">bf_emma - Refined British female</option>
+              <option value="bf_isabella">bf_isabella - Warm British female</option>
+              <option value="bm_george">bm_george - Classic British male</option>
+              <option value="bm_lewis">bm_lewis - Crisp British male</option>
             </select>
           </div>
 
@@ -2332,18 +2588,18 @@
       <button id="topic-modal-close">✕</button>
     </div>
     <div id="topic-modal-body">
-      <div class="pm-hint" style="margin-bottom:4px;">Topics organize your conversations and vault files into separate workspaces — like Health, Finance, or Work. Each topic can have its own AI behavior.</div>
+      <div class="pm-hint" style="margin-bottom:4px;">Topics organize your conversations and files into separate workspaces. Each topic can have its own AI behavior.</div>
       <div class="pm-field">
         <label class="pm-label" for="pm-name">Name</label>
-        <input type="text" id="pm-name" class="setting-input" placeholder="e.g. Health Records" />
+        <input type="text" id="pm-name" class="setting-input" placeholder="e.g. Research, Work, Personal" />
       </div>
       <div class="pm-field">
-        <label class="pm-label" for="pm-desc">Description <span style="font-weight:400;color:var(--text-faint);">— optional</span></label>
+        <label class="pm-label" for="pm-desc">Description <span style="font-weight:400;color:var(--text-faint);">(optional)</span></label>
         <textarea id="pm-desc" class="setting-input" rows="2" placeholder="What this topic is for…"></textarea>
       </div>
       <div class="pm-field">
-        <label class="pm-label" for="pm-prompt">System Prompt <span style="font-weight:400;color:var(--text-faint);">— optional</span></label>
-        <textarea id="pm-prompt" class="setting-input" rows="5" placeholder="Instructions for the AI when working in this topic…&#10;&#10;e.g. You are a medical records assistant. Always cite sources. Be precise and concise."></textarea>
+        <label class="pm-label" for="pm-prompt">System Prompt <span style="font-weight:400;color:var(--text-faint);">(optional)</span></label>
+        <textarea id="pm-prompt" class="setting-input" rows="5" placeholder="Instructions for the AI when working in this topic...&#10;&#10;e.g. Always cite sources. Be precise and concise."></textarea>
         <div class="pm-hint">Custom AI instructions for every chat in this topic. Leave blank to use the default.</div>
       </div>
     </div>
@@ -2487,7 +2743,7 @@ async function initApp() {
   const _t = localStorage.getItem(THEME_KEY);
   if (_t && THEMES[_t]) applyTheme(_t, true);
   else { const _a = localStorage.getItem(ACCENT_KEY); if (_a) applyAccent(_a); }
-  // Fetch server brand in background — patches login screen if admin customised it
+  // Fetch server brand in background - patches login screen if admin customised it
   fetch(`${API}/auth/brand`).then(r => r.json()).then(br => {
     if (br.login_logo) applyLoginLogo(br.login_logo);
     if (br.logo)       applyLogo(br.logo);
@@ -2763,7 +3019,7 @@ function applyLogo(dataUrl) {
   if (dataUrl) {
     letter.style.display = "none";
     img.src = dataUrl; img.style.display = "";
-    // Hide the text name when a logo image is present — wide logos act as the wordmark
+    // Hide the text name when a logo image is present - wide logos act as the wordmark
     if (title) title.style.display = "none";
     if (prev) { prev.src = dataUrl; prev.style.display = ""; }
     if (prevLetter) prevLetter.style.display = "none";
@@ -3120,7 +3376,7 @@ function renderTopicsSidebar() {
         ${p.description ? `<div class="topic-row-desc">${esc(p.description)}</div>` : ""}
       </div>
       <button class="topic-menu-btn" title="Topic options">⋯</button>`;
-    // Click to select (no deselect — a topic is always active)
+    // Click to select (no deselect - a topic is always active)
     row.addEventListener("click", e => {
       if (e.target.classList.contains("topic-menu-btn")) return;
       activeTopicId = p.id;
@@ -3140,7 +3396,7 @@ function renderTopicsSidebar() {
       row.classList.remove("drag-over");
       const cid = e.dataTransfer.getData("text/plain");
       if (!cid || p.id === activeTopicId) {
-        // Moving within same topic or to same topic — still reassign
+        // Moving within same topic or to same topic - still reassign
       }
       if (!cid) return;
       await apiFetch(`/conversations/${cid}/move`, {
@@ -3301,6 +3557,51 @@ document.getElementById("strip-vault-btn").addEventListener("click", openVaultPa
 document.getElementById("vault-sidebar-btn").addEventListener("click", openVaultPanel);
 document.getElementById("strip-settings-btn").addEventListener("click", () => document.getElementById("settings-btn").click());
 
+// ── Mobile sidebar ──
+const mobileMenuBtn = document.getElementById("mobile-menu-btn");
+const mobileSidebarBackdrop = document.getElementById("mobile-sidebar-backdrop");
+const sidebar = document.getElementById("sidebar");
+
+function isMobile() { return window.innerWidth <= 768; }
+
+function openMobileSidebar() {
+  sidebar.classList.add("mobile-open");
+  mobileSidebarBackdrop.classList.add("show");
+  document.body.classList.add("mobile-sidebar-open");
+}
+function closeMobileSidebar() {
+  sidebar.classList.remove("mobile-open");
+  mobileSidebarBackdrop.classList.remove("show");
+  document.body.classList.remove("mobile-sidebar-open");
+}
+
+mobileMenuBtn.addEventListener("click", () => {
+  if (sidebar.classList.contains("mobile-open")) closeMobileSidebar();
+  else openMobileSidebar();
+});
+mobileSidebarBackdrop.addEventListener("click", closeMobileSidebar);
+
+// Close mobile sidebar when a nav action is taken
+["new-chat-btn", "vault-sidebar-btn", "settings-btn", "search-open-btn", "logout-btn"].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener("click", () => { if (isMobile()) closeMobileSidebar(); });
+});
+// Also close on conversation item click
+document.getElementById("conv-list").addEventListener("click", (e) => {
+  if (isMobile() && e.target.closest(".conv-item")) closeMobileSidebar();
+});
+// Also close on topic click
+document.getElementById("topics-list").addEventListener("click", (e) => {
+  if (isMobile() && e.target.closest(".topic-row")) closeMobileSidebar();
+});
+
+// On resize, clean up mobile state if switching to desktop
+window.addEventListener("resize", () => {
+  if (!isMobile()) {
+    closeMobileSidebar();
+  }
+});
+
 // ── Search modal ──
 const searchModal = document.getElementById("search-modal");
 const searchInput = document.getElementById("search-modal-input");
@@ -3381,14 +3682,14 @@ function applyTTS(enabled) {
   localStorage.setItem(TTS_KEY, enabled);
   ttsBtn.innerHTML = enabled ? SVG_VOL_ON : SVG_VOL_OFF;
   ttsBtn.classList.toggle("active", enabled);
-  ttsBtn.title = enabled ? "TTS on — click to mute" : "TTS muted — click to enable";
+  ttsBtn.title = enabled ? "TTS on, click to mute" : "TTS muted, click to enable";
   const toggle = document.getElementById("tts-toggle");
   if (toggle) toggle.checked = enabled;
 }
 applyTTS(ttsEnabled);
 ttsBtn.addEventListener("click", () => { applyTTS(!ttsEnabled); if (!ttsEnabled) stopSpeaking(); });
 
-// TTS settings toggle — wired after settings panel is injected
+// TTS settings toggle - wired after settings panel is injected
 document.getElementById("tts-toggle").checked = ttsEnabled;
 document.getElementById("tts-toggle").addEventListener("change", (e) => {
   applyTTS(e.target.checked);
@@ -3400,6 +3701,7 @@ let voicesLoaded = false;
 
 function openSettings() {
   closeVaultPanel();
+  if (isMobile()) closeMobileSidebar();
   settingsPanel.classList.add("open");
   if (!voicesLoaded) loadVoices();
   loadMemory();
@@ -3443,7 +3745,7 @@ function updateVoiceDesc() {
   if (desc) desc.textContent = VOICE_DESCRIPTIONS[voiceSelect.value] || "";
 }
 const VOICE_NAMES = {
-  // American English — Female
+  // American English - Female
   af_heart:       "American Female – Heart",
   af_bella:       "American Female – Bella",
   af_nicole:      "American Female – Nicole",
@@ -3455,7 +3757,7 @@ const VOICE_NAMES = {
   af_sky:         "American Female – Sky",
   af_jessica:     "American Female – Jessica",
   af_river:       "American Female – River",
-  // American English — Male
+  // American English - Male
   am_fenrir:      "American Male – Fenrir",
   am_michael:     "American Male – Michael",
   am_puck:        "American Male – Puck",
@@ -3465,53 +3767,53 @@ const VOICE_NAMES = {
   am_onyx:        "American Male – Onyx",
   am_santa:       "American Male – Santa",
   am_adam:        "American Male – Adam",
-  // British English — Female
+  // British English - Female
   bf_emma:        "British Female – Emma",
   bf_isabella:    "British Female – Isabella",
   bf_alice:       "British Female – Alice",
   bf_lily:        "British Female – Lily",
-  // British English — Male
+  // British English - Male
   bm_fable:       "British Male – Fable",
   bm_george:      "British Male – George",
   bm_lewis:       "British Male – Lewis",
   bm_daniel:      "British Male – Daniel",
-  // Japanese — Female
+  // Japanese - Female
   jf_alpha:       "Japanese Female – Alpha",
   jf_gongitsune:  "Japanese Female – Gongitsune",
   jf_tebukuro:    "Japanese Female – Tebukuro",
   jf_nezumi:      "Japanese Female – Nezumi",
-  // Japanese — Male
+  // Japanese - Male
   jm_kumo:        "Japanese Male – Kumo",
-  // Mandarin Chinese — Female
+  // Mandarin Chinese - Female
   zf_xiaobei:     "Chinese Female – Xiaobei",
   zf_xiaoni:      "Chinese Female – Xiaoni",
   zf_xiaoxiao:    "Chinese Female – Xiaoxiao",
   zf_xiaoyi:      "Chinese Female – Xiaoyi",
-  // Mandarin Chinese — Male
+  // Mandarin Chinese - Male
   zm_yunjian:     "Chinese Male – Yunjian",
   zm_yunxi:       "Chinese Male – Yunxi",
   zm_yunxia:      "Chinese Male – Yunxia",
   zm_yunyang:     "Chinese Male – Yunyang",
-  // Spanish — Female
+  // Spanish - Female
   ef_dora:        "Spanish Female – Dora",
-  // Spanish — Male
+  // Spanish - Male
   em_alex:        "Spanish Male – Alex",
   em_santa:       "Spanish Male – Santa",
-  // French — Female
+  // French - Female
   ff_siwis:       "French Female – Siwis",
-  // Hindi — Female
+  // Hindi - Female
   hf_alpha:       "Hindi Female – Alpha",
   hf_beta:        "Hindi Female – Beta",
-  // Hindi — Male
+  // Hindi - Male
   hm_omega:       "Hindi Male – Omega",
   hm_psi:         "Hindi Male – Psi",
-  // Italian — Female
+  // Italian - Female
   if_sara:        "Italian Female – Sara",
-  // Italian — Male
+  // Italian - Male
   im_nicola:      "Italian Male – Nicola",
-  // Brazilian Portuguese — Female
+  // Brazilian Portuguese - Female
   pf_dora:        "Portuguese Female – Dora",
-  // Brazilian Portuguese — Male
+  // Brazilian Portuguese - Male
   pm_alex:        "Portuguese Male – Alex",
   pm_santa:       "Portuguese Male – Santa",
 };
@@ -3526,7 +3828,7 @@ async function loadVoices() {
     voicesLoaded = true;
     updateVoiceDesc();
   } catch {
-    // Kokoro unavailable — keep placeholder
+    // Kokoro unavailable - keep placeholder
   }
 }
 voiceSelect.addEventListener("change", updateVoiceDesc);
@@ -3581,7 +3883,7 @@ const webCaution = document.getElementById("web-caution");
 webBtn.addEventListener("click", () => {
   webSearch = !webSearch;
   webBtn.classList.toggle("active", webSearch);
-  webBtn.title = webSearch ? "Web search ON — click to disable" : "Toggle web search";
+  webBtn.title = webSearch ? "Web search ON, click to disable" : "Toggle web search";
   webCaution?.classList.toggle("visible", webSearch);
 });
 
@@ -4620,13 +4922,19 @@ function stopSpeaking() {
 // ── Vault panel ──
 
 function applyVaultPin(fromToggle) {
-  if (vaultPinned) {
+  // On mobile, pinning acts as a persistent full-screen overlay (no side-by-side)
+  if (vaultPinned && !isMobile()) {
     vaultPanel.classList.add("pinned", "open");
     overlay.classList.remove("show");
+  } else if (vaultPinned && isMobile()) {
+    // On mobile, "pinned" just means it stays open as overlay
+    vaultPanel.classList.remove("pinned");
+    vaultPanel.classList.add("open");
+    overlay.classList.add("show");
   } else {
     vaultPanel.classList.remove("pinned");
     if (fromToggle) {
-      // Unpinning — keep panel open as floating overlay
+      // Unpinning - keep panel open as floating overlay
       vaultPanel.classList.add("open");
       overlay.classList.add("show");
     }
@@ -4639,6 +4947,7 @@ function applyVaultPin(fromToggle) {
 function openVaultPanel() {
   if (vaultPinned) return;
   closeSettings();
+  if (isMobile()) closeMobileSidebar();
   vaultPanel.classList.add("open");
   overlay.classList.add("show");
   loadVaultFiles();
@@ -4907,7 +5216,7 @@ function makeFolderEl(folder, items) {
     try {
       const res = await apiFetch(`/vault/folder`, { method:"DELETE", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ folder }) });
       if (!res.ok) throw new Error((await res.json()).detail);
-      showVaultBanner("Folder deleted — search index will update automatically.");
+      showVaultBanner("Folder deleted. Search index will update automatically.");
       loadVaultFiles();
     } catch(e) { showToast(`Delete failed: ${e.message}`); }
   });
@@ -4933,7 +5242,7 @@ function makeFolderEl(folder, items) {
     // Internal vault file move
     const path = e.dataTransfer.getData("text/vault-path");
     if (path) { await moveVaultFile(path, folder); return; }
-    // External file drop — upload directly to this folder
+    // External file drop - upload directly to this folder
     const files = Array.from(e.dataTransfer.files);
     if (files.length) uploadFiles(files, folder);
   });
@@ -4974,7 +5283,7 @@ async function moveVaultFile(path, destFolder) {
   try {
     const res = await apiFetch(`/vault/move`, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ path, dest_folder: destFolder }) });
     if (!res.ok) throw new Error((await res.json()).detail);
-    showVaultBanner("File moved — search index will update automatically.");
+    showVaultBanner("File moved. Search index will update automatically.");
     loadVaultFiles();
   } catch(e) { showToast(`Move failed: ${e.message}`); }
 }
@@ -5081,7 +5390,7 @@ async function deleteVaultFile(f) {
       body: JSON.stringify({ path: f.path }),
     });
     if (!res.ok) throw new Error(await res.text());
-    showVaultBanner("File deleted — search index will update automatically.");
+    showVaultBanner("File deleted. Search index will update automatically.");
     loadVaultFiles();
   } catch (e) {
     showToast(`Delete failed: ${e.message}`);
@@ -5109,7 +5418,7 @@ async function pollIndexStatus() {
       vaultBanner.innerHTML = `<div class="vault-indexing-msg"><span class="step-spinner" style="width:11px;height:11px;flex-shrink:0;"></span>Indexing new files…</div>`;
       if (reindexBtn) { reindexBtn.disabled = true; reindexBtn.innerHTML = `<span class="step-spinner" style="display:inline-block;width:10px;height:10px;margin-right:4px;vertical-align:middle;"></span>Indexing…`; }
     } else if (_lastIndexRunning) {
-      // Just finished — refresh file list, show brief done message
+      // Just finished - refresh file list, show brief done message
       if (reindexBtn) { reindexBtn.disabled = false; reindexBtn.textContent = "↺ Re-index"; }
       vaultBanner.innerHTML = `<div class="vault-banner-msg">Indexing complete.</div>`;
       setTimeout(() => { vaultBanner.innerHTML = ""; }, 4000);
@@ -5159,7 +5468,7 @@ async function uploadFiles(files, subfolder) {
   }
 }
 
-// File picker — clicking drop zone opens picker (label handles itself)
+// File picker - clicking drop zone opens picker (label handles itself)
 vaultDropZone.addEventListener("click", (e) => {
   if (e.target === vaultDropZone || e.target.id === "vault-drop-hint") vaultFileInput.click();
 });
@@ -5168,7 +5477,7 @@ vaultFileInput.addEventListener("change", () => {
   vaultFileInput.value = "";
 });
 
-// Drop zone — upload new files OR move vault files to root
+// Drop zone - upload new files OR move vault files to root
 vaultDropZone.addEventListener("dragover", (e) => { e.preventDefault(); vaultDropZone.classList.add("dragover"); });
 vaultDropZone.addEventListener("dragleave", () => vaultDropZone.classList.remove("dragover"));
 vaultDropZone.addEventListener("drop", async (e) => {
@@ -5180,7 +5489,7 @@ vaultDropZone.addEventListener("drop", async (e) => {
   if (files.length) uploadFiles(files, "");
 });
 
-// Panel-level drag detection — highlight when dragging external files over vault panel
+// Panel-level drag detection - highlight when dragging external files over vault panel
 vaultPanel.addEventListener("dragenter", (e) => {
   if (e.dataTransfer.types.includes("Files")) vaultPanel.classList.add("drag-over");
 });
@@ -5247,7 +5556,7 @@ function stopStream() {
 function setLoading(v) {
   isLoading = v;
   input.disabled = v;
-  sendBtn.disabled = false; // always clickable — acts as stop when loading
+  sendBtn.disabled = false; // always clickable - acts as stop when loading
   sendBtn.innerHTML = v ? SVG_STOP : SVG_SEND;
   sendBtn.title = v ? "Stop" : "Send (Enter)";
   sendBtn.classList.toggle("stopping", v);
@@ -5410,7 +5719,7 @@ function renderMarkdown(text) {
       continue;
     }
 
-    // Blank line — only close list if next non-blank line is NOT another list item
+    // Blank line - only close list if next non-blank line is NOT another list item
     if (line.trim() === '') {
       flushP();
       // Peek ahead: if next non-blank line is a list item of same type, keep list open
@@ -5466,7 +5775,7 @@ function appendAIBubble(text, sources, webSources, modelUsed, debugData, stepRow
       });
     }
     if (webSources.length) {
-      const webLabel = webSearchQuery ? `Web — <em style="opacity:0.6;font-style:normal;">${esc(webSearchQuery)}</em>` : "Web";
+      const webLabel = webSearchQuery ? `Web: <em style="opacity:0.6;font-style:normal;">${esc(webSearchQuery)}</em>` : "Web";
       panelItems += `<div class="sources-panel-label" style="margin-top:4px;">${webLabel}</div>`;
       webSources.forEach(s => {
         panelItems += `<a class="web-link" href="${esc(s.url)}" target="_blank" rel="noopener"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><span>${esc(s.title||s.url)}</span></a>`;
@@ -5609,7 +5918,7 @@ function createStatusSteps() {
     label.textContent = text;
   }
   function completeStep(_, text) {
-    // Just update text — don't hide, next addStep will overwrite
+    // Just update text - don't hide, next addStep will overwrite
     label.textContent = text;
     row.querySelector(".step-icon").innerHTML = `<span class="step-check">✓</span>`;
   }
@@ -5674,7 +5983,7 @@ function createStreamingBubble() {
         sources.forEach(s => { const name = s.split("/").pop(); panelItems += `<button class="source-link" data-path="${esc(s)}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>${esc(name)}</button>`; });
       }
       if (webSources.length) {
-        const webLabel = webSearchQuery ? `Web — <em style="opacity:0.6;font-style:normal;">${esc(webSearchQuery)}</em>` : "Web";
+        const webLabel = webSearchQuery ? `Web: <em style="opacity:0.6;font-style:normal;">${esc(webSearchQuery)}</em>` : "Web";
         panelItems += `<div class="sources-panel-label" style="margin-top:4px;">${webLabel}</div>`;
         webSources.forEach(s => { panelItems += `<a class="web-link" href="${esc(s.url)}" target="_blank" rel="noopener"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><span>${esc(s.title||s.url)}</span></a>`; });
       }
@@ -5809,7 +6118,7 @@ async function sendMessage() {
           if (streamBubble) {
             streamBubble.finalize(fullAnswer, event.sources || [], event.web_sources || [], event.model_used, event.debug, stepRows, event.web_search_query || "");
           } else {
-            // Vault miss — no streaming occurred
+            // Vault miss - no streaming occurred
             stepRows.forEach(r => r.remove());
             appendAIBubble(answerText, event.sources || [], event.web_sources || [], event.model_used, event.debug, null, event.web_search_query || "");
           }
@@ -5838,6 +6147,44 @@ async function sendMessage() {
     input.focus();
   }
 }
+
+// ── iOS / Mobile fixes ──
+// Prevent body scroll bounce on iOS Safari
+document.body.addEventListener("touchmove", (e) => {
+  // Allow scrolling inside scrollable containers
+  let el = e.target;
+  while (el && el !== document.body) {
+    const style = window.getComputedStyle(el);
+    if ((style.overflowY === "auto" || style.overflowY === "scroll") && el.scrollHeight > el.clientHeight) return;
+    if ((style.overflowX === "auto" || style.overflowX === "scroll") && el.scrollWidth > el.clientWidth) return;
+    el = el.parentElement;
+  }
+  e.preventDefault();
+}, { passive: false });
+
+// iOS visual viewport resize handler - adjust input when keyboard appears
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", () => {
+    if (!isMobile()) return;
+    const inputArea = document.getElementById("input-area");
+    // When keyboard is up, the viewport shrinks. Move input up.
+    const vvh = window.visualViewport.height;
+    const wh = window.innerHeight;
+    if (vvh < wh * 0.85) {
+      // Keyboard visible
+      inputArea.style.paddingBottom = "8px";
+    } else {
+      inputArea.style.paddingBottom = "";
+    }
+  });
+}
+
+// Focus input should scroll chat to bottom on mobile
+input.addEventListener("focus", () => {
+  if (isMobile()) {
+    setTimeout(() => chatWindow.scrollTo({ top: chatWindow.scrollHeight }), 300);
+  }
+});
 </script>
 </body>
 </html>
