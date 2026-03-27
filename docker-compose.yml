@@ -57,6 +57,7 @@ services:
       - DB_DIR=/app/data
       - KOKORO_URL=http://kokoro:8880
       - TTS_VOICE=${TTS_VOICE:-af_heart}
+      - IMAGE_GEN_URL=${IMAGE_GEN_URL:-http://image-api:8100}
     depends_on:
       chromadb:
         condition: service_healthy
@@ -67,6 +68,26 @@ services:
   kokoro:
     image: ghcr.io/remsky/kokoro-fastapi-cpu:latest
     container_name: kokoro
+    restart: unless-stopped
+
+  image-api:
+    build: ./image-api
+    container_name: image-api
+    ports:
+      - "${IMAGE_GEN_PORT:-8100}:8100"
+    volumes:
+      - hf_cache:/root/.cache/huggingface
+    environment:
+      - HF_TOKEN=${HF_TOKEN}
+      - FLUX_MODEL_ID=${FLUX_MODEL_ID:-black-forest-labs/FLUX.1-schnell}
+      - HF_HOME=/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     restart: unless-stopped
 
   web:
@@ -82,3 +103,4 @@ volumes:
   chroma_data:
   rag_data:
   ollama_data:
+  hf_cache:

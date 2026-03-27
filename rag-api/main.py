@@ -47,6 +47,7 @@ TAVILY_API_KEY    = os.environ.get("TAVILY_API_KEY", "")
 DB_DIR            = os.environ.get("DB_DIR", "/app/data")
 KOKORO_URL        = os.environ.get("KOKORO_URL", "http://kokoro:8880")
 DEFAULT_VOICE     = os.environ.get("TTS_VOICE", "af_heart")
+IMAGE_GEN_URL     = os.environ.get("IMAGE_GEN_URL", "http://image-api:8100")
 DEFAULT_TOP_K     = 30
 NOT_FOUND_MSG     = "I couldn't find that in your vault."
 SUPPORTED_UPLOAD_EXTENSIONS = {".md", ".txt", ".pdf"}
@@ -805,6 +806,7 @@ async def health():
             ("ollama", f"{OLLAMA_BASE_URL}/api/tags"),
             ("chromadb", f"http://{os.environ.get('CHROMA_HOST','chromadb')}:{os.environ.get('CHROMA_PORT_INTERNAL','8000')}/api/v2/heartbeat"),
             ("kokoro", f"{os.environ.get('KOKORO_URL','http://kokoro:8880')}/health"),
+            ("image-api", f"{IMAGE_GEN_URL}/health"),
         ]:
             try:
                 r = await client.get(url)
@@ -1335,6 +1337,50 @@ async def tts_proxy(text: str, voice: str = DEFAULT_VOICE, format: str = "wav"):
         media_type="audio/wav" if format == "wav" else "audio/mpeg",
         headers={"Cache-Control": "no-cache"},
     )
+
+
+# --- Image generation ---
+
+class ImageGenerateRequest(BaseModel):
+    prompt: str
+    aspect: str = "square"   # square | landscape | portrait
+    steps: int = 4
+    seed: Optional[int] = None
+
+
+@app.post("/image/generate")
+async def image_generate_proxy(req: ImageGenerateRequest, user: dict = Depends(get_current_user)):
+    """Proxy to image-api (FLUX.1-schnell). Unloads Ollama first to free VRAM."""
+    if not req.prompt.strip():
+        raise HTTPException(status_code=400, detail="prompt is required")
+
+    # Unload LLM from VRAM before generating — qwen3:30b-a3b + FLUX peak > 24GB
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            await client.post(
+                f"{OLLAMA_BASE_URL}/api/generate",
+                json={"model": LLM_MODEL, "keep_alive": 0},
+            )
+    except Exception:
+        pass  # non-fatal; image-api will 500 if VRAM is still exhausted
+
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            resp = await client.post(
+                f"{IMAGE_GEN_URL}/generate",
+                json={"prompt": req.prompt, "aspect": req.aspect, "steps": req.steps, "seed": req.seed},
+            )
+            resp.raise_for_status()
+            return resp.json()
+    except httpx.ConnectError:
+        raise HTTPException(status_code=503, detail="Image generation service is not available")
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="Image generation timed out")
+    except httpx.HTTPStatusError as e:
+        detail = e.response.json().get("detail", str(e)) if e.response.content else str(e)
+        raise HTTPException(status_code=e.response.status_code, detail=detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Image generation failed: {e}")
 
 
 # --- Topic endpoints ---

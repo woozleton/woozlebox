@@ -769,6 +769,26 @@
     #send-btn.stopping { background: var(--surface3); color: var(--danger); }
     #send-btn.stopping:hover { background: rgba(249,115,22,0.15); }
 
+    /* ── Image generation button ── */
+    #image-gen-btn { background: none; color: var(--text-faint); }
+    #image-gen-btn:hover { background: var(--surface3); color: #c084fc; }
+    #image-gen-btn.active { color: #c084fc; background: rgba(192,132,252,0.12); }
+
+    /* ── Generated image bubble ── */
+    .generated-image-wrap { display: flex; flex-direction: column; gap: 6px; }
+    .generated-image-wrap img {
+      width: 100%; max-width: 480px; border-radius: 10px;
+      border: 1px solid var(--border); display: block; cursor: zoom-in;
+    }
+    .generated-image-caption { font-size: 0.78rem; color: var(--text-dim); font-style: italic; line-height: 1.4; }
+    .image-download-btn {
+      display: inline-flex; align-items: center; gap: 5px; font-size: 0.75rem;
+      color: var(--text-faint); background: none; border: 1px solid var(--border);
+      border-radius: 6px; padding: 3px 8px; cursor: pointer; margin-top: 2px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .image-download-btn:hover { background: var(--surface3); color: var(--text); }
+
     /* ── Message queue tray ── */
     #queue-tray {
       display: flex;
@@ -2030,6 +2050,9 @@
         </button>
         <button class="input-btn" id="web-btn" title="Toggle web search">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        </button>
+        <button class="input-btn" id="image-gen-btn" title="Generate image">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
         </button>
         <button class="input-btn" id="send-btn" title="Send (Enter)">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -4065,6 +4088,15 @@ webBtn.addEventListener("click", () => {
   webBtn.classList.toggle("active", webSearch);
   webBtn.title = webSearch ? "Web search ON, click to disable" : "Toggle web search";
   webCaution?.classList.toggle("visible", webSearch);
+});
+
+// ── Image generation mode ──
+let imageGenMode = false;
+const imageGenBtn = document.getElementById("image-gen-btn");
+imageGenBtn.addEventListener("click", () => {
+  imageGenMode = !imageGenMode;
+  imageGenBtn.classList.toggle("active", imageGenMode);
+  imageGenBtn.title = imageGenMode ? "Image mode ON — click to disable" : "Generate image";
 });
 
 // ── Confirm modal ──
@@ -6393,6 +6425,94 @@ function createStreamingBubble() {
   return { row, appendToken, finalize };
 }
 
+// ── Image generation ──
+
+// Patterns that indicate the user wants an image generated rather than a text answer
+const IMAGE_INTENT_PATTERNS = [
+  /\b(generate|draw|paint|illustrate|sketch|render|create)\b.{0,60}\b(image|picture|photo|artwork|illustration|portrait|scene|landscape|logo|icon|drawing)\b/i,
+  /\b(image|picture|photo|artwork|illustration|portrait|drawing)\b.{0,30}\b(of|showing|depicting|with)\b/i,
+  /^(draw|paint|sketch|illustrate|generate|create|make)\b/i,
+];
+function detectImageIntent(text) {
+  return IMAGE_INTENT_PATTERNS.some(p => p.test(text));
+}
+
+function appendImageBubble(prompt, b64Image, elapsedS) {
+  const row = document.createElement("div");
+  row.className = "message-row ai";
+
+  const aiAvatarDataUrl = localStorage.getItem(AI_AVATAR_KEY) || "";
+  const aiAvatarLetter = (JSON.parse(localStorage.getItem(BRAND_KEY) || "{}").name || "D").trim().charAt(0).toUpperCase();
+  const aiAvatarInner = aiAvatarDataUrl
+    ? `<img src="${aiAvatarDataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`
+    : aiAvatarLetter;
+
+  const src = `data:image/png;base64,${b64Image}`;
+  const elapsedLabel = elapsedS ? ` · ${elapsedS}s` : "";
+
+  const wrap = document.createElement("div");
+  wrap.className = "bubble-wrap";
+  wrap.innerHTML = `
+    <div class="ai-avatar-bubble">${aiAvatarInner}</div>
+    <div class="bubble">
+      <div class="generated-image-wrap">
+        <img src="${src}" alt="${esc(prompt)}" onclick="window.open(this.src)" />
+        <div class="generated-image-caption">${esc(prompt)}</div>
+        <button class="image-download-btn">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Save image
+        </button>
+      </div>
+    </div>
+    <div class="msg-meta">
+      <span class="timestamp">${ts()}</span>
+      <span class="meta-sep">·</span>
+      <span class="model-tag">FLUX.1-schnell${elapsedLabel}</span>
+    </div>
+  `;
+
+  wrap.querySelector(".image-download-btn").addEventListener("click", () => {
+    const a = document.createElement("a");
+    a.href = src;
+    a.download = `generated-${Date.now()}.png`;
+    a.click();
+  });
+
+  row.appendChild(wrap);
+  chatWindow.appendChild(row);
+  scrollBottom();
+  return row;
+}
+
+async function sendImageRequest(prompt) {
+  appendUserBubble(prompt, []);
+  const steps = createStatusSteps();
+  const step = steps.addStep("Generating image…");
+  try {
+    const res = await apiFetch("/image/generate", {
+      method: "POST",
+      body: JSON.stringify({ prompt, aspect: "square", steps: 4 }),
+    });
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
+      throw new Error(e.detail || `HTTP ${res.status}`);
+    }
+    steps.completeStep(step, "Image generated");
+    steps.container.remove();
+    const data = await res.json();
+    appendImageBubble(data.prompt, data.image, data.elapsed_s);
+  } catch (err) {
+    steps.container.remove();
+    appendAIBubble(
+      `Sorry, I couldn't generate that image. ${err.message || "Please try again."}`,
+      [], [], null, null, null, ""
+    );
+  } finally {
+    setLoading(false);
+    input.focus();
+  }
+}
+
 // ── Main send ──
 // ── Message Queue ──
 let messageQueue = []; // [{text, images}]
@@ -6434,6 +6554,16 @@ async function sendMessage() {
     renderQueueTray();
     input.value = "";
     input.style.height = "44px";
+    return;
+  }
+
+  // Image generation: explicit toggle OR auto-detected intent (no images attached)
+  if ((imageGenMode || detectImageIntent(text)) && attachedImages.length === 0) {
+    input.value = "";
+    input.style.height = "44px";
+    setLoading(true);
+    stopSpeaking();
+    await sendImageRequest(text);
     return;
   }
 
