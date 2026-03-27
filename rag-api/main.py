@@ -13,6 +13,7 @@ Chat flow (streaming SSE):
 import os
 import re
 import json
+import time
 import logging
 import asyncio
 import shutil
@@ -41,7 +42,7 @@ VAULT_PATH        = os.environ.get("VAULT_PATH", "/vault")
 OLLAMA_BASE_URL   = os.environ.get("OLLAMA_BASE_URL", "http://host.docker.internal:11434")
 EMBED_MODEL       = os.environ.get("EMBED_MODEL", "nomic-embed-text")
 LLM_MODEL         = os.environ.get("LLM_MODEL", "qwen3:30b-a3b")
-SIMILARITY_THRESHOLD = float(os.environ.get("SIMILARITY_THRESHOLD", "0.6"))
+SIMILARITY_THRESHOLD = float(os.environ.get("SIMILARITY_THRESHOLD", "0.45"))
 TAVILY_API_KEY    = os.environ.get("TAVILY_API_KEY", "")
 DB_DIR            = os.environ.get("DB_DIR", "/app/data")
 KOKORO_URL        = os.environ.get("KOKORO_URL", "http://kokoro:8880")
@@ -382,7 +383,15 @@ async def chat_stream(request: ChatRequest, user_id: str) -> AsyncGenerator[str,
     top_k = max(1, request.top_k)
     collection_name = collection_name_for_user(user_id)
 
-    # Step 1: Embed
+    # Step 1: Embed the query
+    t_start = time.monotonic()
+    documents, metadatas, distances = [], [], []
+    relevant = []
+    sources = []
+    debug = {"best_distance": 2.0, "threshold": threshold, "chunks_retrieved": 0, "chunks_used": 0}
+    # Timing keys: embed_ms=embed query, vault_ms=vault search, web_ms=web search, ttft_ms=time-to-first-token, total_ms=total wall-clock
+    timings = {}
+
     yield sse({"type": "status", "step": "embed", "text": "Understanding your question…"})
     try:
         loop = asyncio.get_event_loop()
@@ -392,54 +401,99 @@ async def chat_stream(request: ChatRequest, user_id: str) -> AsyncGenerator[str,
     except Exception as e:
         yield sse({"type": "error", "text": f"Embedding failed: {e}"})
         return
+    timings["embed_ms"] = round((time.monotonic() - t_start) * 1000)
     yield sse({"type": "status", "step": "embed", "text": "Question understood", "done": True})
 
-    # Step 2: Vault search (skip if web search is requested)
-    documents, metadatas, distances = [], [], []
-    relevant = []
-    sources = []
-    debug = {"best_distance": 2.0, "threshold": threshold, "chunks_retrieved": 0, "chunks_used": 0}
-
-    # Step 2: Vault search — always search vault first
-    yield sse({"type": "status", "step": "vault", "text": "Reading through your vault…"})
+    # Step 2: Smart vault search — semantic probe, full search only if relevant
+    vault_collection = None
     try:
         chroma_client = get_chroma_client()
-        collection = chroma_client.get_collection(collection_name)
-        results = collection.query(
-            query_embeddings=[query_embedding],
-            n_results=top_k,
-            include=["documents", "metadatas", "distances"],
-        )
-        documents = results["documents"][0]
-        metadatas = results["metadatas"][0]
-        distances = results["distances"][0]
-    except Exception as e:
-        if "does not exist" not in str(e):
-            yield sse({"type": "error", "text": f"Vault search failed: {e}"})
-            return
+        vault_collection = chroma_client.get_collection(collection_name)
+        vault_count = vault_collection.count()
+    except Exception:
+        vault_count = 0
 
-    best_distance = distances[0] if distances else 2.0
-    relevant = [
-        (doc, meta)
-        for doc, meta, dist in zip(documents, metadatas, distances)
-        if dist <= threshold
-    ]
-    sources = list(dict.fromkeys(meta["source"] for _, meta in relevant))
-    debug = {"best_distance": best_distance, "threshold": threshold, "chunks_retrieved": len(documents), "chunks_used": len(relevant)}
+    if vault_count > 0:
+        # Quick probe: single nearest neighbor to check if anything is semantically close
+        probe = vault_collection.query(query_embeddings=[query_embedding], n_results=1, include=["distances"])
+        probe_dist = probe["distances"][0][0] if probe["distances"] and probe["distances"][0] else 2.0
+        logger.info(f"Vault probe: '{request.message[:60]}' → best_dist={probe_dist:.3f}, threshold={threshold}")
 
-    if relevant:
-        src_names = ", ".join(os.path.basename(s) for s in sources[:3])
-        yield sse({"type": "status", "step": "vault", "text": f"Found relevant content in {src_names}", "done": True})
-    else:
-        yield sse({"type": "status", "step": "vault", "text": "Nothing relevant found in vault", "done": True})
+        if probe_dist <= threshold:
+            # Relevant content exists — do the full search
+            t_vault = time.monotonic()
+            yield sse({"type": "status", "step": "vault", "text": "Reading through your vault…"})
+            try:
+                results = vault_collection.query(
+                    query_embeddings=[query_embedding],
+                    n_results=top_k,
+                    include=["documents", "metadatas", "distances"],
+                )
+                documents = results["documents"][0]
+                metadatas = results["metadatas"][0]
+                distances = results["distances"][0]
+            except Exception as e:
+                yield sse({"type": "error", "text": f"Vault search failed: {e}"})
+                return
+
+            timings["vault_ms"] = round((time.monotonic() - t_vault) * 1000)
+            best_distance = distances[0] if distances else 2.0
+            relevant = [
+                (doc, meta)
+                for doc, meta, dist in zip(documents, metadatas, distances)
+                if dist <= threshold
+            ]
+            sources = list(dict.fromkeys(meta["source"] for _, meta in relevant))
+            debug = {"best_distance": best_distance, "threshold": threshold, "chunks_retrieved": len(documents), "chunks_used": len(relevant)}
+
+            if relevant:
+                src_names = ", ".join(os.path.basename(s) for s in sources[:3])
+                yield sse({"type": "status", "step": "vault", "text": f"Found relevant content in {src_names}", "done": True})
+            else:
+                yield sse({"type": "status", "step": "vault", "text": "Nothing relevant found in vault", "done": True})
+        else:
+            logger.info(f"Vault skipped — probe distance {probe_dist:.3f} > threshold {threshold}")
 
     # Step 3: Web search (optional) — skip if vault already has relevant results
     web_sources = []
     web_search_query = ""
     if request.web_search:
+        # If the message is short/vague and we have conversation history, use LLM to build a proper search query
+        raw_msg = request.message.strip()
+        if len(raw_msg.split()) <= 5 and request.conversation_id:
+            try:
+                conv = db.get_conversation(request.conversation_id, user_id)
+                if conv and conv["messages"]:
+                    recent = conv["messages"][-6:]
+                    history_text = "\n".join(f"{m['role'].upper()}: {m['content']}" for m in recent)
+                    loc_ctx = ""
+                    if request.user_context:
+                        loc_match = re.search(r'Location:\s*(.+)', request.user_context)
+                        if loc_match:
+                            loc_ctx = f"\nUser location: {loc_match.group(1).strip()}"
+                    rewrite_resp = httpx.post(
+                        f"{OLLAMA_BASE_URL}/api/chat",
+                        json={
+                            "model": model,
+                            "messages": [
+                                {"role": "system", "content": "Given the conversation history and the user's latest message, generate a concise web search query that captures what the user actually wants to find. Output ONLY the search query, nothing else." + loc_ctx},
+                                {"role": "user", "content": f"Conversation:\n{history_text}\n\nLatest message: {raw_msg}"},
+                            ],
+                            "options": {"temperature": 0.1, "num_predict": 40},
+                            "think": False,
+                            "stream": False,
+                        },
+                        timeout=15,
+                    )
+                    rewritten = rewrite_resp.json().get("message", {}).get("content", "").strip().strip('"\'')
+                    if rewritten and len(rewritten) > len(raw_msg):
+                        raw_msg = rewritten
+                        logger.info(f"Rewrote vague search query: '{request.message}' -> '{raw_msg}'")
+            except Exception as e:
+                logger.warning(f"Search query rewrite failed: {e}")
+
         # Clean the query — extract site: hint and strip meta-instructions
-        import re
-        search_query = request.message.strip().rstrip("?!")
+        search_query = raw_msg.rstrip("?!")
         # Detect site hints like "search reddit - X", "search X on reddit", "find X on twitter"
         # Sites that work well with site: operator (scrapeable)
         SITE_OPERATOR_MAP = {
@@ -473,9 +527,23 @@ async def chat_stream(request: ChatRequest, user_id: str) -> AsyncGenerator[str,
             search_query = f"{search_query} {site_operator}"
         elif site_keyword and site_keyword.lower() not in search_query.lower():
             search_query = f"{search_query} {site_keyword}"
+        # Append user location to search query if it seems location-relevant
+        # and doesn't already mention a specific place
+        if request.user_context:
+            location_match = re.search(r'Location:\s*(.+)', request.user_context)
+            if location_match:
+                user_location = location_match.group(1).strip()
+                location_keywords = ["weather", "near me", "nearby", "local", "restaurant", "store", "shop",
+                                     "directions", "traffic", "events", "here", "around me", "close to me"]
+                if any(kw in search_query.lower() for kw in location_keywords):
+                    # Only add if the query doesn't already contain the location
+                    if user_location.lower() not in search_query.lower():
+                        search_query = f"{search_query} {user_location}"
         web_search_query = search_query
         yield sse({"type": "status", "step": "web", "text": f"Searching: {search_query}"})
+        t_web = time.monotonic()
         web_sources = await web_search(search_query)
+        timings["web_ms"] = round((time.monotonic() - t_web) * 1000)
         if web_sources:
             domains = ", ".join(r["url"].split("/")[2].lstrip("www.") for r in web_sources)
             suffix = f"→ {domains}"
@@ -505,6 +573,7 @@ async def chat_stream(request: ChatRequest, user_id: str) -> AsyncGenerator[str,
     date_str = now.strftime("%A, %B %-d, %Y at %-I:%M %p %Z")
     base_instructions = request.default_prompt or "You are a personal AI assistant. When relevant context from the user's vault is provided, prioritize it in your answer. Otherwise, answer using your general knowledge."
     base_instructions += f"\n\nCurrent date and time: {date_str}"
+    base_instructions += f"\n\nYou are running locally as {request.model} via Ollama on the user's own machine. You are NOT cloud-based and you are NOT a different model. Do not claim to be any other model or service."
 
     # Use topic system prompt if provided (overrides default)
     if request.topic_id:
@@ -525,6 +594,10 @@ async def chat_stream(request: ChatRequest, user_id: str) -> AsyncGenerator[str,
         user_section = f"\n\nUser profile:\n{request.user_context}"
 
     context_block = f"\n\nContext:\n{context_text}" if context_parts else ""
+
+    web_hint = ""
+    if not request.web_search:
+        web_hint = "\n\nIMPORTANT: Web search is currently OFF. If the user's question requires real-time, current, or location-specific information (weather, news, prices, events, etc.) that you don't have, tell them to click the globe icon (next to the chat input) to enable web search so you can look it up. Do NOT fabricate URLs, links, or suggest visiting specific websites. Do NOT make up current data. Simply tell them to enable web search."
 
     web_instruction = ""
     if web_sources:
@@ -556,7 +629,7 @@ Only use this when the user explicitly asks you to remember something.
 Do not mention the SAVE_MEMORY tag to the user. Just naturally confirm you'll remember it.
 To remove an outdated fact when asked, use: [DELETE_MEMORY: the outdated fact]"""
 
-    system_prompt = f"""{base_instructions}{memory_section}{user_section}{' ' + source_instruction if source_instruction else ''}{context_block}{web_instruction}{memory_instruction}
+    system_prompt = f"""{base_instructions}{memory_section}{user_section}{' ' + source_instruction if source_instruction else ''}{context_block}{web_instruction}{web_hint}{memory_instruction}
 
 Answer concisely."""
 
@@ -617,9 +690,12 @@ Answer concisely."""
 
     # Step 6: Stream LLM response
     ctx_kb = round(len(context_text) / 1024, 1)
-    yield sse({"type": "status", "step": "llm", "text": f"Thinking through {ctx_kb} KB of context…"})
+    llm_status = f"Thinking through {ctx_kb} KB of context…" if ctx_kb > 0 else "Thinking…"
+    yield sse({"type": "status", "step": "llm", "text": llm_status})
 
     full_answer = ""
+    t_llm_start = time.monotonic()
+    ttft_ms = None
     try:
         async with httpx.AsyncClient(timeout=None) as hc:
             async with hc.stream(
@@ -641,6 +717,8 @@ Answer concisely."""
                     chunk = json.loads(line)
                     token = chunk.get("message", {}).get("content", "")
                     if token:
+                        if ttft_ms is None:
+                            ttft_ms = round((time.monotonic() - t_llm_start) * 1000)
                         full_answer += token
                         yield sse({"type": "token", "text": token})
     except Exception as e:
@@ -702,6 +780,8 @@ Answer concisely."""
     db.add_message(conv_id, "user", request.message)
     db.add_message(conv_id, "assistant", clean_answer, sources=sources, web_sources=web_sources, model_used=model)
 
+    timings["ttft_ms"] = ttft_ms
+    timings["total_ms"] = round((time.monotonic() - t_start) * 1000)
     yield sse({
         "type": "done",
         "answer": clean_answer,
@@ -711,7 +791,7 @@ Answer concisely."""
         "web_search_query": web_search_query,
         "model_used": model,
         "conversation_id": conv_id,
-        "debug": debug,
+        "debug": {**debug, "timings": timings},
     })
 
 
@@ -849,9 +929,8 @@ async def model_info(model: str = None, user: dict = Depends(get_current_user)):
                 vision = True
             if any(f in families for f in ["clip", "mllama"]):
                 vision = True
-            # Also check if the modelfile mentions image/vision
-            modelfile = data.get("modelfile", "")
-            if "image" in modelfile.lower() or "vision" in modelfile.lower():
+            # Check for projector-related keys (vision models have these)
+            if any("projector" in key.lower() or "vision" in key.lower() for key in info.keys()):
                 vision = True
     except Exception as e:
         logger.warning(f"Could not check model info for {use_model}: {e}")

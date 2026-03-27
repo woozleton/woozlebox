@@ -533,6 +533,9 @@
     .bubble-action-btn:hover { color: var(--text-dim); }
     .copy-btn.copied { opacity: 1; }
     .tts-btn.playing { color: var(--accent); border-color: var(--accent); opacity: 1; }
+    .mem-btn.active { color: var(--accent); }
+    @keyframes mem-spin { to { transform: rotate(360deg); } }
+    .mem-btn .mem-spin { animation: mem-spin 0.7s linear infinite; display: block; }
 
     .msg-meta {
       display: flex;
@@ -766,6 +769,54 @@
     #send-btn.stopping { background: var(--surface3); color: var(--danger); }
     #send-btn.stopping:hover { background: rgba(249,115,22,0.15); }
 
+    /* ── Message queue tray ── */
+    #queue-tray {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    #queue-tray:empty { display: none; }
+    .queue-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 6px 10px 6px 12px;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      animation: queue-in 0.15s ease;
+    }
+    @keyframes queue-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+    .queue-item-pos {
+      font-size: 0.68rem;
+      background: var(--surface3);
+      color: var(--text-faint);
+      border-radius: 4px;
+      padding: 1px 5px;
+      flex-shrink: 0;
+    }
+    .queue-item-text {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .queue-item-cancel {
+      background: none;
+      border: none;
+      color: var(--text-faint);
+      cursor: pointer;
+      padding: 2px;
+      border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+    .queue-item-cancel:hover { color: var(--danger); background: rgba(239,68,68,0.1); }
+
     #mic-btn { background: none; color: var(--text-faint); }
     #mic-btn:hover { background: var(--surface3); color: var(--accent); }
     #mic-btn.recording { color: #ef4444; background: rgba(239,68,68,0.12); animation: mic-pulse 1s ease-in-out infinite; }
@@ -780,7 +831,8 @@
     #vision-indicator { display: none; font-size: 0.6rem; padding: 2px 6px; border-radius: 8px; background: rgba(34,197,94,0.12); color: #22c55e; white-space: nowrap; align-self: center; margin-left: 4px; }
     #vision-indicator.no-vision { background: rgba(249,115,22,0.12); color: var(--danger); }
     #attach-btn { background: none; color: var(--text-faint); }
-    #attach-btn:hover { background: var(--surface3); color: var(--accent); }
+    #attach-btn:hover:not(:disabled) { background: var(--surface3); color: var(--accent); }
+    #attach-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
     /* Wild theme special effects */
     body[data-wild-theme="cyber"] { text-shadow: 0 0 1px rgba(0,255,242,0.3); }
@@ -1965,6 +2017,7 @@
       </div>
       <div id="topic-crumb-menu"></div>
       <div id="image-preview-bar"></div>
+      <div id="queue-tray"></div>
       <div id="input-box">
         <textarea id="message-input" placeholder="Ask something…" rows="1" autocomplete="off"></textarea>
         <button class="input-btn" id="attach-btn" title="Attach image">
@@ -2060,6 +2113,12 @@
                 <span id="profile-account-badge" style="font-size:0.72rem;font-weight:600;padding:2px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:0.04em;background:var(--accent-glow);color:var(--accent);">User</span>
               </div>
             </div>
+          </div>
+
+          <div class="setting-group">
+            <div class="setting-label"><span>Location</span></div>
+            <input type="text" id="profile-location" class="setting-input" placeholder="e.g. Seattle, WA" />
+            <div class="setting-desc">Used for local recommendations, weather, time zone, and similar context.</div>
           </div>
 
           <div class="setting-group">
@@ -2986,6 +3045,7 @@ function loadSettings() {
     // voice restored in loadVoices() after options are populated
     if (s.default_prompt !== undefined) document.getElementById("default-prompt-input").value = s.default_prompt;
     if (s.auto_memory !== undefined) document.getElementById("auto-memory-toggle").checked = s.auto_memory;
+    if (s.debug !== undefined) { document.getElementById("debug-toggle").checked = s.debug; debugMode = s.debug; document.body.classList.toggle("debug-on", s.debug); }
   } catch {}
   updateSettingLabels();
 }
@@ -2999,6 +3059,7 @@ function saveSettings() {
     voice:           voiceSelect.value,
     default_prompt:  document.getElementById("default-prompt-input").value.trim(),
     auto_memory:     document.getElementById("auto-memory-toggle").checked,
+    debug:           document.getElementById("debug-toggle").checked,
   }));
 }
 function updateSettingLabels() {
@@ -3048,8 +3109,9 @@ function applyAvatar(dataUrl) {
 function loadProfile() {
   try {
     const p = JSON.parse(localStorage.getItem(PROFILE_KEY) || "{}");
-    if (p.name)  document.getElementById("profile-name").value  = p.name;
-    if (p.prefs) document.getElementById("profile-prefs").value = p.prefs;
+    if (p.name)     document.getElementById("profile-name").value     = p.name;
+    if (p.location) document.getElementById("profile-location").value = p.location;
+    if (p.prefs)    document.getElementById("profile-prefs").value    = p.prefs;
   } catch {}
   applyAvatar(localStorage.getItem(AVATAR_KEY));
   // Show account badge + username
@@ -3062,8 +3124,9 @@ function loadProfile() {
 }
 function saveProfile() {
   localStorage.setItem(PROFILE_KEY, JSON.stringify({
-    name:  document.getElementById("profile-name").value.trim(),
-    prefs: document.getElementById("profile-prefs").value.trim(),
+    name:     document.getElementById("profile-name").value.trim(),
+    location: document.getElementById("profile-location").value.trim(),
+    prefs:    document.getElementById("profile-prefs").value.trim(),
   }));
   // Update avatar initials live
   applyAvatar(localStorage.getItem(AVATAR_KEY));
@@ -3072,12 +3135,13 @@ function getProfileContext() {
   try {
     const p = JSON.parse(localStorage.getItem(PROFILE_KEY) || "{}");
     const parts = [];
-    if (p.name)  parts.push(`Name: ${p.name}`);
-    if (p.prefs) parts.push(`Preferences: ${p.prefs}`);
+    if (p.name)     parts.push(`Name: ${p.name}`);
+    if (p.location) parts.push(`Location: ${p.location}`);
+    if (p.prefs)    parts.push(`Preferences: ${p.prefs}`);
     return parts.join("\n") || null;
   } catch { return null; }
 }
-["profile-name","profile-prefs"].forEach(id => {
+["profile-name","profile-location","profile-prefs"].forEach(id => {
   document.getElementById(id).addEventListener("input", () => { saveProfile(); scheduleSettingsSync(); });
 });
 
@@ -3991,6 +4055,7 @@ const debugToggle = document.getElementById("debug-toggle");
 debugToggle.addEventListener("change", () => {
   debugMode = debugToggle.checked;
   document.body.classList.toggle("debug-on", debugMode);
+  saveSettings(); scheduleSettingsSync();
 });
 
 // ── Web search toggle ──
@@ -4426,6 +4491,7 @@ async function loadModels() {
     modelSelect.value = pick;
     selectedModel = pick;
     localStorage.setItem("diab_model", pick);
+    if (typeof checkVisionSupport === "function") checkVisionSupport(pick);
   } catch { modelSelect.innerHTML = `<option value="">Unavailable</option>`; }
   loadSuggestions();
   const wa = document.getElementById("welcome-avatar");
@@ -5675,6 +5741,19 @@ input.addEventListener("keydown", (e) => {
 sendBtn.addEventListener("click", () => { if (isLoading) stopStream(); else sendMessage(); });
 
 function ts() { return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); }
+
+// Memory brain button SVG helpers
+// active=false: outline brain (unsaved), active=true: filled accent brain (saved)
+function memBrainSvg(active) {
+  const fill = active ? 'var(--accent)' : 'none';
+  const stroke = active ? 'var(--accent)' : 'currentColor';
+  return `<svg width="13" height="13" viewBox="0 0 24 24" fill="${fill}" stroke="${stroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/></svg>`;
+}
+// Spinning arc shown while saving/loading
+function memSpinSvg() {
+  return `<svg class="mem-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="9" stroke-dasharray="42 14"/></svg>`;
+}
+
 function esc(str) {
   return String(str)
     .replace(/&/g, "&amp;").replace(/</g, "&lt;")
@@ -5693,7 +5772,7 @@ function stopStream() {
 
 function setLoading(v) {
   isLoading = v;
-  input.disabled = v;
+  input.disabled = false; // keep input enabled so user can queue more messages
   sendBtn.disabled = false; // always clickable - acts as stop when loading
   sendBtn.innerHTML = v ? SVG_STOP : SVG_SEND;
   sendBtn.title = v ? "Stop" : "Send (Enter)";
@@ -5725,12 +5804,52 @@ function appendUserBubble(text, images) {
       <div class="msg-meta">
         <span class="timestamp">${ts()}</span>
         <span class="bubble-actions">
+          <button class="mem-btn bubble-action-btn" title="Save to memory">${memBrainSvg(false)}</button>
           <button class="tts-btn bubble-action-btn" title="Read aloud"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></button>
           <button class="copy-btn bubble-action-btn" title="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
         </span>
       </div>
     </div>
   `;
+
+  // Memory brain button (toggle save/remove) for user messages
+  row.querySelector(".mem-btn").addEventListener("click", async function() {
+    const btn = this;
+    if (btn.dataset.memoryActive === "true") {
+      btn.disabled = true;
+      btn.innerHTML = memSpinSvg();
+      try {
+        await apiFetch(`/memory/${btn.dataset.memoryId}`, { method: "DELETE" });
+        showMemoryToast("Memory removed");
+        btn.dataset.memoryActive = "";
+        btn.dataset.memoryId = "";
+        btn.classList.remove("active");
+        btn.title = "Save to memory";
+        btn.innerHTML = memBrainSvg(false);
+      } catch { showToast("Failed to remove memory."); btn.innerHTML = memBrainSvg(true); }
+      btn.disabled = false;
+      return;
+    }
+    btn.disabled = true;
+    btn.innerHTML = memSpinSvg();
+    try {
+      const res = await apiFetch("/memory", {
+        method: "POST",
+        body: JSON.stringify({ fact: text }),
+      });
+      const data = await res.json();
+      showMemoryToast("Saved to memory");
+      btn.innerHTML = memBrainSvg(true);
+      btn.classList.add("active");
+      btn.dataset.memoryActive = "true";
+      btn.dataset.memoryId = data.id || "";
+      btn.title = "Remove from memory";
+    } catch (e) {
+      showToast("Failed to save memory.");
+      btn.innerHTML = memBrainSvg(false);
+    }
+    btn.disabled = false;
+  });
 
   row.querySelector(".copy-btn").addEventListener("click", function() {
     navigator.clipboard.writeText(text).then(() => {
@@ -5926,7 +6045,16 @@ function appendAIBubble(text, sources, webSources, modelUsed, debugData, stepRow
   // Debug pill
   let debugHtml = "";
   if (debugData) {
-    debugHtml = `<span class="debug-pill">dist:${debugData.best_distance?.toFixed(3)} thr:${debugData.threshold} chunks:${debugData.chunks_used}/${debugData.chunks_retrieved}</span>`;
+    const t = debugData.timings || {};
+    // Timing labels: emb=embed query, vlt=vault search, web=web search, ttft=time-to-first-token, tot=total wall-clock
+    const timingParts = [];
+    if (t.embed_ms != null) timingParts.push(`emb:${t.embed_ms}ms`);
+    if (t.vault_ms != null) timingParts.push(`vlt:${t.vault_ms}ms`);
+    if (t.web_ms != null) timingParts.push(`web:${t.web_ms}ms`);
+    if (t.ttft_ms != null) timingParts.push(`ttft:${t.ttft_ms}ms`);
+    if (t.total_ms != null) timingParts.push(`tot:${t.total_ms}ms`);
+    const timingStr = timingParts.length ? ` · ${timingParts.join(" ")}` : "";
+    debugHtml = `<span class="debug-pill">dist:${debugData.best_distance?.toFixed(3)} thr:${debugData.threshold} chunks:${debugData.chunks_used}/${debugData.chunks_retrieved}${debugData.tok_s ? ` ${debugData.tok_s} tok/s` : ""}${timingStr}</span>`;
   }
 
   const modelTag = modelUsed ? `<span class="model-tag">${esc(modelUsed)}</span>` : "";
@@ -5941,7 +6069,7 @@ function appendAIBubble(text, sources, webSources, modelUsed, debugData, stepRow
         ${debugHtml}
         ${sourcesToggle ? `<span class="meta-sep">·</span>${sourcesToggle}` : ""}
         <span class="bubble-actions" style="margin-left:auto;">
-          <button class="mem-btn bubble-action-btn" title="Save to memory"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>
+          <button class="mem-btn bubble-action-btn" title="Save to memory">${memBrainSvg(false)}</button>
           <button class="tts-btn bubble-action-btn" title="Play"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></button>
           <button class="copy-btn bubble-action-btn" title="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
         </span>
@@ -5950,11 +6078,26 @@ function appendAIBubble(text, sources, webSources, modelUsed, debugData, stepRow
     </div>
   `;
 
-  // Memory bookmark button
+  // Memory brain button (toggle save/remove)
   row.querySelector(".mem-btn").addEventListener("click", async function() {
     const btn = this;
+    if (btn.dataset.memoryActive === "true") {
+      btn.disabled = true;
+      btn.innerHTML = memSpinSvg();
+      try {
+        await apiFetch(`/memory/${btn.dataset.memoryId}`, { method: "DELETE" });
+        showMemoryToast("Memory removed");
+        btn.dataset.memoryActive = "";
+        btn.dataset.memoryId = "";
+        btn.classList.remove("active");
+        btn.title = "Save to memory";
+        btn.innerHTML = memBrainSvg(false);
+      } catch { showToast("Failed to remove memory."); btn.innerHTML = memBrainSvg(true); }
+      btn.disabled = false;
+      return;
+    }
     btn.disabled = true;
-    btn.style.color = "var(--accent)";
+    btn.innerHTML = memSpinSvg();
     try {
       const res = await apiFetch("/chat/extract-memory", {
         method: "POST",
@@ -5963,17 +6106,20 @@ function appendAIBubble(text, sources, webSources, modelUsed, debugData, stepRow
       const data = await res.json();
       if (data.saved) {
         showMemoryToast("Saved to memory: " + data.fact);
-        btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="var(--accent)" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>';
+        btn.innerHTML = memBrainSvg(true);
+        btn.classList.add("active");
+        btn.dataset.memoryActive = "true";
+        btn.dataset.memoryId = data.id || "";
+        btn.title = "Remove from memory";
       } else {
         showToast(data.reason || "Nothing to save.", "success");
-        btn.style.color = "";
-        btn.disabled = false;
+        btn.innerHTML = memBrainSvg(false);
       }
     } catch (e) {
       showToast("Failed to save memory.");
-      btn.style.color = "";
-      btn.disabled = false;
+      btn.innerHTML = memBrainSvg(false);
     }
+    btn.disabled = false;
   });
 
   // Copy button
@@ -6155,12 +6301,21 @@ function createStreamingBubble() {
       }
       sourcesPanelHtml = `<div class="sources-panel">${panelItems}</div>`;
     }
-    const debugHtml = debugData ? `<span class="debug-pill">dist:${debugData.best_distance?.toFixed(3)} thr:${debugData.threshold} chunks:${debugData.chunks_used}/${debugData.chunks_retrieved}</span>` : "";
+    const _t = (debugData?.timings) || {};
+    // Timing labels: emb=embed query, vlt=vault search, web=web search, ttft=time-to-first-token, tot=total wall-clock
+    const _tp = [];
+    if (_t.embed_ms != null) _tp.push(`emb:${_t.embed_ms}ms`);
+    if (_t.vault_ms != null) _tp.push(`vlt:${_t.vault_ms}ms`);
+    if (_t.web_ms != null) _tp.push(`web:${_t.web_ms}ms`);
+    if (_t.ttft_ms != null) _tp.push(`ttft:${_t.ttft_ms}ms`);
+    if (_t.total_ms != null) _tp.push(`tot:${_t.total_ms}ms`);
+    const _timingStr = _tp.length ? ` · ${_tp.join(" ")}` : "";
+    const debugHtml = debugData ? `<span class="debug-pill">dist:${debugData.best_distance?.toFixed(3)} thr:${debugData.threshold} chunks:${debugData.chunks_used}/${debugData.chunks_retrieved}${debugData.tok_s ? ` ${debugData.tok_s} tok/s` : ""}${_timingStr}</span>` : "";
     const modelTag = modelUsed ? `<span class="model-tag">${esc(modelUsed)}</span>` : "";
 
     const meta = document.createElement("div");
     meta.className = "msg-meta";
-    meta.innerHTML = `<span class="timestamp">${ts()}</span>${modelUsed ? `<span class="meta-sep">·</span>${modelTag}` : ""}${debugHtml}${sourcesToggle ? `<span class="meta-sep">·</span>${sourcesToggle}` : ""}<span class="bubble-actions" style="margin-left:auto;"><button class="mem-btn bubble-action-btn" title="Save to memory"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button><button class="tts-btn bubble-action-btn" title="Play"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></button><button class="copy-btn bubble-action-btn" title="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></span>`;
+    meta.innerHTML = `<span class="timestamp">${ts()}</span>${modelUsed ? `<span class="meta-sep">·</span>${modelTag}` : ""}${debugHtml}${sourcesToggle ? `<span class="meta-sep">·</span>${sourcesToggle}` : ""}<span class="bubble-actions" style="margin-left:auto;"><button class="mem-btn bubble-action-btn" title="Save to memory">${memBrainSvg(false)}</button><button class="tts-btn bubble-action-btn" title="Play"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></button><button class="copy-btn bubble-action-btn" title="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></span>`;
     wrap.appendChild(meta);
     if (sourcesPanelHtml) { const sp = document.createElement("div"); sp.innerHTML = sourcesPanelHtml; wrap.appendChild(sp.firstChild); }
 
@@ -6188,11 +6343,26 @@ function createStreamingBubble() {
     // Wire vault source links
     wrap.querySelectorAll(".source-link").forEach(btn => { btn.addEventListener("click", () => openVaultFile(btn.dataset.path)); });
 
-    // Wire memory bookmark button
+    // Wire memory brain button (toggle save/remove)
     meta.querySelector(".mem-btn").addEventListener("click", async function() {
       const btn = this;
+      if (btn.dataset.memoryActive === "true") {
+        btn.disabled = true;
+        btn.innerHTML = memSpinSvg();
+        try {
+          await apiFetch(`/memory/${btn.dataset.memoryId}`, { method: "DELETE" });
+          showMemoryToast("Memory removed");
+          btn.dataset.memoryActive = "";
+          btn.dataset.memoryId = "";
+          btn.classList.remove("active");
+          btn.title = "Save to memory";
+          btn.innerHTML = memBrainSvg(false);
+        } catch { showToast("Failed to remove memory."); btn.innerHTML = memBrainSvg(true); }
+        btn.disabled = false;
+        return;
+      }
       btn.disabled = true;
-      btn.style.color = "var(--accent)";
+      btn.innerHTML = memSpinSvg();
       try {
         const res = await apiFetch("/chat/extract-memory", {
           method: "POST",
@@ -6201,17 +6371,20 @@ function createStreamingBubble() {
         const data = await res.json();
         if (data.saved) {
           showMemoryToast("Saved to memory: " + data.fact);
-          btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="var(--accent)" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>';
+          btn.innerHTML = memBrainSvg(true);
+          btn.classList.add("active");
+          btn.dataset.memoryActive = "true";
+          btn.dataset.memoryId = data.id || "";
+          btn.title = "Remove from memory";
         } else {
           showToast(data.reason || "Nothing to save.", "success");
-          btn.style.color = "";
-          btn.disabled = false;
+          btn.innerHTML = memBrainSvg(false);
         }
       } catch (e) {
         showToast("Failed to save memory.");
-        btn.style.color = "";
-        btn.disabled = false;
+        btn.innerHTML = memBrainSvg(false);
       }
+      btn.disabled = false;
     });
 
     scrollBottom();
@@ -6221,15 +6394,48 @@ function createStreamingBubble() {
 }
 
 // ── Main send ──
+// ── Message Queue ──
+let messageQueue = []; // [{text, images}]
+
+function renderQueueTray() {
+  const tray = document.getElementById("queue-tray");
+  if (!tray) return;
+  tray.innerHTML = messageQueue.map((item, i) => `
+    <div class="queue-item" data-idx="${i}">
+      <span class="queue-item-pos">#${i + 1}</span>
+      <span class="queue-item-text">${esc(item.text)}</span>
+      <button class="queue-item-cancel" title="Remove from queue" data-idx="${i}">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  `).join("");
+  tray.querySelectorAll(".queue-item-cancel").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const idx = parseInt(btn.dataset.idx);
+      messageQueue.splice(idx, 1);
+      renderQueueTray();
+    });
+  });
+}
+
 async function sendMessage() {
   const text = input.value.trim();
-  if (!text || isLoading) return;
+  if (!text) return;
   if (!activeTopicId || topics.length === 0) return;
 
   // Capture any attached images before clearing
   const attachedImages = [...pendingImages];
   pendingImages = [];
   renderImagePreviews();
+
+  // If already processing, push to queue instead of sending now
+  if (isLoading) {
+    messageQueue.push({ text, images: attachedImages });
+    renderQueueTray();
+    input.value = "";
+    input.style.height = "44px";
+    return;
+  }
 
   messageHistory.push(text);
   historyIndex = -1;
@@ -6244,6 +6450,8 @@ async function sendMessage() {
   let streamBubble = null;
   let fullAnswer = "";
   let convId = activeConvId;
+  let tokenCount = 0;
+  let firstTokenTime = null;
 
   const body = {
     message: text,
@@ -6307,6 +6515,8 @@ async function sendMessage() {
             steps.container.remove();
             streamBubble = createStreamingBubble();
           }
+          if (!firstTokenTime) firstTokenTime = performance.now();
+          tokenCount++;
           fullAnswer += event.text;
           streamBubble.appendToken(event.text);
         } else if (event.type === "memory_saved") {
@@ -6323,12 +6533,18 @@ async function sendMessage() {
           const stepRows = [steps.container];
           // Use clean answer from server (tags stripped) if available
           const answerText = event.answer || fullAnswer;
+          // Compute tokens per second
+          const debugWithTps = event.debug || {};
+          if (firstTokenTime && tokenCount > 1) {
+            const elapsed = (performance.now() - firstTokenTime) / 1000;
+            debugWithTps.tok_s = (tokenCount / elapsed).toFixed(1);
+          }
           if (streamBubble) {
-            streamBubble.finalize(answerText, event.sources || [], event.web_sources || [], event.model_used, event.debug, stepRows, event.web_search_query || "");
+            streamBubble.finalize(answerText, event.sources || [], event.web_sources || [], event.model_used, debugWithTps, stepRows, event.web_search_query || "");
           } else {
             // Vault miss - no streaming occurred
             stepRows.forEach(r => r.remove());
-            appendAIBubble(answerText, event.sources || [], event.web_sources || [], event.model_used, event.debug, null, event.web_search_query || "");
+            appendAIBubble(answerText, event.sources || [], event.web_sources || [], event.model_used, debugWithTps, null, event.web_search_query || "");
           }
           updateActiveSidebar();
           loadConversations();
@@ -6352,7 +6568,18 @@ async function sendMessage() {
   } finally {
     chatAbortController = null;
     setLoading(false);
-    input.focus();
+    // Drain queue: if messages are waiting, fire the next one
+    if (messageQueue.length > 0) {
+      const next = messageQueue.shift();
+      renderQueueTray();
+      // Inject into input and trigger as if typed
+      input.value = next.text;
+      pendingImages = next.images || [];
+      renderImagePreviews();
+      sendMessage();
+    } else {
+      input.focus();
+    }
   }
 }
 
@@ -6402,12 +6629,18 @@ function updateVisionIndicator() {
     visionIndicator.textContent = "Vision";
     visionIndicator.className = "";
     visionIndicator.style.display = "inline-block";
-  } else if (pendingImages.length > 0) {
-    visionIndicator.textContent = "No vision";
-    visionIndicator.className = "no-vision";
-    visionIndicator.style.display = "inline-block";
+    attachBtn.disabled = false;
+    attachBtn.title = "Attach image";
   } else {
-    visionIndicator.style.display = "none";
+    attachBtn.disabled = true;
+    attachBtn.title = "Current model does not support vision";
+    if (pendingImages.length > 0) {
+      visionIndicator.textContent = "No vision";
+      visionIndicator.className = "no-vision";
+      visionIndicator.style.display = "inline-block";
+    } else {
+      visionIndicator.style.display = "none";
+    }
   }
 }
 
@@ -6444,7 +6677,7 @@ function renderImagePreviews() {
 }
 
 // Attach button
-attachBtn.addEventListener("click", () => imageFileInput.click());
+attachBtn.addEventListener("click", () => { if (!attachBtn.disabled) imageFileInput.click(); });
 imageFileInput.addEventListener("change", () => {
   for (const file of imageFileInput.files) {
     const reader = new FileReader();
@@ -6454,8 +6687,9 @@ imageFileInput.addEventListener("change", () => {
   imageFileInput.value = "";
 });
 
-// Paste images directly into chat
+// Paste images directly into chat (only if vision model is loaded)
 input.addEventListener("paste", (e) => {
+  if (!currentModelSupportsVision) return;
   const items = e.clipboardData?.items;
   if (!items) return;
   for (const item of items) {
@@ -6471,8 +6705,6 @@ input.addEventListener("paste", (e) => {
 
 // Check vision on model change
 modelSelect.addEventListener("change", () => { checkVisionSupport(modelSelect.value); });
-// Initial check
-if (selectedModel) checkVisionSupport(selectedModel);
 
 // ── iOS / Mobile fixes ──
 // Prevent body scroll bounce on iOS Safari
