@@ -41,7 +41,7 @@ OLLAMA_BASE_URL   = os.environ.get("OLLAMA_BASE_URL", "http://host.docker.intern
 EMBED_MODEL       = os.environ.get("EMBED_MODEL", "nomic-embed-text")
 LLM_MODEL         = os.environ.get("LLM_MODEL", "qwen3:30b-a3b")
 SIMILARITY_THRESHOLD = float(os.environ.get("SIMILARITY_THRESHOLD", "0.6"))
-SEARXNG_URL       = os.environ.get("SEARXNG_URL", "http://searxng:8080")
+TAVILY_API_KEY    = os.environ.get("TAVILY_API_KEY", "")
 DB_DIR            = os.environ.get("DB_DIR", "/app/data")
 KOKORO_URL        = os.environ.get("KOKORO_URL", "http://kokoro:8880")
 DEFAULT_VOICE     = os.environ.get("TTS_VOICE", "af_heart")
@@ -259,23 +259,24 @@ def sse(event: dict) -> str:
 
 
 # --- Web search ---
-async def web_search(query: str, num_results: int = 5) -> list[dict]:
+async def web_search(query: str, num_results: int = 3) -> list[dict]:
+    """Search the web using Tavily — returns full extracted content directly."""
     try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.get(
-                f"{SEARXNG_URL}/search",
-                params={"q": query, "format": "json", "language": "en"},
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            results = []
-            for r in data.get("results", [])[:num_results]:
-                results.append({
-                    "title": r.get("title", ""),
-                    "url": r.get("url", ""),
-                    "snippet": r.get("content", ""),
-                })
-            return results
+        from tavily import TavilyClient
+        client = TavilyClient(api_key=TAVILY_API_KEY)
+        response = await asyncio.get_event_loop().run_in_executor(
+            None,
+            lambda: client.search(query, max_results=num_results, include_raw_content=False)
+        )
+        results = []
+        for r in response.get("results", []):
+            results.append({
+                "title": r.get("title", ""),
+                "url": r.get("url", ""),
+                "content": r.get("content", ""),
+                "snippet": r.get("content", ""),
+            })
+        return results
     except Exception as e:
         logger.warning(f"Web search failed: {e}")
         return []
@@ -300,9 +301,14 @@ async def chat_stream(request: ChatRequest, user_id: str) -> AsyncGenerator[str,
         return
     yield sse({"type": "status", "step": "embed", "text": "Question understood", "done": True})
 
-    # Step 2: Vault search
-    yield sse({"type": "status", "step": "vault", "text": "Reading through your vault…"})
+    # Step 2: Vault search (skip if web search is requested)
     documents, metadatas, distances = [], [], []
+    relevant = []
+    sources = []
+    debug = {"best_distance": 2.0, "threshold": threshold, "chunks_retrieved": 0, "chunks_used": 0}
+
+    # Step 2: Vault search — always search vault first
+    yield sse({"type": "status", "step": "vault", "text": "Reading through your vault…"})
     try:
         chroma_client = get_chroma_client()
         collection = chroma_client.get_collection(collection_name)
@@ -334,12 +340,54 @@ async def chat_stream(request: ChatRequest, user_id: str) -> AsyncGenerator[str,
     else:
         yield sse({"type": "status", "step": "vault", "text": "Nothing relevant found in vault", "done": True})
 
-    # Step 3: Web search (optional)
+    # Step 3: Web search (optional) — skip if vault already has relevant results
     web_sources = []
+    web_search_query = ""
     if request.web_search:
-        yield sse({"type": "status", "step": "web", "text": "Searching the web…"})
-        web_sources = await web_search(request.message)
-        suffix = f"found {len(web_sources)} results" if web_sources else "no results found"
+        # Clean the query — extract site: hint and strip meta-instructions
+        import re
+        search_query = request.message.strip().rstrip("?!")
+        # Detect site hints like "search reddit - X", "search X on reddit", "find X on twitter"
+        # Sites that work well with site: operator (scrapeable)
+        SITE_OPERATOR_MAP = {
+            "wikipedia": "site:wikipedia.org",
+            "github": "site:github.com",
+            "stackoverflow": "site:stackoverflow.com",
+            "hn": "site:news.ycombinator.com",
+            "hacker news": "site:news.ycombinator.com",
+        }
+        # Sites that block scrapers — append as keyword instead so Google finds their content via cache/previews
+        SITE_KEYWORD_MAP = {
+            "reddit": "reddit",
+            "twitter": "twitter",
+            "youtube": "youtube",
+        }
+        site_operator = ""
+        site_keyword = ""
+        for keyword, operator in SITE_OPERATOR_MAP.items():
+            if re.search(rf'\b{re.escape(keyword)}\b', search_query, re.IGNORECASE):
+                site_operator = operator
+                break
+        if not site_operator:
+            for keyword, kw in SITE_KEYWORD_MAP.items():
+                if re.search(rf'\b{re.escape(keyword)}\b', search_query, re.IGNORECASE):
+                    site_keyword = kw
+                    break
+        # Strip meta-instructions (including site names)
+        search_query = re.sub(r"^(search|look up|find|google|ask)\s+(reddit|twitter|youtube|wikipedia|github|stackoverflow|hacker news|hn|the web|online|google|bing)[\s\-–:]+", "", search_query, flags=re.IGNORECASE).strip()
+        search_query = re.sub(r"\s+on\s+(reddit|twitter|youtube|wikipedia|github|stackoverflow|hacker news)$", "", search_query, flags=re.IGNORECASE).strip()
+        if site_operator and site_operator not in search_query:
+            search_query = f"{search_query} {site_operator}"
+        elif site_keyword and site_keyword.lower() not in search_query.lower():
+            search_query = f"{search_query} {site_keyword}"
+        web_search_query = search_query
+        yield sse({"type": "status", "step": "web", "text": f"Searching: {search_query}"})
+        web_sources = await web_search(search_query)
+        if web_sources:
+            domains = ", ".join(r["url"].split("/")[2].lstrip("www.") for r in web_sources)
+            suffix = f"→ {domains}"
+        else:
+            suffix = "no results found"
         yield sse({"type": "status", "step": "web", "text": f"Web search complete — {suffix}", "done": True})
 
     # Step 4: (fallthrough — always proceed to LLM)
@@ -351,7 +399,7 @@ async def chat_stream(request: ChatRequest, user_id: str) -> AsyncGenerator[str,
         context_parts.append(f"[VAULT CONTEXT]\n{vault_context}")
     if web_sources:
         web_context = "\n\n".join(
-            f"Title: {r['title']}\nURL: {r['url']}\nSummary: {r['snippet']}"
+            f"Title: {r['title']}\nURL: {r['url']}\nContent: {r.get('content') or r.get('snippet', '')}"
             for r in web_sources
         )
         context_parts.append(f"[WEB SEARCH RESULTS]\n{web_context}")
@@ -365,7 +413,7 @@ async def chat_stream(request: ChatRequest, user_id: str) -> AsyncGenerator[str,
     # Use topic system prompt if provided (overrides default)
     if request.topic_id:
         topic = db.get_topic(request.topic_id, user_id)
-        if topic and topic.get("system_prompt"):
+        if topic and topic.get("system_prompt") is not None and topic["system_prompt"] != "":
             base_instructions = topic["system_prompt"]
 
     # Inject memory facts
@@ -381,7 +429,16 @@ async def chat_stream(request: ChatRequest, user_id: str) -> AsyncGenerator[str,
         user_section = f"\n\nUser profile:\n{request.user_context}"
 
     context_block = f"\n\nContext:\n{context_text}" if context_parts else ""
-    system_prompt = f"""{base_instructions}{memory_section}{user_section}{' ' + source_instruction if source_instruction else ''}{context_block}
+
+    web_instruction = ""
+    if web_sources:
+        has_real_content = any(len(r.get("content", "")) > 100 for r in web_sources)
+        if has_real_content:
+            web_instruction = "\n\nYou have been given real web page content in the [WEB SEARCH RESULTS] above. Answer the user's question using that content directly. Do NOT tell the user to visit a website. Do NOT say you lack real-time access. Summarize and report the actual information from the content."
+        else:
+            web_instruction = "\n\nWeb search was performed but the pages could not be fully retrieved (JavaScript-rendered or blocked). Summarize what you can from the snippets and titles. Do not tell the user to visit a website — tell them the pages weren't fully accessible and share what little was retrieved."
+
+    system_prompt = f"""{base_instructions}{memory_section}{user_section}{' ' + source_instruction if source_instruction else ''}{context_block}{web_instruction}
 
 Answer concisely."""
 
@@ -477,6 +534,7 @@ Answer concisely."""
         "from_vault": bool(relevant),
         "sources": sources,
         "web_sources": web_sources,
+        "web_search_query": web_search_query,
         "model_used": model,
         "conversation_id": conv_id,
         "debug": debug,
@@ -492,7 +550,6 @@ async def health():
         for name, url in [
             ("ollama", f"{OLLAMA_BASE_URL}/api/tags"),
             ("chromadb", f"http://{os.environ.get('CHROMA_HOST','chromadb')}:{os.environ.get('CHROMA_PORT_INTERNAL','8000')}/api/v2/heartbeat"),
-            ("searxng", f"{os.environ.get('SEARXNG_URL','http://searxng:8080')}/healthz"),
             ("kokoro", f"{os.environ.get('KOKORO_URL','http://kokoro:8880')}/health"),
         ]:
             try:
@@ -501,6 +558,82 @@ async def health():
             except Exception:
                 services[name] = False
     return {"status": "ok", "services": services}
+
+
+def _get_docker_client():
+    import docker
+    return docker.from_env()
+
+
+@app.get("/containers")
+def list_containers(user: dict = Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    try:
+        from datetime import timezone
+        dc = _get_docker_client()
+        result = []
+        for c in dc.containers.list(all=True):
+            started = c.attrs.get("State", {}).get("StartedAt", "")
+            uptime = None
+            cpu_pct = None
+            if c.status == "running":
+                if started:
+                    started_dt = datetime.fromisoformat(started.replace("Z", "+00:00").split(".")[0] + "+00:00")
+                    delta = datetime.now(timezone.utc) - started_dt
+                    total = int(delta.total_seconds())
+                    h, rem = divmod(total, 3600)
+                    m, s = divmod(rem, 60)
+                    uptime = f"{h}h {m}m" if h else f"{m}m {s}s"
+                try:
+                    stats = c.stats(stream=False)
+                    cpu_delta = stats["cpu_stats"]["cpu_usage"]["total_usage"] - stats["precpu_stats"]["cpu_usage"]["total_usage"]
+                    sys_delta = stats["cpu_stats"]["system_cpu_usage"] - stats["precpu_stats"]["system_cpu_usage"]
+                    cpus = stats["cpu_stats"].get("online_cpus", 1)
+                    cpu_pct = round((cpu_delta / sys_delta) * cpus * 100, 1) if sys_delta > 0 else 0.0
+                except Exception:
+                    pass
+            result.append({
+                "name": c.name,
+                "status": c.status,
+                "uptime": uptime,
+                "cpu": cpu_pct,
+            })
+        result.sort(key=lambda x: x["name"])
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/apis")
+async def list_apis(user: dict = Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    result = []
+    # Tavily
+    tavily_ok = False
+    if TAVILY_API_KEY:
+        try:
+            async with httpx.AsyncClient(timeout=5) as client:
+                r = await client.get("https://api.tavily.com", headers={"Authorization": f"Bearer {TAVILY_API_KEY}"})
+                tavily_ok = r.status_code < 500
+        except Exception:
+            tavily_ok = False
+    result.append({"name": "Tavily", "configured": bool(TAVILY_API_KEY), "online": tavily_ok})
+    return result
+
+
+@app.post("/containers/{name}/restart")
+def restart_container(name: str, user: dict = Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    try:
+        dc = _get_docker_client()
+        c = dc.containers.get(name)
+        c.restart()
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/models", response_model=ModelsResponse)
@@ -571,19 +704,44 @@ async def trigger_reindex(user: dict = Depends(get_current_user)):
 @app.get("/suggestions")
 async def get_suggestions(model: str = None, user: dict = Depends(get_current_user)):
     use_model = model or LLM_MODEL
-    vault = user_vault_path(user["id"])
-    filenames = []
-    if vault.is_dir():
-        for p in vault.rglob("*"):
-            if p.is_file():
-                filenames.append(str(p.relative_to(vault)))
-    if not filenames:
+    user_id = user["id"]
+    collection_name = f"vault_{user_id.replace('-', '')}"
+
+    # Sample actual content from the vault's ChromaDB collection
+    sample_text = ""
+    try:
+        chroma_client = get_chroma_client()
+        collection = chroma_client.get_collection(collection_name)
+        count = collection.count()
+        if count == 0:
+            return {"suggestions": []}
+        import random
+        sample_ids = random.sample(range(count), min(10, count))
+        result = collection.get(
+            include=["documents", "metadatas"],
+            limit=min(10, count),
+        )
+        docs = result.get("documents", [])
+        metas = result.get("metadatas", [])
+        snippets = []
+        for doc, meta in zip(docs, metas):
+            source = meta.get("source", "unknown") if meta else "unknown"
+            snippet = doc[:300] if doc else ""
+            if snippet:
+                snippets.append(f"[From: {source}]\n{snippet}")
+        sample_text = "\n\n".join(snippets[:8])
+    except Exception as e:
+        logger.warning(f"suggestions: failed to sample vault: {e}")
         return {"suggestions": []}
-    file_list = "\n".join(f"- {f}" for f in filenames[:40])
+
+    if not sample_text:
+        return {"suggestions": []}
+
     prompt = (
-        f"Files in vault:\n{file_list}\n\n"
-        "Write exactly 4 questions a user might ask about these files. "
-        "Rules: each question on its own line, ends with ?, under 60 chars, no numbering, no bullets, no explanations."
+        f"Here are excerpts from a user's personal document vault:\n\n{sample_text}\n\n"
+        "Based on this content, write exactly 4 specific, interesting questions the user might want to ask about their documents. "
+        "The questions should be practical and specific to the actual content — not generic questions about the files themselves. "
+        "Rules: each question on its own line, ends with ?, under 70 chars, no numbering, no bullets, no explanations."
     )
     try:
         import re as _re
@@ -592,10 +750,11 @@ async def get_suggestions(model: str = None, user: dict = Depends(get_current_us
             json={
                 "model": use_model,
                 "messages": [
-                    {"role": "system", "content": "You are a concise assistant. Output only the requested list, nothing else. No explanations, no preamble, no reasoning."},
+                    {"role": "system", "content": "/no_think\nYou output ONLY what is asked. No reasoning. No preamble."},
                     {"role": "user", "content": prompt},
+                    {"role": "assistant", "content": "<think>\n\n</think>\n1."},
                 ],
-                "options": {"temperature": 0.7, "num_predict": 800},
+                "options": {"temperature": 0.8, "num_predict": 500},
                 "think": False,
                 "stream": False,
             },
@@ -604,9 +763,16 @@ async def get_suggestions(model: str = None, user: dict = Depends(get_current_us
         ollama_resp.raise_for_status()
         data = ollama_resp.json()
         raw = data.get("message", {}).get("content", "")
-        cleaned = _re.sub(r"<think>[\s\S]*?</think>", "", raw, flags=_re.IGNORECASE)
-        lines = [line.strip().lstrip("-•* ") for line in cleaned.splitlines()]
-        suggestions = [s for s in lines if s.endswith("?") and 10 < len(s) < 100][:4]
+        logger.info(f"suggestions raw response: {raw[:800]}")
+        # Strip think blocks and any trailing thinking text before actual output
+        cleaned = _re.sub(r"<think>[\s\S]*?</think>", "", raw, flags=_re.IGNORECASE).strip()
+        # If the entire response looks like reasoning (no question marks), bail early
+        if "?" not in cleaned:
+            raise ValueError(f"no questions in response: {cleaned[:200]}")
+        lines = [line.strip().lstrip("-•*0123456789.) ") for line in cleaned.splitlines() if line.strip()]
+        suggestions = [s for s in lines if "?" in s and len(s) > 10 and len(s) < 120][:4]
+        # Ensure they end with ?
+        suggestions = [s if s.endswith("?") else s.split("?")[0] + "?" for s in suggestions]
         if not suggestions:
             raise ValueError("no suggestions parsed")
         return {"suggestions": suggestions}

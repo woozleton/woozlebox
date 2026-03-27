@@ -271,8 +271,7 @@ def update_topic(pid: str, user_id: str, name: str = None, description: str = No
             conn.execute("UPDATE topics SET name=? WHERE id=? AND user_id=?", (name, pid, user_id))
         if description is not None:
             conn.execute("UPDATE topics SET description=? WHERE id=? AND user_id=?", (description, pid, user_id))
-        if system_prompt is not None:
-            conn.execute("UPDATE topics SET system_prompt=? WHERE id=? AND user_id=?", (system_prompt, pid, user_id))
+        conn.execute("UPDATE topics SET system_prompt=? WHERE id=? AND user_id=?", (system_prompt, pid, user_id))
 
 
 def delete_topic(pid: str, user_id: str):

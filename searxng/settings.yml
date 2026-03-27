@@ -10,11 +10,11 @@ general:
   enable_metrics: false
 
 brand:
-  new_issue_url: false
-  docs_url: false
-  public_instances: false
-  wiki_url: false
-  issue_url: false
+  new_issue_url: ""
+  docs_url: ""
+  public_instances: ""
+  wiki_url: ""
+  issue_url: ""
 
 search:
   safe_search: 0
@@ -101,3 +101,29 @@ outgoing:
   pool_connections: 100
   pool_maxsize: 20
   enable_http2: true
+
+valkey:
+  url: false
+
+categories_as_tabs:
+  general:
+  images:
+  news:
+  science:
+
+plugins:
+  searx.plugins.calculator.SXNGPlugin:
+    active: true
+  searx.plugins.hash_plugin.SXNGPlugin:
+    active: true
+  searx.plugins.self_info.SXNGPlugin:
+    active: true
+  searx.plugins.tracker_url_remover.SXNGPlugin:
+    active: true
+  searx.plugins.unit_converter.SXNGPlugin:
+    active: true
+
+doi_resolvers:
+  oadoi.org: "https://oadoi.org/"
+
+default_doi_resolver: "oadoi.org"
