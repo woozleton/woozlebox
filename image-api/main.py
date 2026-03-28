@@ -140,9 +140,13 @@ async def startup():
 
 class GenerateRequest(BaseModel):
     prompt: str
+    negative_prompt: Optional[str] = None
     aspect: str = "square"
+    width: Optional[int] = None
+    height: Optional[int] = None
     steps: Optional[int] = None
     seed: Optional[int] = None
+    guidance_scale: Optional[float] = None
     model: Optional[str] = None
 
 
@@ -227,10 +231,14 @@ async def generate(req: GenerateRequest):
 
     cfg = MODELS[_current_model]
     dims = cfg["dimensions"]
-    w, h = dims.get(req.aspect, dims["square"])
+    # Custom width/height override aspect ratio presets
+    if req.width and req.height:
+        w, h = req.width, req.height
+    else:
+        w, h = dims.get(req.aspect, dims["square"])
     steps = req.steps or cfg["default_steps"]
     steps = max(1, min(steps, cfg["max_steps"]))
-    guidance = cfg["guidance_scale"]
+    guidance = req.guidance_scale if req.guidance_scale is not None else cfg["guidance_scale"]
     generator = torch.Generator("cuda").manual_seed(req.seed) if req.seed is not None else None
 
     # Evict ALL Ollama models from VRAM to avoid contention
@@ -268,7 +276,7 @@ async def generate(req: GenerateRequest):
 
         def _run_inference():
             logger.info(f"Starting {cfg['name']} inference ({steps} steps, {w}x{h})")
-            result = _pipeline(
+            kwargs = dict(
                 prompt=req.prompt,
                 width=w,
                 height=h,
@@ -277,6 +285,9 @@ async def generate(req: GenerateRequest):
                 generator=generator,
                 callback_on_step_end=_step_callback,
             )
+            if req.negative_prompt:
+                kwargs["negative_prompt"] = req.negative_prompt
+            result = _pipeline(**kwargs)
             return result
 
         result = await loop.run_in_executor(None, _run_inference)

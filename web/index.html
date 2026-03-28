@@ -790,6 +790,194 @@
     }
     .image-download-btn:hover { background: var(--surface3); color: var(--text); }
 
+    /* ── Image Studio ── */
+    #image-studio {
+      display: none; flex: 1; flex-direction: column; height: 100%; overflow: hidden;
+      background: var(--bg);
+    }
+    #image-studio.active { display: flex; }
+    #image-studio-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 16px 24px 12px; border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    #image-studio-header h2 {
+      font-size: 1.1rem; font-weight: 600; color: var(--text); margin: 0;
+    }
+    #image-studio-header .studio-subtitle {
+      font-size: 0.78rem; color: var(--text-dim); margin-left: auto;
+    }
+    #studio-body {
+      display: flex; flex: 1; overflow: hidden;
+    }
+    /* Controls sidebar */
+    #studio-controls {
+      width: 320px; min-width: 280px; flex-shrink: 0;
+      display: flex; flex-direction: column; gap: 0;
+      border-right: 1px solid var(--border);
+      overflow-y: auto; padding: 0;
+      background: var(--surface);
+    }
+    .studio-section {
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+    }
+    .studio-section:last-child { border-bottom: none; }
+    .studio-section-title {
+      font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--text-dim); margin-bottom: 10px;
+    }
+    .studio-field { margin-bottom: 12px; }
+    .studio-field:last-child { margin-bottom: 0; }
+    .studio-field label {
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 0.78rem; color: var(--text-dim); margin-bottom: 5px;
+    }
+    .studio-field label .field-val {
+      font-size: 0.72rem; color: var(--text-faint); font-family: monospace;
+    }
+    .studio-field textarea, .studio-field input[type="text"], .studio-field input[type="number"] {
+      width: 100%; background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); border-radius: 8px; padding: 8px 10px;
+      font-size: 0.82rem; outline: none; resize: vertical; font-family: inherit;
+      transition: border-color 0.15s;
+    }
+    .studio-field textarea:focus, .studio-field input:focus {
+      border-color: var(--accent);
+    }
+    .studio-field textarea { min-height: 60px; }
+    .studio-field select {
+      width: 100%; background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); border-radius: 8px; padding: 7px 10px;
+      font-size: 0.82rem; outline: none; cursor: pointer;
+      appearance: none; -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238888aa' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 8px center;
+    }
+    .studio-field select:focus { border-color: var(--accent); }
+    .studio-field select option { background: var(--surface); color: var(--text); }
+    .studio-field input[type="range"] {
+      width: 100%; accent-color: var(--accent); height: 4px;
+      -webkit-appearance: none; appearance: none;
+      background: var(--surface3); border-radius: 2px; outline: none;
+    }
+    .studio-field input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 14px; height: 14px;
+      border-radius: 50%; background: var(--accent); cursor: pointer;
+    }
+    .studio-aspect-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+    }
+    .studio-aspect-btn {
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      padding: 8px 4px; border-radius: 8px; cursor: pointer;
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text-dim); font-size: 0.7rem; transition: all 0.15s;
+    }
+    .studio-aspect-btn:hover { border-color: var(--accent); color: var(--text); }
+    .studio-aspect-btn.active {
+      border-color: var(--accent); background: var(--accent-glow);
+      color: var(--accent); font-weight: 600;
+    }
+    .studio-aspect-btn .aspect-icon {
+      border: 2px solid currentColor; border-radius: 3px;
+    }
+    .studio-preset-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;
+    }
+    .studio-preset-btn {
+      padding: 6px 8px; border-radius: 6px; cursor: pointer;
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text-dim); font-size: 0.72rem; text-align: center;
+      transition: all 0.15s;
+    }
+    .studio-preset-btn:hover { border-color: var(--accent); color: var(--text); }
+    .studio-preset-btn.active {
+      border-color: var(--accent); background: var(--accent-glow);
+      color: var(--accent); font-weight: 600;
+    }
+    #studio-generate-btn {
+      width: 100%; padding: 12px; border: none; border-radius: 10px;
+      background: var(--accent); color: #fff; font-size: 0.9rem;
+      font-weight: 600; cursor: pointer; transition: opacity 0.15s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    #studio-generate-btn:hover { opacity: 0.9; }
+    #studio-generate-btn:disabled {
+      opacity: 0.5; cursor: not-allowed;
+    }
+    #studio-progress {
+      display: none; padding: 0 20px 16px;
+    }
+    #studio-progress.active { display: block; }
+    #studio-progress-bar {
+      height: 4px; background: var(--surface3); border-radius: 2px;
+      overflow: hidden; margin-bottom: 6px;
+    }
+    #studio-progress-fill {
+      height: 100%; background: var(--accent); border-radius: 2px;
+      transition: width 0.3s ease; width: 0%;
+    }
+    #studio-progress-text {
+      font-size: 0.72rem; color: var(--text-dim); text-align: center;
+    }
+    /* Canvas / gallery area */
+    #studio-canvas {
+      flex: 1; display: flex; flex-direction: column;
+      overflow-y: auto; padding: 24px;
+      align-items: center; justify-content: flex-start; gap: 20px;
+    }
+    #studio-canvas-empty {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; flex: 1; gap: 12px; color: var(--text-faint);
+      text-align: center; padding: 40px;
+    }
+    #studio-canvas-empty svg { opacity: 0.3; }
+    #studio-canvas-empty p { font-size: 0.85rem; max-width: 300px; line-height: 1.5; }
+    .studio-result {
+      display: flex; flex-direction: column; gap: 10px;
+      width: 100%; max-width: 768px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 16px; animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    .studio-result img {
+      width: 100%; border-radius: 10px; display: block; cursor: zoom-in;
+      border: 1px solid var(--border);
+    }
+    .studio-result-meta {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      font-size: 0.75rem; color: var(--text-dim);
+    }
+    .studio-result-meta .meta-pill {
+      background: var(--surface2); border-radius: 4px; padding: 2px 7px;
+      font-family: monospace; font-size: 0.7rem;
+    }
+    .studio-result-prompt {
+      font-size: 0.8rem; color: var(--text-dim); font-style: italic;
+      line-height: 1.4;
+    }
+    .studio-result-actions {
+      display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .studio-result-actions button {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 0.75rem; color: var(--text-faint); background: none;
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: 4px 10px; cursor: pointer; transition: all 0.15s;
+    }
+    .studio-result-actions button:hover {
+      background: var(--surface3); color: var(--text);
+    }
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+      #studio-body { flex-direction: column; }
+      #studio-controls {
+        width: 100%; min-width: unset; max-height: 45vh;
+        border-right: none; border-bottom: 1px solid var(--border);
+      }
+      #studio-canvas { padding: 16px; }
+    }
+
     /* ── Message queue tray ── */
     #queue-tray {
       display: flex;
@@ -1204,6 +1392,10 @@
     #new-chat-btn:hover { background: var(--surface2); }
     #new-chat-btn svg { flex-shrink: 0; }
     #vault-sidebar-btn:hover { background: var(--surface2); color: var(--text); }
+    #studio-sidebar-btn.active {
+      background: var(--accent-glow); color: var(--accent); font-weight: 600;
+    }
+    #studio-sidebar-btn.active svg { opacity: 1; }
 
     #sidebar-bottom {
       flex-shrink: 0;
@@ -1959,6 +2151,10 @@
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1.5" fill="currentColor"/></svg>
         File Vault
       </button>
+      <button class="sidebar-row" id="studio-sidebar-btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+        Image Studio
+      </button>
     </div>
     <button id="sidebar-toggle" title="Collapse sidebar">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
@@ -1977,6 +2173,9 @@
       </button>
       <button class="strip-btn" id="strip-vault-btn" title="File Manager">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1.5" fill="currentColor"/></svg>
+      </button>
+      <button class="strip-btn" id="strip-studio-btn" title="Image Studio">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
       </button>
       <button class="strip-btn" id="strip-settings-btn" title="Settings">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -2061,6 +2260,110 @@
         <div id="web-caution">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           CAUTION: Your query will be sent to the Internet
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IMAGE STUDIO (lives in #main, toggles with chat-area) -->
+  <div id="image-studio">
+    <div id="image-studio-header">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+      <h2>Image Studio</h2>
+      <span class="studio-subtitle" id="studio-model-label">Playground v2.5</span>
+    </div>
+    <div id="studio-body">
+      <!-- Controls sidebar -->
+      <div id="studio-controls">
+        <div class="studio-section">
+          <div class="studio-section-title">Prompt</div>
+          <div class="studio-field">
+            <textarea id="studio-prompt" placeholder="Describe the image you want to create..." rows="3"></textarea>
+          </div>
+          <div class="studio-field">
+            <label>Negative Prompt</label>
+            <textarea id="studio-negative" placeholder="Things to avoid: blurry, low quality, distorted..." rows="2" style="min-height:40px;"></textarea>
+          </div>
+        </div>
+
+        <div class="studio-section">
+          <div class="studio-section-title">Model</div>
+          <div class="studio-field">
+            <select id="studio-model-select">
+              <option value="">Loading...</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="studio-section">
+          <div class="studio-section-title">Aspect Ratio</div>
+          <div class="studio-aspect-grid">
+            <button class="studio-aspect-btn active" data-aspect="square" data-w="1024" data-h="1024">
+              <div class="aspect-icon" style="width:24px;height:24px;"></div>
+              <span>1:1</span>
+            </button>
+            <button class="studio-aspect-btn" data-aspect="landscape" data-w="1344" data-h="768">
+              <div class="aspect-icon" style="width:28px;height:18px;"></div>
+              <span>16:9</span>
+            </button>
+            <button class="studio-aspect-btn" data-aspect="portrait" data-w="768" data-h="1344">
+              <div class="aspect-icon" style="width:18px;height:28px;"></div>
+              <span>9:16</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="studio-section">
+          <div class="studio-section-title">Quality</div>
+          <div class="studio-field">
+            <label>Steps <span class="field-val" id="studio-steps-val">25</span></label>
+            <input type="range" id="studio-steps" min="1" max="50" value="25" />
+          </div>
+          <div class="studio-field">
+            <label>Guidance Scale <span class="field-val" id="studio-guidance-val">3.0</span></label>
+            <input type="range" id="studio-guidance" min="0" max="20" step="0.5" value="3.0" />
+          </div>
+          <div class="studio-field">
+            <label>Seed</label>
+            <div style="display:flex;gap:6px;">
+              <input type="number" id="studio-seed" placeholder="Random" style="flex:1;" />
+              <button id="studio-random-seed" style="padding:4px 10px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);cursor:pointer;font-size:0.75rem;" title="Random seed">&#x1f3b2;</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="studio-section">
+          <div class="studio-section-title">Presets</div>
+          <div class="studio-preset-grid">
+            <button class="studio-preset-btn" data-preset="cinematic">Cinematic</button>
+            <button class="studio-preset-btn" data-preset="anime">Anime</button>
+            <button class="studio-preset-btn" data-preset="photorealistic">Photo</button>
+            <button class="studio-preset-btn" data-preset="digital-art">Digital Art</button>
+            <button class="studio-preset-btn" data-preset="oil-painting">Oil Painting</button>
+            <button class="studio-preset-btn" data-preset="watercolor">Watercolor</button>
+            <button class="studio-preset-btn" data-preset="pixel-art">Pixel Art</button>
+            <button class="studio-preset-btn" data-preset="3d-render">3D Render</button>
+          </div>
+        </div>
+
+        <div class="studio-section">
+          <button id="studio-generate-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>
+            Generate
+          </button>
+        </div>
+
+        <div id="studio-progress">
+          <div id="studio-progress-bar"><div id="studio-progress-fill"></div></div>
+          <div id="studio-progress-text">Preparing...</div>
+        </div>
+      </div>
+
+      <!-- Gallery / canvas area -->
+      <div id="studio-canvas">
+        <div id="studio-canvas-empty">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+          <p>Configure your settings and click <strong>Generate</strong> to create an image.</p>
         </div>
       </div>
     </div>
@@ -4601,6 +4904,329 @@ imageModelSelect.addEventListener("change", async () => {
   }
 });
 
+// ── Image Studio ──
+const imageStudio = document.getElementById("image-studio");
+const chatArea = document.getElementById("chat-area");
+const studioPrompt = document.getElementById("studio-prompt");
+const studioNegative = document.getElementById("studio-negative");
+const studioModelSelect = document.getElementById("studio-model-select");
+const studioModelLabel = document.getElementById("studio-model-label");
+const studioSteps = document.getElementById("studio-steps");
+const studioStepsVal = document.getElementById("studio-steps-val");
+const studioGuidance = document.getElementById("studio-guidance");
+const studioGuidanceVal = document.getElementById("studio-guidance-val");
+const studioSeed = document.getElementById("studio-seed");
+const studioGenerateBtn = document.getElementById("studio-generate-btn");
+const studioProgress = document.getElementById("studio-progress");
+const studioProgressFill = document.getElementById("studio-progress-fill");
+const studioProgressText = document.getElementById("studio-progress-text");
+const studioCanvas = document.getElementById("studio-canvas");
+const studioCanvasEmpty = document.getElementById("studio-canvas-empty");
+
+let studioAspect = "square";
+let studioActivePreset = null;
+let studioGenerating = false;
+let _studioModelsCache = [];
+
+const STUDIO_PRESETS = {
+  "cinematic":     { suffix: ", cinematic lighting, dramatic composition, film grain, anamorphic lens, movie still", negative: "cartoon, anime, painting, illustration" },
+  "anime":         { suffix: ", anime style, cel-shaded, vibrant colors, detailed, studio ghibli quality", negative: "photorealistic, photograph, 3d render" },
+  "photorealistic":{ suffix: ", photorealistic, DSLR photograph, 8K UHD, sharp focus, professional photography", negative: "cartoon, painting, illustration, drawing, anime" },
+  "digital-art":   { suffix: ", digital art, highly detailed, trending on artstation, vibrant, sharp", negative: "photograph, blurry, low quality" },
+  "oil-painting":  { suffix: ", oil painting, classical art, rich textures, brushstrokes visible, masterpiece", negative: "photograph, digital, anime, cartoon" },
+  "watercolor":    { suffix: ", watercolor painting, soft edges, translucent colors, paper texture, artistic", negative: "photograph, digital, sharp edges, 3d" },
+  "pixel-art":     { suffix: ", pixel art, retro game style, 16-bit, clean pixels, sprite art", negative: "photorealistic, blurry, smooth, 3d render" },
+  "3d-render":     { suffix: ", 3D render, octane render, ray tracing, volumetric lighting, highly detailed", negative: "painting, drawing, 2d, flat, cartoon" },
+};
+
+// View switching
+function showStudio() {
+  chatArea.style.display = "none";
+  imageStudio.classList.add("active");
+  document.getElementById("studio-sidebar-btn").classList.add("active");
+  if (isMobile() && typeof closeMobileSidebar === "function") closeMobileSidebar();
+  studioPrompt.focus();
+  loadStudioModels();
+}
+function hideStudio() {
+  imageStudio.classList.remove("active");
+  chatArea.style.display = "";
+  document.getElementById("studio-sidebar-btn").classList.remove("active");
+}
+function toggleStudio() {
+  if (imageStudio.classList.contains("active")) hideStudio();
+  else showStudio();
+}
+document.getElementById("studio-sidebar-btn").addEventListener("click", toggleStudio);
+document.getElementById("strip-studio-btn").addEventListener("click", toggleStudio);
+
+// Make sidebar row highlighting work
+["new-chat-btn", "search-open-btn", "vault-sidebar-btn"].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener("click", hideStudio);
+});
+
+// Slider wiring
+studioSteps.addEventListener("input", () => { studioStepsVal.textContent = studioSteps.value; });
+studioGuidance.addEventListener("input", () => { studioGuidanceVal.textContent = parseFloat(studioGuidance.value).toFixed(1); });
+
+// Aspect ratio buttons
+document.querySelectorAll(".studio-aspect-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".studio-aspect-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    studioAspect = btn.dataset.aspect;
+  });
+});
+
+// Preset buttons
+document.querySelectorAll(".studio-preset-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const preset = btn.dataset.preset;
+    if (studioActivePreset === preset) {
+      btn.classList.remove("active");
+      studioActivePreset = null;
+    } else {
+      document.querySelectorAll(".studio-preset-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      studioActivePreset = preset;
+    }
+  });
+});
+
+// Random seed
+document.getElementById("studio-random-seed").addEventListener("click", () => {
+  studioSeed.value = Math.floor(Math.random() * 2147483647);
+});
+
+// Load models for studio
+async function loadStudioModels() {
+  try {
+    const res = await apiFetch("/image/models");
+    const data = await res.json();
+    _studioModelsCache = data.models || [];
+    studioModelSelect.innerHTML = "";
+    data.models.forEach(m => {
+      const opt = document.createElement("option");
+      opt.value = m.id;
+      opt.textContent = m.name;
+      if (m.id === data.current) opt.selected = true;
+      studioModelSelect.appendChild(opt);
+    });
+    // Sync with settings selector
+    const saved = localStorage.getItem("diab_image_model");
+    if (saved && data.models.some(m => m.id === saved)) studioModelSelect.value = saved;
+    updateStudioModelDefaults();
+  } catch {
+    studioModelSelect.innerHTML = `<option value="">Unavailable</option>`;
+  }
+}
+
+function updateStudioModelDefaults() {
+  const m = _studioModelsCache.find(x => x.id === studioModelSelect.value);
+  if (!m) return;
+  studioModelLabel.textContent = m.name;
+  studioSteps.value = m.default_steps;
+  studioSteps.max = m.max_steps;
+  studioStepsVal.textContent = m.default_steps;
+  studioGuidance.value = m.guidance_scale;
+  studioGuidanceVal.textContent = m.guidance_scale.toFixed(1);
+}
+
+studioModelSelect.addEventListener("change", async () => {
+  const newModel = studioModelSelect.value;
+  if (!newModel) return;
+  studioModelSelect.disabled = true;
+  try {
+    const res = await apiFetch("/image/models/load", {
+      method: "POST",
+      body: JSON.stringify({ model: newModel }),
+    });
+    if (res.ok) {
+      localStorage.setItem("diab_image_model", newModel);
+      selectedImageModel = newModel;
+      updateStudioModelDefaults();
+      // Sync settings dropdown if it exists
+      if (imageModelSelect) { await loadImageModels(); }
+    }
+  } catch {}
+  studioModelSelect.disabled = false;
+});
+
+// Generate
+studioGenerateBtn.addEventListener("click", studioGenerate);
+studioPrompt.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && !studioGenerating) {
+    e.preventDefault();
+    studioGenerate();
+  }
+});
+
+async function studioGenerate() {
+  const rawPrompt = studioPrompt.value.trim();
+  if (!rawPrompt || studioGenerating) return;
+
+  studioGenerating = true;
+  studioGenerateBtn.disabled = true;
+  studioGenerateBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Generating...`;
+
+  // Build prompt with preset
+  let prompt = rawPrompt;
+  let negativePrompt = studioNegative.value.trim() || null;
+  if (studioActivePreset && STUDIO_PRESETS[studioActivePreset]) {
+    const p = STUDIO_PRESETS[studioActivePreset];
+    prompt += p.suffix;
+    if (p.negative) {
+      negativePrompt = negativePrompt ? negativePrompt + ", " + p.negative : p.negative;
+    }
+  }
+
+  const seed = studioSeed.value ? parseInt(studioSeed.value) : null;
+  const body = {
+    prompt,
+    negative_prompt: negativePrompt,
+    aspect: studioAspect,
+    steps: parseInt(studioSteps.value),
+    seed,
+    guidance_scale: parseFloat(studioGuidance.value),
+    model: studioModelSelect.value || null,
+  };
+
+  // Show progress
+  studioProgress.classList.add("active");
+  studioProgressFill.style.width = "0%";
+  studioProgressText.textContent = "Preparing...";
+
+  let pollTimer = setInterval(async () => {
+    try {
+      const pr = await apiFetch("/image/progress");
+      if (!pr.ok) return;
+      const p = await pr.json();
+      if (p.running && p.total_steps > 0) {
+        const pct = Math.round((p.step / p.total_steps) * 100);
+        studioProgressFill.style.width = pct + "%";
+        studioProgressText.textContent = `Step ${p.step}/${p.total_steps} (${p.elapsed_s}s)`;
+      } else if (!p.running && p.step === 0) {
+        studioProgressText.textContent = "Unloading LLM from VRAM...";
+      }
+    } catch {}
+  }, 1000);
+
+  try {
+    const res = await apiFetch("/image/generate", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
+      throw new Error(e.detail || `HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    appendStudioResult(data, rawPrompt, body);
+  } catch (err) {
+    appendStudioError(err.message || "Generation failed");
+  } finally {
+    clearInterval(pollTimer);
+    studioGenerating = false;
+    studioGenerateBtn.disabled = false;
+    studioGenerateBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg> Generate`;
+    studioProgress.classList.remove("active");
+  }
+}
+
+function appendStudioResult(data, rawPrompt, body) {
+  if (studioCanvasEmpty) studioCanvasEmpty.remove();
+
+  const result = document.createElement("div");
+  result.className = "studio-result";
+  const src = `data:image/png;base64,${data.image}`;
+  const seedUsed = body.seed || "random";
+
+  result.innerHTML = `
+    <img src="${src}" alt="${esc(rawPrompt)}" onclick="window.open(this.src)" />
+    <div class="studio-result-prompt">${esc(rawPrompt)}${studioActivePreset ? ` <span style="color:var(--accent);">[${studioActivePreset}]</span>` : ""}</div>
+    <div class="studio-result-meta">
+      <span class="meta-pill">${esc(data.model)}</span>
+      <span class="meta-pill">${data.width}×${data.height}</span>
+      <span class="meta-pill">${body.steps} steps</span>
+      <span class="meta-pill">cfg ${body.guidance_scale}</span>
+      <span class="meta-pill">seed ${seedUsed}</span>
+      <span class="meta-pill">${data.elapsed_s}s</span>
+    </div>
+    <div class="studio-result-actions">
+      <button class="studio-dl-btn">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Save
+      </button>
+      <button class="studio-reuse-btn">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+        Reuse Settings
+      </button>
+      <button class="studio-vary-btn">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>
+        Variation
+      </button>
+    </div>
+  `;
+
+  // Save button
+  result.querySelector(".studio-dl-btn").addEventListener("click", () => {
+    const a = document.createElement("a");
+    a.href = src;
+    a.download = `studio-${Date.now()}.png`;
+    a.click();
+  });
+
+  // Reuse settings — fills seed so exact reproduction is possible
+  result.querySelector(".studio-reuse-btn").addEventListener("click", () => {
+    studioPrompt.value = rawPrompt;
+    studioNegative.value = body.negative_prompt || "";
+    studioSteps.value = body.steps;
+    studioStepsVal.textContent = body.steps;
+    studioGuidance.value = body.guidance_scale;
+    studioGuidanceVal.textContent = body.guidance_scale.toFixed(1);
+    if (body.seed) studioSeed.value = body.seed;
+    // Set aspect
+    document.querySelectorAll(".studio-aspect-btn").forEach(b => {
+      b.classList.toggle("active", b.dataset.aspect === body.aspect);
+    });
+    studioAspect = body.aspect;
+    studioPrompt.focus();
+  });
+
+  // Variation — same settings but new random seed
+  result.querySelector(".studio-vary-btn").addEventListener("click", () => {
+    studioPrompt.value = rawPrompt;
+    studioNegative.value = body.negative_prompt || "";
+    studioSteps.value = body.steps;
+    studioStepsVal.textContent = body.steps;
+    studioGuidance.value = body.guidance_scale;
+    studioGuidanceVal.textContent = body.guidance_scale.toFixed(1);
+    studioSeed.value = Math.floor(Math.random() * 2147483647);
+    document.querySelectorAll(".studio-aspect-btn").forEach(b => {
+      b.classList.toggle("active", b.dataset.aspect === body.aspect);
+    });
+    studioAspect = body.aspect;
+    studioGenerate();
+  });
+
+  studioCanvas.insertBefore(result, studioCanvas.firstChild);
+  studioCanvas.scrollTop = 0;
+}
+
+function appendStudioError(msg) {
+  const result = document.createElement("div");
+  result.className = "studio-result";
+  result.style.borderColor = "var(--danger)";
+  result.innerHTML = `
+    <div style="padding:20px;text-align:center;">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <p style="color:var(--danger);margin-top:8px;font-size:0.85rem;">${esc(msg)}</p>
+    </div>
+  `;
+  studioCanvas.insertBefore(result, studioCanvas.firstChild);
+}
+
 // ── Conversation sidebar ──
 let allConversations = [];
 
@@ -4697,6 +5323,7 @@ function renderSidebar(convs, flat = false) {
 }
 
 async function loadConversation(id) {
+  hideStudio();
   try {
     const res = await apiFetch(`/conversations/${id}`);
     if (!res.ok) return;
@@ -4786,6 +5413,7 @@ ctxDelete.addEventListener("click", async () => {
 
 // ── New chat ──
 newChatBtn.addEventListener("click", () => {
+  hideStudio();
   if (topics.length === 0) { openTopicModal(null); return; }
   activeConvId = null;
   chatWindow.innerHTML = "";

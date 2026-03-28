@@ -1348,9 +1348,13 @@ async def tts_proxy(text: str, voice: str = DEFAULT_VOICE, format: str = "wav"):
 
 class ImageGenerateRequest(BaseModel):
     prompt: str
+    negative_prompt: Optional[str] = None
     aspect: str = "square"   # square | landscape | portrait
+    width: Optional[int] = None
+    height: Optional[int] = None
     steps: Optional[int] = None
     seed: Optional[int] = None
+    guidance_scale: Optional[float] = None
     model: Optional[str] = None
 
 
@@ -1407,7 +1411,12 @@ async def image_generate_proxy(req: ImageGenerateRequest, user: dict = Depends(g
         async with httpx.AsyncClient(timeout=300.0) as client:
             resp = await client.post(
                 f"{IMAGE_GEN_URL}/generate",
-                json={"prompt": req.prompt, "aspect": req.aspect, "steps": req.steps, "seed": req.seed, "model": req.model},
+                json={
+                    "prompt": req.prompt, "negative_prompt": req.negative_prompt,
+                    "aspect": req.aspect, "width": req.width, "height": req.height,
+                    "steps": req.steps, "seed": req.seed,
+                    "guidance_scale": req.guidance_scale, "model": req.model,
+                },
             )
             resp.raise_for_status()
             return resp.json()
