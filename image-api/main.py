@@ -1,23 +1,30 @@
 """
-image-api — FLUX.1-schnell text-to-image service for Dave-in-a-Box.
+image-api — Multi-model text-to-image service for Dave-in-a-Box.
 
-POST /generate  {prompt, aspect, steps, seed}
-  → {image (base64 PNG), prompt, elapsed_s, width, height}
+POST /generate  {prompt, aspect, steps, seed, model}
+  → {image (base64 PNG), prompt, elapsed_s, width, height, model}
 
 GET /health
-  → {ok, model_loaded}
+  → {ok, model_loaded, current_model}
 
-Aspect ratios:
+GET /progress
+  → {running, step, total_steps, elapsed_s}
+
+GET /models
+  → {models: [{id, name, description, default_steps, max_steps, guidance_scale}], current}
+
+POST /models/load  {model}
+  → {ok, model, vram_mb}
+
+Supported models:
+  sdxl-turbo      — Fast 1-4 step generation, stylized output (~6.7GB)
+  stable-diffusion-xl — High quality 20-30 step generation (~6.5GB)
+  ssd-1b          — Fast distilled SDXL, good balance (~2.5GB)
+
+Aspect ratios (SDXL-class models):
   square    → 1024×1024 (default)
   landscape → 1344×768  (16:9)
   portrait  → 768×1344
-
-Notes:
-  - guidance_scale MUST be 0.0 for FLUX-schnell (guidance-distilled model)
-  - bfloat16 is used over float16 to avoid NaN issues on Ampere GPUs
-  - enable_model_cpu_offload() keeps GPU VRAM near 0 at rest (~8GB peak during inference)
-  - run_in_executor keeps FastAPI's event loop alive during the blocking diffusion call
-  - Model loads at startup; first start downloads ~16GB of weights to the HF cache volume
 """
 
 import os
@@ -29,6 +36,7 @@ import asyncio
 from typing import Optional
 
 import torch
+import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -37,18 +45,73 @@ from PIL import Image
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-MODEL_ID = os.environ.get("FLUX_MODEL_ID", "black-forest-labs/FLUX.1-schnell")
 HF_TOKEN = os.environ.get("HF_TOKEN", "")
 HF_CACHE = os.environ.get("HF_HOME", "/root/.cache/huggingface")
+DEFAULT_MODEL = os.environ.get("IMAGE_MODEL_ID", "stabilityai/sdxl-turbo")
 
-# Supported aspect ratios → (width, height)
-DIMENSIONS = {
-    "square":    (1024, 1024),
-    "landscape": (1344, 768),
-    "portrait":  (768, 1344),
+# Ollama connection — used to evict loaded models from VRAM before inference
+OLLAMA_URL = os.environ.get("OLLAMA_BASE_URL", "http://ollama:11434")
+
+# Model registry: each entry defines how to load and run a model
+MODELS = {
+    "sdxl-turbo": {
+        "hf_id": "stabilityai/sdxl-turbo",
+        "name": "SDXL Turbo",
+        "description": "Fast 1-4 step generation, good for quick drafts",
+        "default_steps": 4,
+        "max_steps": 4,
+        "guidance_scale": 0.0,
+        "variant": "fp16",
+        "dimensions": {
+            "square":    (512, 512),
+            "landscape": (768, 512),
+            "portrait":  (512, 768),
+        },
+    },
+    "stable-diffusion-xl": {
+        "hf_id": "stabilityai/stable-diffusion-xl-base-1.0",
+        "name": "Stable Diffusion XL",
+        "description": "High quality photorealistic images, 20-30 steps",
+        "default_steps": 25,
+        "max_steps": 50,
+        "guidance_scale": 7.5,
+        "variant": "fp16",
+        "dimensions": {
+            "square":    (1024, 1024),
+            "landscape": (1344, 768),
+            "portrait":  (768, 1344),
+        },
+    },
+    "ssd-1b": {
+        "hf_id": "segmind/SSD-1B",
+        "name": "SSD-1B",
+        "description": "Fast distilled SDXL, good quality at fewer steps",
+        "default_steps": 25,
+        "max_steps": 50,
+        "guidance_scale": 7.0,
+        "variant": None,
+        "dimensions": {
+            "square":    (1024, 1024),
+            "landscape": (1344, 768),
+            "portrait":  (768, 1344),
+        },
+    },
 }
 
+# Resolve default model key from env (could be hf_id or short key)
+_default_key = None
+for k, v in MODELS.items():
+    if DEFAULT_MODEL in (k, v["hf_id"]):
+        _default_key = k
+        break
+if not _default_key:
+    _default_key = "sdxl-turbo"
+
 _pipeline = None
+_current_model = None
+
+# Live progress state — updated by the pipeline callback during inference
+_progress = {"running": False, "step": 0, "total_steps": 0, "elapsed_s": 0.0, "started_at": 0.0}
 
 app = FastAPI(title="image-api")
 app.add_middleware(
@@ -59,71 +122,185 @@ app.add_middleware(
 )
 
 
-@app.on_event("startup")
-async def load_model():
-    """Load FLUX pipeline at startup. Downloads weights on first run (~16GB, cached after)."""
-    global _pipeline
-    logger.info(f"Loading FLUX pipeline: {MODEL_ID}")
+def _load_pipeline(model_key: str):
+    """Load a model pipeline onto GPU. Returns the pipeline."""
+    from diffusers import AutoPipelineForText2Image
+    cfg = MODELS[model_key]
+    logger.info(f"Loading {cfg['name']} ({cfg['hf_id']})...")
     t0 = time.time()
 
-    from diffusers import FluxPipeline
+    load_kwargs = {
+        "torch_dtype": torch.float16,
+        "token": HF_TOKEN or None,
+        "cache_dir": HF_CACHE,
+    }
+    if cfg["variant"]:
+        load_kwargs["variant"] = cfg["variant"]
+
+    pipe = AutoPipelineForText2Image.from_pretrained(cfg["hf_id"], **load_kwargs)
+    pipe.to("cuda")
+
+    vram = torch.cuda.memory_allocated() // 1024 // 1024
+    logger.info(f"{cfg['name']} ready in {time.time()-t0:.1f}s — VRAM: {vram}MB")
+    return pipe
+
+
+@app.on_event("startup")
+async def startup():
+    """Load default model at startup."""
+    global _pipeline, _current_model
     loop = asyncio.get_event_loop()
-
-    def _load():
-        pipe = FluxPipeline.from_pretrained(
-            MODEL_ID,
-            torch_dtype=torch.bfloat16,
-            token=HF_TOKEN or None,
-            cache_dir=HF_CACHE,
-        )
-        # GPU only during active inference; near-zero VRAM at rest
-        pipe.enable_model_cpu_offload()
-        return pipe
-
-    _pipeline = await loop.run_in_executor(None, _load)
-    logger.info(f"FLUX pipeline ready in {time.time() - t0:.1f}s")
+    _pipeline = await loop.run_in_executor(None, _load_pipeline, _default_key)
+    _current_model = _default_key
 
 
 class GenerateRequest(BaseModel):
     prompt: str
     aspect: str = "square"
-    steps: int = 4        # FLUX-schnell sweet spot; degrades above 8
+    steps: Optional[int] = None
     seed: Optional[int] = None
+    model: Optional[str] = None
+
+
+class LoadModelRequest(BaseModel):
+    model: str
 
 
 @app.get("/health")
 def health():
-    return {"ok": True, "model_loaded": _pipeline is not None}
+    return {"ok": True, "model_loaded": _pipeline is not None, "current_model": _current_model}
+
+
+@app.get("/progress")
+def progress():
+    """Returns live generation progress for frontend polling."""
+    p = _progress.copy()
+    if p["running"] and p["started_at"]:
+        p["elapsed_s"] = round(time.time() - p["started_at"], 1)
+    return p
+
+
+@app.get("/models")
+def list_models():
+    """Returns available image models and current selection."""
+    models = []
+    for key, cfg in MODELS.items():
+        models.append({
+            "id": key,
+            "name": cfg["name"],
+            "description": cfg["description"],
+            "default_steps": cfg["default_steps"],
+            "max_steps": cfg["max_steps"],
+            "guidance_scale": cfg["guidance_scale"],
+        })
+    return {"models": models, "current": _current_model}
+
+
+@app.post("/models/load")
+async def load_model(req: LoadModelRequest):
+    """Switch to a different image model. Unloads current model and loads the new one."""
+    global _pipeline, _current_model
+
+    if req.model not in MODELS:
+        raise HTTPException(status_code=400, detail=f"Unknown model: {req.model}. Available: {list(MODELS.keys())}")
+
+    if req.model == _current_model and _pipeline is not None:
+        return {"ok": True, "model": req.model, "vram_mb": torch.cuda.memory_allocated() // 1024 // 1024}
+
+    # Unload current pipeline
+    logger.info(f"Unloading {_current_model}")
+    _pipeline = None
+    _current_model = None
+    torch.cuda.empty_cache()
+
+    # Load new model
+    loop = asyncio.get_event_loop()
+    _pipeline = await loop.run_in_executor(None, _load_pipeline, req.model)
+    _current_model = req.model
+
+    return {"ok": True, "model": req.model, "vram_mb": torch.cuda.memory_allocated() // 1024 // 1024}
 
 
 @app.post("/generate")
 async def generate(req: GenerateRequest):
+    global _pipeline, _current_model
+
     if not req.prompt.strip():
         raise HTTPException(status_code=400, detail="prompt is required")
+
+    # If a specific model is requested and it's different from current, swap it
+    requested_model = req.model or _current_model
+    if requested_model and requested_model != _current_model and requested_model in MODELS:
+        logger.info(f"Switching model from {_current_model} to {requested_model}")
+        _pipeline = None
+        torch.cuda.empty_cache()
+        loop = asyncio.get_event_loop()
+        _pipeline = await loop.run_in_executor(None, _load_pipeline, requested_model)
+        _current_model = requested_model
+
     if _pipeline is None:
         raise HTTPException(status_code=503, detail="Model not loaded yet, please retry shortly")
 
-    w, h = DIMENSIONS.get(req.aspect, DIMENSIONS["square"])
-    steps = max(1, min(req.steps, 8))
-    generator = torch.Generator("cpu").manual_seed(req.seed) if req.seed is not None else None
+    cfg = MODELS[_current_model]
+    dims = cfg["dimensions"]
+    w, h = dims.get(req.aspect, dims["square"])
+    steps = req.steps or cfg["default_steps"]
+    steps = max(1, min(steps, cfg["max_steps"]))
+    guidance = cfg["guidance_scale"]
+    generator = torch.Generator("cuda").manual_seed(req.seed) if req.seed is not None else None
+
+    # Evict ALL Ollama models from VRAM to avoid contention
+    _progress.update({"running": False, "step": 0, "total_steps": steps, "elapsed_s": 0.0, "started_at": time.time()})
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            ps = await client.get(f"{OLLAMA_URL}/api/ps")
+            loaded_models = [m.get("name", "") for m in ps.json().get("models", []) if m.get("name")]
+            for model_name in loaded_models:
+                logger.info(f"Evicting {model_name} from VRAM")
+                await client.post(f"{OLLAMA_URL}/api/generate", json={"model": model_name, "keep_alive": 0})
+        if loaded_models:
+            for _ in range(30):
+                await asyncio.sleep(1)
+                async with httpx.AsyncClient(timeout=5) as client:
+                    ps = await client.get(f"{OLLAMA_URL}/api/ps")
+                    if not ps.json().get("models", []):
+                        break
+            await asyncio.sleep(3)
+            logger.info("Ollama VRAM cleared")
+    except Exception as e:
+        logger.warning(f"Could not evict Ollama models: {e}")
+
+    # Reset progress state before starting
+    _progress.update({"running": True, "step": 0, "total_steps": steps, "elapsed_s": 0.0, "started_at": time.time()})
+
+    def _step_callback(pipe, step_index, timestep, callback_kwargs):
+        """Called by diffusers after each denoising step — updates live progress."""
+        _progress["step"] = step_index + 1
+        return callback_kwargs
 
     t0 = time.time()
     try:
         loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(
-            None,
-            lambda: _pipeline(
+
+        def _run_inference():
+            logger.info(f"Starting {cfg['name']} inference ({steps} steps, {w}x{h})")
+            result = _pipeline(
                 prompt=req.prompt,
                 width=w,
                 height=h,
                 num_inference_steps=steps,
-                guidance_scale=0.0,  # MUST be 0.0 for schnell (guidance-distilled)
+                guidance_scale=guidance,
                 generator=generator,
-            ),
-        )
+                callback_on_step_end=_step_callback,
+            )
+            return result
+
+        result = await loop.run_in_executor(None, _run_inference)
     except Exception as e:
         logger.error(f"Generation failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Generation failed: {e}")
+    finally:
+        _progress["running"] = False
 
     img: Image.Image = result.images[0]
     buf = io.BytesIO()
@@ -139,4 +316,5 @@ async def generate(req: GenerateRequest):
         "elapsed_s": elapsed,
         "width": w,
         "height": h,
+        "model": cfg["name"],
     }

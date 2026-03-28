@@ -79,8 +79,9 @@ services:
       - hf_cache:/root/.cache/huggingface
     environment:
       - HF_TOKEN=${HF_TOKEN}
-      - FLUX_MODEL_ID=${FLUX_MODEL_ID:-black-forest-labs/FLUX.1-schnell}
+      - IMAGE_MODEL_ID=${IMAGE_MODEL_ID:-stabilityai/sdxl-turbo}
       - HF_HOME=/root/.cache/huggingface
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
     deploy:
       resources:
         reservations:

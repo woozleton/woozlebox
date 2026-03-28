@@ -48,6 +48,7 @@ DB_DIR            = os.environ.get("DB_DIR", "/app/data")
 KOKORO_URL        = os.environ.get("KOKORO_URL", "http://kokoro:8880")
 DEFAULT_VOICE     = os.environ.get("TTS_VOICE", "af_heart")
 IMAGE_GEN_URL     = os.environ.get("IMAGE_GEN_URL", "http://image-api:8100")
+_image_gen_active = False  # Guard flag — blocks Ollama calls while image gen is using the GPU
 DEFAULT_TOP_K     = 30
 NOT_FOUND_MSG     = "I couldn't find that in your vault."
 SUPPORTED_UPLOAD_EXTENSIONS = {".md", ".txt", ".pdf"}
@@ -970,6 +971,8 @@ async def context_info(model: str = None, conversation_id: str = None, user: dic
 
 @app.post("/chat")
 async def chat(request: ChatRequest, user: dict = Depends(get_current_user)):
+    if _image_gen_active:
+        raise HTTPException(status_code=503, detail="GPU is busy generating an image, please wait")
     if not request.message.strip():
         raise HTTPException(status_code=400, detail="Message cannot be empty")
     return StreamingResponse(
@@ -1067,6 +1070,8 @@ async def stream_reindex(user: dict = Depends(get_current_user)):
 
 @app.get("/suggestions")
 async def get_suggestions(model: str = None, user: dict = Depends(get_current_user)):
+    if _image_gen_active:
+        return {"suggestions": []}
     use_model = model or LLM_MODEL
     user_id = user["id"]
     collection_name = f"vault_{user_id.replace('-', '')}"
@@ -1344,31 +1349,65 @@ async def tts_proxy(text: str, voice: str = DEFAULT_VOICE, format: str = "wav"):
 class ImageGenerateRequest(BaseModel):
     prompt: str
     aspect: str = "square"   # square | landscape | portrait
-    steps: int = 4
+    steps: Optional[int] = None
     seed: Optional[int] = None
+    model: Optional[str] = None
+
+
+class ImageLoadModelRequest(BaseModel):
+    model: str
+
+
+@app.get("/image/models")
+async def image_models_proxy(user: dict = Depends(get_current_user)):
+    """Proxy to image-api /models — returns available image generation models."""
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(f"{IMAGE_GEN_URL}/models")
+            return resp.json()
+    except Exception:
+        return {"models": [], "current": None}
+
+
+@app.post("/image/models/load")
+async def image_load_model_proxy(req: ImageLoadModelRequest, user: dict = Depends(get_current_user)):
+    """Proxy to image-api /models/load — switch image generation model."""
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            resp = await client.post(f"{IMAGE_GEN_URL}/models/load", json={"model": req.model})
+            resp.raise_for_status()
+            return resp.json()
+    except httpx.HTTPStatusError as e:
+        detail = e.response.json().get("detail", str(e)) if e.response.content else str(e)
+        raise HTTPException(status_code=e.response.status_code, detail=detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to load model: {e}")
+
+
+@app.get("/image/progress")
+async def image_progress_proxy(user: dict = Depends(get_current_user)):
+    """Proxy to image-api /progress for live step polling during generation."""
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(f"{IMAGE_GEN_URL}/progress")
+            return resp.json()
+    except Exception:
+        return {"running": False, "step": 0, "total_steps": 0, "elapsed_s": 0.0}
 
 
 @app.post("/image/generate")
 async def image_generate_proxy(req: ImageGenerateRequest, user: dict = Depends(get_current_user)):
-    """Proxy to image-api (FLUX.1-schnell). Unloads Ollama first to free VRAM."""
+    """Proxy to image-api (FLUX.1-schnell). Sets guard flag to block Ollama calls during generation."""
+    global _image_gen_active
     if not req.prompt.strip():
         raise HTTPException(status_code=400, detail="prompt is required")
 
-    # Unload LLM from VRAM before generating — qwen3:30b-a3b + FLUX peak > 24GB
+    _image_gen_active = True
     try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            await client.post(
-                f"{OLLAMA_BASE_URL}/api/generate",
-                json={"model": LLM_MODEL, "keep_alive": 0},
-            )
-    except Exception:
-        pass  # non-fatal; image-api will 500 if VRAM is still exhausted
-
-    try:
-        async with httpx.AsyncClient(timeout=120.0) as client:
+        async with httpx.AsyncClient(timeout=300.0) as client:
             resp = await client.post(
                 f"{IMAGE_GEN_URL}/generate",
-                json={"prompt": req.prompt, "aspect": req.aspect, "steps": req.steps, "seed": req.seed},
+                json={"prompt": req.prompt, "aspect": req.aspect, "steps": req.steps, "seed": req.seed, "model": req.model},
             )
             resp.raise_for_status()
             return resp.json()
@@ -1381,6 +1420,8 @@ async def image_generate_proxy(req: ImageGenerateRequest, user: dict = Depends(g
         raise HTTPException(status_code=e.response.status_code, detail=detail)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Image generation failed: {e}")
+    finally:
+        _image_gen_active = False
 
 
 # --- Topic endpoints ---
