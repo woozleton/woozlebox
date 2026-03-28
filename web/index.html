@@ -2292,18 +2292,22 @@
         <div class="studio-section">
           <div class="studio-section-title">Aspect Ratio</div>
           <div class="studio-aspect-grid">
-            <button class="studio-aspect-btn active" data-aspect="square" data-w="1024" data-h="1024">
+            <button class="studio-aspect-btn active" data-aspect="square">
               <div class="aspect-icon" style="width:24px;height:24px;"></div>
               <span>1:1</span>
             </button>
-            <button class="studio-aspect-btn" data-aspect="landscape" data-w="1344" data-h="768">
+            <button class="studio-aspect-btn" data-aspect="landscape">
               <div class="aspect-icon" style="width:28px;height:18px;"></div>
               <span>16:9</span>
             </button>
-            <button class="studio-aspect-btn" data-aspect="portrait" data-w="768" data-h="1344">
+            <button class="studio-aspect-btn" data-aspect="portrait">
               <div class="aspect-icon" style="width:18px;height:28px;"></div>
               <span>9:16</span>
             </button>
+          </div>
+          <div class="studio-field" style="margin-top:10px;">
+            <label>Resolution <span class="field-val" id="studio-res-val">1024 × 1024</span></label>
+            <select id="studio-resolution"></select>
           </div>
         </div>
 
@@ -4915,6 +4919,50 @@ let studioAspect = "square";
 let studioActivePreset = null;
 let studioGenerating = false;
 let _studioModelsCache = [];
+const studioResolution = document.getElementById("studio-resolution");
+const studioResVal = document.getElementById("studio-res-val");
+
+const STUDIO_RESOLUTIONS = {
+  square:    [
+    { w: 512,  h: 512,  label: "512 × 512" },
+    { w: 768,  h: 768,  label: "768 × 768" },
+    { w: 1024, h: 1024, label: "1024 × 1024", default: true },
+    { w: 1536, h: 1536, label: "1536 × 1536" },
+  ],
+  landscape: [
+    { w: 768,  h: 432,  label: "768 × 432" },
+    { w: 1024, h: 576,  label: "1024 × 576" },
+    { w: 1344, h: 768,  label: "1344 × 768", default: true },
+    { w: 1536, h: 864,  label: "1536 × 864" },
+  ],
+  portrait:  [
+    { w: 432,  h: 768,  label: "432 × 768" },
+    { w: 576,  h: 1024, label: "576 × 1024" },
+    { w: 768,  h: 1344, label: "768 × 1344", default: true },
+    { w: 864,  h: 1536, label: "864 × 1536" },
+  ],
+};
+
+function updateStudioResolutions() {
+  const options = STUDIO_RESOLUTIONS[studioAspect] || STUDIO_RESOLUTIONS.square;
+  studioResolution.innerHTML = "";
+  options.forEach(r => {
+    const opt = document.createElement("option");
+    opt.value = `${r.w}x${r.h}`;
+    opt.textContent = r.label;
+    if (r.default) opt.selected = true;
+    studioResolution.appendChild(opt);
+  });
+  updateStudioResLabel();
+}
+
+function updateStudioResLabel() {
+  const [w, h] = studioResolution.value.split("x");
+  studioResVal.textContent = `${w} × ${h}`;
+}
+
+studioResolution.addEventListener("change", updateStudioResLabel);
+updateStudioResolutions();
 
 const STUDIO_PRESETS = {
   "cinematic":     { suffix: ", cinematic lighting, dramatic composition, film grain, anamorphic lens, movie still", negative: "cartoon, anime, painting, illustration" },
@@ -4964,6 +5012,7 @@ document.querySelectorAll(".studio-aspect-btn").forEach(btn => {
     document.querySelectorAll(".studio-aspect-btn").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
     studioAspect = btn.dataset.aspect;
+    updateStudioResolutions();
   });
 });
 
@@ -5070,10 +5119,13 @@ async function studioGenerate() {
   }
 
   const seed = studioSeed.value ? parseInt(studioSeed.value) : null;
+  const [resW, resH] = studioResolution.value.split("x").map(Number);
   const body = {
     prompt,
     negative_prompt: negativePrompt,
     aspect: studioAspect,
+    width: resW,
+    height: resH,
     steps: parseInt(studioSteps.value),
     seed,
     guidance_scale: parseFloat(studioGuidance.value),
@@ -5174,11 +5226,13 @@ function appendStudioResult(data, rawPrompt, body) {
     studioGuidance.value = body.guidance_scale;
     studioGuidanceVal.textContent = body.guidance_scale.toFixed(1);
     if (body.seed) studioSeed.value = body.seed;
-    // Set aspect
     document.querySelectorAll(".studio-aspect-btn").forEach(b => {
       b.classList.toggle("active", b.dataset.aspect === body.aspect);
     });
     studioAspect = body.aspect;
+    updateStudioResolutions();
+    if (body.width && body.height) studioResolution.value = `${body.width}x${body.height}`;
+    updateStudioResLabel();
     studioPrompt.focus();
   });
 
@@ -5195,6 +5249,9 @@ function appendStudioResult(data, rawPrompt, body) {
       b.classList.toggle("active", b.dataset.aspect === body.aspect);
     });
     studioAspect = body.aspect;
+    updateStudioResolutions();
+    if (body.width && body.height) studioResolution.value = `${body.width}x${body.height}`;
+    updateStudioResLabel();
     studioGenerate();
   });
 
