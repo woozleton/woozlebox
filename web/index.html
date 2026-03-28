@@ -771,9 +771,6 @@
     #send-btn.stopping:hover { background: rgba(249,115,22,0.15); }
 
     /* ── Image generation button ── */
-    #image-gen-btn { background: none; color: var(--text-faint); }
-    #image-gen-btn:hover { background: var(--surface3); color: #c084fc; }
-    #image-gen-btn.active { color: #c084fc; background: rgba(192,132,252,0.12); }
 
     /* ── Generated image bubble ── */
     .generated-image-wrap { display: flex; flex-direction: column; gap: 6px; }
@@ -2250,9 +2247,6 @@
         </button>
         <button class="input-btn" id="web-btn" title="Toggle web search">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-        </button>
-        <button class="input-btn" id="image-gen-btn" title="Generate image">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
         </button>
         <button class="input-btn" id="send-btn" title="Send (Enter)">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -4401,14 +4395,6 @@ webBtn.addEventListener("click", () => {
 });
 
 // ── Image generation mode ──
-let imageGenMode = false;
-const imageGenBtn = document.getElementById("image-gen-btn");
-imageGenBtn.addEventListener("click", () => {
-  imageGenMode = !imageGenMode;
-  imageGenBtn.classList.toggle("active", imageGenMode);
-  imageGenBtn.title = imageGenMode ? "Image mode ON — click to disable" : "Generate image";
-});
-
 // ── Confirm modal ──
 function showConfirm({ title = "Confirm", message, okLabel = "Delete", okClass = "danger" } = {}) {
   return new Promise(resolve => {
@@ -7118,16 +7104,6 @@ function createStreamingBubble() {
 
 // ── Image generation ──
 
-// Patterns that indicate the user wants an image generated rather than a text answer
-const IMAGE_INTENT_PATTERNS = [
-  /\b(generate|draw|paint|illustrate|sketch|render|create)\b.{0,60}\b(image|picture|photo|artwork|illustration|portrait|scene|landscape|logo|icon|drawing)\b/i,
-  /\b(image|picture|photo|artwork|illustration|portrait|drawing)\b.{0,30}\b(of|showing|depicting|with)\b/i,
-  /^(draw|paint|sketch|illustrate|generate|create|make)\b/i,
-];
-function detectImageIntent(text) {
-  return IMAGE_INTENT_PATTERNS.some(p => p.test(text));
-}
-
 function appendImageBubble(prompt, b64Image, elapsedS, modelName) {
   const row = document.createElement("div");
   row.className = "message-row ai";
@@ -7261,16 +7237,6 @@ async function sendMessage() {
     renderQueueTray();
     input.value = "";
     input.style.height = "44px";
-    return;
-  }
-
-  // Image generation: explicit toggle OR auto-detected intent (no images attached)
-  if ((imageGenMode || detectImageIntent(text)) && attachedImages.length === 0) {
-    input.value = "";
-    input.style.height = "44px";
-    setLoading(true);
-    stopSpeaking();
-    await sendImageRequest(text);
     return;
   }
 
