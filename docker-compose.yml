@@ -79,7 +79,6 @@ services:
       - hf_cache:/root/.cache/huggingface
     environment:
       - HF_TOKEN=${HF_TOKEN}
-      - IMAGE_MODEL_ID=${IMAGE_MODEL_ID:-stabilityai/sdxl-turbo}
       - HF_HOME=/root/.cache/huggingface
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
     deploy:

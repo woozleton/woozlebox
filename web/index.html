@@ -66,7 +66,7 @@
     body.sidebar-collapsed #sidebar-logo { justify-content: center; }
     body.sidebar-collapsed #sidebar-title { display: none; }
 
-    #model-select, #image-model-select {
+    #model-select {
       background: var(--surface2);
       border: 1px solid var(--border);
       color: var(--text);
@@ -83,9 +83,8 @@
       background-position: right 8px center;
       transition: border-color 0.15s;
     }
-    #model-select:hover, #model-select:focus,
-    #image-model-select:hover, #image-model-select:focus { border-color: var(--accent); }
-    #model-select option, #image-model-select option {
+    #model-select:hover, #model-select:focus { border-color: var(--accent); }
+    #model-select option {
       background: #1a1a28;
       color: var(--text);
       padding: 6px 10px;
@@ -2195,11 +2194,6 @@
             <div class="setting-desc">The default Large Language Model used to generate responses.</div>
           </div>
           <div class="setting-group">
-            <div class="setting-label"><span>Image Model</span></div>
-            <select id="image-model-select"><option value="">Loading…</option></select>
-            <div class="setting-desc" id="image-model-desc">The model used for text-to-image generation.</div>
-          </div>
-          <div class="setting-group">
             <div class="setting-label"><span>Default System Prompt</span></div>
             <textarea id="default-prompt-input" class="setting-input" rows="4" placeholder="You are a personal AI assistant. When relevant context from the user's vault is provided, prioritize it in your answer. Otherwise, answer using your general knowledge."></textarea>
             <div class="setting-desc">Sets the AI's base behavior for all conversations. Each topic can override this with its own system prompt. Leave blank to use the built-in default shown above.</div>
@@ -3000,7 +2994,6 @@ async function loadApp() {
   else { const savedAccent = localStorage.getItem(ACCENT_KEY); if (savedAccent) applyAccent(savedAccent); }
   applyTextSize(localStorage.getItem(TEXT_SIZE_KEY) || "medium");
   loadModels();
-  loadImageModels();
   loadVoices();
   await loadConversations();
   applyVaultPin();
@@ -4544,64 +4537,6 @@ modelSelect.addEventListener("change", () => {
   if (activeConvId) updateContextBar(activeConvId);
 });
 // loadModels() is called from loadApp()
-
-// ── Image model selector ──
-const imageModelSelect = document.getElementById("image-model-select");
-const imageModelDesc   = document.getElementById("image-model-desc");
-let selectedImageModel = localStorage.getItem("diab_image_model") || null;
-
-async function loadImageModels() {
-  try {
-    const res = await apiFetch("/image/models");
-    const data = await res.json();
-    imageModelSelect.innerHTML = "";
-    data.models.forEach(m => {
-      const opt = document.createElement("option");
-      opt.value = m.id;
-      opt.textContent = m.name;
-      opt.title = m.description;
-      if (m.id === data.current) opt.selected = true;
-      imageModelSelect.appendChild(opt);
-    });
-    const saved = localStorage.getItem("diab_image_model");
-    const current = data.current || (data.models[0] && data.models[0].id);
-    if (saved && data.models.some(m => m.id === saved)) {
-      imageModelSelect.value = saved;
-    } else if (current) {
-      imageModelSelect.value = current;
-    }
-    selectedImageModel = imageModelSelect.value;
-    // Show description for current selection
-    const sel = data.models.find(m => m.id === selectedImageModel);
-    if (sel) imageModelDesc.textContent = sel.description;
-  } catch {
-    imageModelSelect.innerHTML = `<option value="">Unavailable</option>`;
-  }
-}
-imageModelSelect.addEventListener("change", async () => {
-  const newModel = imageModelSelect.value;
-  if (!newModel || newModel === selectedImageModel) return;
-  imageModelSelect.disabled = true;
-  const sel = imageModelSelect.options[imageModelSelect.selectedIndex];
-  const origText = sel.textContent;
-  sel.textContent = origText + " (loading…)";
-  try {
-    const res = await apiFetch("/image/models/load", {
-      method: "POST",
-      body: JSON.stringify({ model: newModel }),
-    });
-    if (!res.ok) throw new Error("Failed to load");
-    selectedImageModel = newModel;
-    localStorage.setItem("diab_image_model", newModel);
-    // Update description
-    await loadImageModels();
-  } catch (err) {
-    imageModelSelect.value = selectedImageModel;
-  } finally {
-    sel.textContent = origText;
-    imageModelSelect.disabled = false;
-  }
-});
 
 // ── Conversation sidebar ──
 let allConversations = [];
@@ -6571,7 +6506,7 @@ async function sendImageRequest(prompt) {
   try {
     const res = await apiFetch("/image/generate", {
       method: "POST",
-      body: JSON.stringify({ prompt, aspect: "square", model: selectedImageModel }),
+      body: JSON.stringify({ prompt, aspect: "square" }),
     });
     if (!res.ok) {
       const e = await res.json().catch(() => ({}));

@@ -1351,37 +1351,6 @@ class ImageGenerateRequest(BaseModel):
     aspect: str = "square"   # square | landscape | portrait
     steps: Optional[int] = None
     seed: Optional[int] = None
-    model: Optional[str] = None
-
-
-class ImageLoadModelRequest(BaseModel):
-    model: str
-
-
-@app.get("/image/models")
-async def image_models_proxy(user: dict = Depends(get_current_user)):
-    """Proxy to image-api /models — returns available image generation models."""
-    try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.get(f"{IMAGE_GEN_URL}/models")
-            return resp.json()
-    except Exception:
-        return {"models": [], "current": None}
-
-
-@app.post("/image/models/load")
-async def image_load_model_proxy(req: ImageLoadModelRequest, user: dict = Depends(get_current_user)):
-    """Proxy to image-api /models/load — switch image generation model."""
-    try:
-        async with httpx.AsyncClient(timeout=120.0) as client:
-            resp = await client.post(f"{IMAGE_GEN_URL}/models/load", json={"model": req.model})
-            resp.raise_for_status()
-            return resp.json()
-    except httpx.HTTPStatusError as e:
-        detail = e.response.json().get("detail", str(e)) if e.response.content else str(e)
-        raise HTTPException(status_code=e.response.status_code, detail=detail)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to load model: {e}")
 
 
 @app.get("/image/progress")
@@ -1407,7 +1376,7 @@ async def image_generate_proxy(req: ImageGenerateRequest, user: dict = Depends(g
         async with httpx.AsyncClient(timeout=300.0) as client:
             resp = await client.post(
                 f"{IMAGE_GEN_URL}/generate",
-                json={"prompt": req.prompt, "aspect": req.aspect, "steps": req.steps, "seed": req.seed, "model": req.model},
+                json={"prompt": req.prompt, "aspect": req.aspect, "steps": req.steps, "seed": req.seed},
             )
             resp.raise_for_status()
             return resp.json()
