@@ -892,6 +892,24 @@
       border-color: var(--accent); background: var(--accent-glow);
       color: var(--accent); font-weight: 600;
     }
+    #studio-inspire-btn {
+      width: 100%; padding: 7px 12px; border: 1px dashed var(--border);
+      border-radius: 8px; background: none; color: var(--text-dim);
+      font-size: 0.78rem; cursor: pointer; display: flex;
+      align-items: center; justify-content: center; gap: 6px;
+      transition: all 0.15s; margin-top: 4px;
+    }
+    #studio-inspire-btn:hover {
+      border-color: var(--accent); color: var(--accent);
+      background: var(--accent-glow);
+    }
+    #studio-inspire-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    #studio-model-loading {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 0 0; font-size: 0.78rem; color: var(--accent);
+    }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    #studio-model-loading svg { animation: spin 1s linear infinite; }
     #studio-generate-btn {
       width: 100%; padding: 12px; border: none; border-radius: 10px;
       background: var(--accent); color: #fff; font-size: 0.9rem;
@@ -2278,14 +2296,22 @@
             <label>Negative Prompt</label>
             <textarea id="studio-negative" placeholder="Things to avoid: blurry, low quality, distorted..." rows="2" style="min-height:40px;"></textarea>
           </div>
+          <button id="studio-inspire-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="m6.34 6.34 2.83 2.83"/><path d="M2 12h4"/><path d="m6.34 17.66 2.83-2.83"/><path d="M12 18v4"/><path d="m17.66 17.66-2.83-2.83"/><path d="M18 12h4"/><path d="m17.66 6.34-2.83 2.83"/></svg>
+            Inspire me
+          </button>
         </div>
 
         <div class="studio-section">
           <div class="studio-section-title">Model</div>
-          <div class="studio-field">
+          <div class="studio-field" style="position:relative;">
             <select id="studio-model-select">
               <option value="">Loading...</option>
             </select>
+            <div id="studio-model-loading" style="display:none;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"><animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite"/></path></svg>
+              <span>Loading model...</span>
+            </div>
           </div>
         </div>
 
@@ -5031,6 +5057,40 @@ document.querySelectorAll(".studio-preset-btn").forEach(btn => {
   });
 });
 
+// Inspire me
+const STUDIO_INSPIRATIONS = [
+  "A cozy treehouse library nestled in an ancient oak, warm lantern light spilling through windows, books stacked everywhere",
+  "An astronaut sitting on the edge of a moon crater, Earth rising on the horizon, reflection in the visor",
+  "A Japanese garden in autumn with a red torii gate, koi pond, falling maple leaves, soft morning mist",
+  "A steampunk clockwork city floating above the clouds, brass gears turning, airships docking at towers",
+  "An underwater cathedral made of coral and bioluminescent jellyfish, shafts of sunlight piercing the deep",
+  "A cozy coffee shop on a rainy night, neon signs reflecting in puddles, warm light through foggy windows",
+  "A massive ancient library carved into a cliff face, waterfalls cascading around it, bridges connecting sections",
+  "A fox wearing a scarf walking through a snowy village at twilight, warm windows glowing, smoke from chimneys",
+  "A dragon curled protectively around a lighthouse during a thunderstorm, waves crashing, lightning in the sky",
+  "A night market on a canal in a fantasy city, floating lanterns, colorful stalls, reflections in the water",
+  "A robot painter in an art studio, surrounded by half-finished canvases, paint splattered everywhere, soft afternoon light",
+  "A crystal cave with an underground lake, bioluminescent mushrooms, stalactites reflecting prismatic light",
+  "A witch's cottage in a meadow of wildflowers, herbs drying in the doorway, a black cat on the windowsill",
+  "A samurai meditating under a cherry blossom tree at sunrise, petals drifting in the wind, mountain backdrop",
+  "A retro-futuristic diner on Mars, red desert outside the windows, neon signs, a robot waitress serving coffee",
+  "A giant sea turtle carrying a small island on its back, tiny village with windmills, sailing through calm ocean",
+  "An abandoned greenhouse reclaimed by nature, overgrown with exotic flowers, sunbeams through broken glass",
+  "A wizard's study at the top of a tower, star maps on the walls, floating orbs of light, telescope pointed at the sky",
+  "A tiny door at the base of a tree trunk leading to a miniature fairy kingdom, mushroom houses, firefly lights",
+  "A Viking longship sailing through aurora borealis, the crew gazing upward, icebergs in the distance",
+  "A cyberpunk ramen stall in a neon-lit alley, steam rising, holographic menu, rain-slicked streets",
+  "A magical bookshop where the books are flying off shelves, pages turning into butterflies, warm golden light",
+  "A lone musician playing piano on a cliff overlooking a misty valley at dawn, birds circling above",
+  "A space station greenhouse with Earth visible through the glass dome, astronaut tending alien plants",
+];
+const studioInspireBtn = document.getElementById("studio-inspire-btn");
+studioInspireBtn.addEventListener("click", () => {
+  const idx = Math.floor(Math.random() * STUDIO_INSPIRATIONS.length);
+  studioPrompt.value = STUDIO_INSPIRATIONS[idx];
+  studioPrompt.focus();
+});
+
 // Random seed
 document.getElementById("studio-random-seed").addEventListener("click", () => {
   studioSeed.value = Math.floor(Math.random() * 2147483647);
@@ -5073,7 +5133,10 @@ function updateStudioModelDefaults() {
 studioModelSelect.addEventListener("change", async () => {
   const newModel = studioModelSelect.value;
   if (!newModel) return;
+  const loadingEl = document.getElementById("studio-model-loading");
   studioModelSelect.disabled = true;
+  studioGenerateBtn.disabled = true;
+  loadingEl.style.display = "flex";
   try {
     const res = await apiFetch("/image/models/load", {
       method: "POST",
@@ -5083,11 +5146,12 @@ studioModelSelect.addEventListener("change", async () => {
       localStorage.setItem("diab_image_model", newModel);
       selectedImageModel = newModel;
       updateStudioModelDefaults();
-      // Sync settings dropdown if it exists
       if (imageModelSelect) { await loadImageModels(); }
     }
   } catch {}
+  loadingEl.style.display = "none";
   studioModelSelect.disabled = false;
+  studioGenerateBtn.disabled = false;
 });
 
 // Generate
