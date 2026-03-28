@@ -1,14 +1,24 @@
 """
-image-api — Playground v2.5 text-to-image service for Dave-in-a-Box.
+image-api — Multi-model text-to-image service for Dave-in-a-Box.
 
-POST /generate  {prompt, aspect, steps, seed}
+POST /generate  {prompt, aspect, steps, seed, model}
   → {image (base64 PNG), prompt, elapsed_s, width, height, model}
 
 GET /health
-  → {ok, model_loaded, model}
+  → {ok, model_loaded, current_model}
 
 GET /progress
   → {running, step, total_steps, elapsed_s}
+
+GET /models
+  → {models: [{id, name, description, default_steps, max_steps, guidance_scale}], current}
+
+POST /models/load  {model}
+  → {ok, model, vram_mb}
+
+Supported models:
+  playground-v2.5         — Aesthetic champion, beats SDXL/DALL-E 3/MJ 5.2 (~6.7GB)
+  stable-diffusion-3.5    — Latest SD architecture, superior prompt adherence (~12GB)
 
 Aspect ratios:
   square    → 1024×1024 (default)
@@ -36,23 +46,45 @@ logger = logging.getLogger(__name__)
 
 HF_TOKEN = os.environ.get("HF_TOKEN", "")
 HF_CACHE = os.environ.get("HF_HOME", "/root/.cache/huggingface")
-MODEL_ID = "playgroundai/playground-v2.5-1024px-aesthetic"
-MODEL_NAME = "Playground v2.5"
 
 # Ollama connection — used to evict loaded models from VRAM before inference
 OLLAMA_URL = os.environ.get("OLLAMA_BASE_URL", "http://ollama:11434")
 
-DIMENSIONS = {
-    "square":    (1024, 1024),
-    "landscape": (1344, 768),
-    "portrait":  (768, 1344),
+MODELS = {
+    "playground-v2.5": {
+        "hf_id": "playgroundai/playground-v2.5-1024px-aesthetic",
+        "name": "Playground v2.5",
+        "description": "Best aesthetics — outperforms SDXL, DALL-E 3 and Midjourney 5.2",
+        "default_steps": 25,
+        "max_steps": 50,
+        "guidance_scale": 3.0,
+        "loader": "playground",
+        "dimensions": {
+            "square":    (1024, 1024),
+            "landscape": (1344, 768),
+            "portrait":  (768, 1344),
+        },
+    },
+    "stable-diffusion-3.5": {
+        "hf_id": "stabilityai/stable-diffusion-3.5-medium",
+        "name": "Stable Diffusion 3.5",
+        "description": "Latest SD architecture — superior text rendering and prompt adherence",
+        "default_steps": 28,
+        "max_steps": 50,
+        "guidance_scale": 7.0,
+        "loader": "sd3",
+        "dimensions": {
+            "square":    (1024, 1024),
+            "landscape": (1344, 768),
+            "portrait":  (768, 1344),
+        },
+    },
 }
 
-DEFAULT_STEPS = 25
-MAX_STEPS = 50
-GUIDANCE_SCALE = 3.0
+DEFAULT_MODEL = "playground-v2.5"
 
 _pipeline = None
+_current_model = None
 
 # Live progress state — updated by the pipeline callback during inference
 _progress = {"running": False, "step": 0, "total_steps": 0, "elapsed_s": 0.0, "started_at": 0.0}
@@ -66,34 +98,44 @@ app.add_middleware(
 )
 
 
-def _load_pipeline():
-    """Load Playground v2.5 onto GPU. Returns the pipeline."""
-    from diffusers import DiffusionPipeline, EDMDPMSolverMultistepScheduler
-
-    logger.info(f"Loading {MODEL_NAME} ({MODEL_ID})...")
+def _load_pipeline(model_key: str):
+    """Load a model pipeline onto GPU. Returns the pipeline."""
+    cfg = MODELS[model_key]
+    logger.info(f"Loading {cfg['name']} ({cfg['hf_id']})...")
     t0 = time.time()
 
-    pipe = DiffusionPipeline.from_pretrained(
-        MODEL_ID,
-        torch_dtype=torch.float16,
-        variant="fp16",
-        token=HF_TOKEN or None,
-        cache_dir=HF_CACHE,
-    )
-    pipe.scheduler = EDMDPMSolverMultistepScheduler()
-    pipe.to("cuda")
+    if cfg["loader"] == "playground":
+        from diffusers import DiffusionPipeline, EDMDPMSolverMultistepScheduler
+        pipe = DiffusionPipeline.from_pretrained(
+            cfg["hf_id"],
+            torch_dtype=torch.float16,
+            variant="fp16",
+            token=HF_TOKEN or None,
+            cache_dir=HF_CACHE,
+        )
+        pipe.scheduler = EDMDPMSolverMultistepScheduler()
+    elif cfg["loader"] == "sd3":
+        from diffusers import StableDiffusion3Pipeline
+        pipe = StableDiffusion3Pipeline.from_pretrained(
+            cfg["hf_id"],
+            torch_dtype=torch.float16,
+            token=HF_TOKEN or None,
+            cache_dir=HF_CACHE,
+        )
 
+    pipe.to("cuda")
     vram = torch.cuda.memory_allocated() // 1024 // 1024
-    logger.info(f"{MODEL_NAME} ready in {time.time()-t0:.1f}s — VRAM: {vram}MB")
+    logger.info(f"{cfg['name']} ready in {time.time()-t0:.1f}s — VRAM: {vram}MB")
     return pipe
 
 
 @app.on_event("startup")
 async def startup():
-    """Load model at startup."""
-    global _pipeline
+    """Load default model at startup."""
+    global _pipeline, _current_model
     loop = asyncio.get_event_loop()
-    _pipeline = await loop.run_in_executor(None, _load_pipeline)
+    _pipeline = await loop.run_in_executor(None, _load_pipeline, DEFAULT_MODEL)
+    _current_model = DEFAULT_MODEL
 
 
 class GenerateRequest(BaseModel):
@@ -101,11 +143,16 @@ class GenerateRequest(BaseModel):
     aspect: str = "square"
     steps: Optional[int] = None
     seed: Optional[int] = None
+    model: Optional[str] = None
+
+
+class LoadModelRequest(BaseModel):
+    model: str
 
 
 @app.get("/health")
 def health():
-    return {"ok": True, "model_loaded": _pipeline is not None, "model": MODEL_NAME}
+    return {"ok": True, "model_loaded": _pipeline is not None, "current_model": _current_model}
 
 
 @app.get("/progress")
@@ -117,17 +164,73 @@ def progress():
     return p
 
 
+@app.get("/models")
+def list_models():
+    """Returns available image models and current selection."""
+    models = []
+    for key, cfg in MODELS.items():
+        models.append({
+            "id": key,
+            "name": cfg["name"],
+            "description": cfg["description"],
+            "default_steps": cfg["default_steps"],
+            "max_steps": cfg["max_steps"],
+            "guidance_scale": cfg["guidance_scale"],
+        })
+    return {"models": models, "current": _current_model}
+
+
+@app.post("/models/load")
+async def load_model(req: LoadModelRequest):
+    """Switch to a different image model. Unloads current model and loads the new one."""
+    global _pipeline, _current_model
+
+    if req.model not in MODELS:
+        raise HTTPException(status_code=400, detail=f"Unknown model: {req.model}. Available: {list(MODELS.keys())}")
+
+    if req.model == _current_model and _pipeline is not None:
+        return {"ok": True, "model": req.model, "vram_mb": torch.cuda.memory_allocated() // 1024 // 1024}
+
+    # Unload current pipeline
+    logger.info(f"Unloading {_current_model}")
+    _pipeline = None
+    _current_model = None
+    torch.cuda.empty_cache()
+
+    # Load new model
+    loop = asyncio.get_event_loop()
+    _pipeline = await loop.run_in_executor(None, _load_pipeline, req.model)
+    _current_model = req.model
+
+    return {"ok": True, "model": req.model, "vram_mb": torch.cuda.memory_allocated() // 1024 // 1024}
+
+
 @app.post("/generate")
 async def generate(req: GenerateRequest):
+    global _pipeline, _current_model
+
     if not req.prompt.strip():
         raise HTTPException(status_code=400, detail="prompt is required")
+
+    # If a specific model is requested and it's different from current, swap it
+    requested_model = req.model or _current_model
+    if requested_model and requested_model != _current_model and requested_model in MODELS:
+        logger.info(f"Switching model from {_current_model} to {requested_model}")
+        _pipeline = None
+        torch.cuda.empty_cache()
+        loop = asyncio.get_event_loop()
+        _pipeline = await loop.run_in_executor(None, _load_pipeline, requested_model)
+        _current_model = requested_model
 
     if _pipeline is None:
         raise HTTPException(status_code=503, detail="Model not loaded yet, please retry shortly")
 
-    w, h = DIMENSIONS.get(req.aspect, DIMENSIONS["square"])
-    steps = req.steps or DEFAULT_STEPS
-    steps = max(1, min(steps, MAX_STEPS))
+    cfg = MODELS[_current_model]
+    dims = cfg["dimensions"]
+    w, h = dims.get(req.aspect, dims["square"])
+    steps = req.steps or cfg["default_steps"]
+    steps = max(1, min(steps, cfg["max_steps"]))
+    guidance = cfg["guidance_scale"]
     generator = torch.Generator("cuda").manual_seed(req.seed) if req.seed is not None else None
 
     # Evict ALL Ollama models from VRAM to avoid contention
@@ -164,13 +267,13 @@ async def generate(req: GenerateRequest):
         loop = asyncio.get_event_loop()
 
         def _run_inference():
-            logger.info(f"Starting {MODEL_NAME} inference ({steps} steps, {w}x{h})")
+            logger.info(f"Starting {cfg['name']} inference ({steps} steps, {w}x{h})")
             result = _pipeline(
                 prompt=req.prompt,
                 width=w,
                 height=h,
                 num_inference_steps=steps,
-                guidance_scale=GUIDANCE_SCALE,
+                guidance_scale=guidance,
                 generator=generator,
                 callback_on_step_end=_step_callback,
             )
@@ -197,5 +300,5 @@ async def generate(req: GenerateRequest):
         "elapsed_s": elapsed,
         "width": w,
         "height": h,
-        "model": MODEL_NAME,
+        "model": cfg["name"],
     }
