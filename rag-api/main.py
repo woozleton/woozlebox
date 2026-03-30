@@ -378,6 +378,19 @@ async def web_search(query: str, num_results: int = 3) -> list[dict]:
         return []
 
 
+async def _evict_image_model():
+    """Unload the image-api model from VRAM before LLM inference."""
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(f"{IMAGE_GEN_URL}/health")
+            data = resp.json()
+            if data.get("model_loaded"):
+                logger.info("Evicting image model from VRAM before LLM call")
+                await client.post(f"{IMAGE_GEN_URL}/models/unload")
+    except Exception as e:
+        logger.debug(f"Image model eviction skipped: {e}")
+
+
 # --- Streaming chat generator ---
 async def chat_stream(request: ChatRequest, user_id: str) -> AsyncGenerator[str, None]:
     model = request.model or LLM_MODEL
@@ -690,7 +703,18 @@ Answer concisely."""
 
     logger.info(f"Sending {len(relevant)} vault chunks + {len(web_sources)} web results to LLM ({len(context_text)} chars), {len(messages)} messages in history, {len(request.images)} images")
 
-    # Step 6: Stream LLM response
+    # Step 6: Check if model is loaded, show loading indicator if not
+    try:
+        async with httpx.AsyncClient(timeout=5) as hc:
+            ps_resp = await hc.get(f"{OLLAMA_BASE_URL}/api/ps")
+            loaded_models = [m.get("name", "") for m in ps_resp.json().get("models", [])]
+            model_loaded = any(model in m or m in model for m in loaded_models)
+            if not model_loaded:
+                yield sse({"type": "status", "step": "loading_model", "text": "Loading language model…"})
+    except Exception:
+        pass
+
+    # Stream LLM response
     ctx_kb = round(len(context_text) / 1024, 1)
     llm_status = f"Thinking through {ctx_kb} KB of context…" if ctx_kb > 0 else "Thinking…"
     yield sse({"type": "status", "step": "llm", "text": llm_status})
@@ -911,6 +935,143 @@ def list_models():
         raise HTTPException(status_code=503, detail=f"Ollama unavailable: {e}")
 
 
+@app.get("/models/ps")
+async def models_ps(user: dict = Depends(get_current_user)):
+    """Return models currently loaded in VRAM (Ollama + image-api)."""
+    loaded = []
+    # Ollama models
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(f"{OLLAMA_BASE_URL}/api/ps")
+            for m in resp.json().get("models", []):
+                name = m.get("name", "")
+                size = m.get("size_vram", m.get("size", 0))
+                loaded.append({"name": name, "type": "llm", "vram_mb": round(size / 1024 / 1024)})
+    except Exception:
+        pass
+    # Image model
+    try:
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            resp = await client.get(f"{IMAGE_GEN_URL}/health")
+            data = resp.json()
+            if data.get("model_loaded") and data.get("current_model"):
+                loaded.append({"name": data["current_model"], "type": "image", "vram_mb": data.get("vram_mb", 0)})
+    except Exception:
+        pass
+    return {"loaded": loaded}
+
+
+@app.post("/models/warmup")
+async def models_warmup(request: Request, user: dict = Depends(get_current_user)):
+    """Preload an LLM into VRAM. Evicts image model and other LLMs first."""
+    global _image_gen_active
+    model = LLM_MODEL
+    try:
+        body = await request.json()
+        if body.get("model"):
+            model = body["model"]
+    except Exception:
+        pass
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            # Evict image model
+            try:
+                await client.post(f"{IMAGE_GEN_URL}/models/unload")
+            except Exception:
+                pass
+            _image_gen_active = False
+
+            # Evict any currently loaded Ollama models that aren't the target
+            try:
+                ps = await client.get(f"{OLLAMA_BASE_URL}/api/ps")
+                for m in ps.json().get("models", []):
+                    mname = m.get("name", "")
+                    if mname and mname != model:
+                        try:
+                            await client.post(
+                                f"{OLLAMA_BASE_URL}/api/generate",
+                                json={"model": mname, "prompt": "", "keep_alive": 0, "stream": False},
+                            )
+                        except Exception:
+                            pass
+            except Exception:
+                pass
+
+        # Send a minimal request to Ollama to preload the model
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            resp = await client.post(
+                f"{OLLAMA_BASE_URL}/api/chat",
+                json={
+                    "model": model,
+                    "messages": [{"role": "user", "content": "hi"}],
+                    "options": {"num_predict": 1},
+                    "keep_alive": "5m",
+                    "stream": False,
+                },
+            )
+            return {"ok": True, "model": model}
+    except Exception as e:
+        logger.warning(f"Warmup failed: {e}")
+        return {"ok": False, "error": str(e)}
+
+
+@app.post("/models/prepare-studio")
+async def prepare_studio(request: Request, user: dict = Depends(get_current_user)):
+    """Evict Ollama models from VRAM, then preload the image model."""
+    evicted = []
+    # Optionally accept a target image model
+    target_model = None
+    try:
+        body = await request.json()
+        target_model = body.get("model")
+    except Exception:
+        pass
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            # Evict all Ollama models
+            ps = await client.get(f"{OLLAMA_BASE_URL}/api/ps")
+            loaded = [m["name"] for m in ps.json().get("models", [])]
+            for model_name in loaded:
+                try:
+                    await client.post(
+                        f"{OLLAMA_BASE_URL}/api/generate",
+                        json={"model": model_name, "prompt": "", "keep_alive": 0, "stream": False},
+                    )
+                    evicted.append(model_name)
+                except Exception:
+                    pass
+    except Exception as e:
+        logger.warning(f"prepare-studio evict failed: {e}")
+
+    # Preload the image model into VRAM
+    loaded_model = None
+    try:
+        async with httpx.AsyncClient(timeout=180.0) as client:
+            # Check what's already loaded
+            health = await client.get(f"{IMAGE_GEN_URL}/health")
+            hdata = health.json()
+            if hdata.get("model_loaded") and (not target_model or hdata.get("current_model") == target_model):
+                loaded_model = hdata.get("current_model")
+            else:
+                # Determine which model to load
+                if not target_model:
+                    models_resp = await client.get(f"{IMAGE_GEN_URL}/models")
+                    mdata = models_resp.json()
+                    target_model = mdata.get("current") or (mdata.get("models", [{}])[0].get("id") if mdata.get("models") else None)
+                if target_model:
+                    resp = await client.post(
+                        f"{IMAGE_GEN_URL}/models/load",
+                        json={"model": target_model},
+                    )
+                    if resp.status_code == 200:
+                        loaded_model = target_model
+    except Exception as e:
+        logger.warning(f"prepare-studio image load failed: {e}")
+
+    return {"ok": True, "evicted": evicted, "image_model": loaded_model}
+
+
 @app.get("/models/info")
 async def model_info(model: str = None, user: dict = Depends(get_current_user)):
     """Check model capabilities like vision support."""
@@ -975,6 +1136,7 @@ async def chat(request: ChatRequest, user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=503, detail="GPU is busy generating an image, please wait")
     if not request.message.strip():
         raise HTTPException(status_code=400, detail="Message cannot be empty")
+    await _evict_image_model()
     return StreamingResponse(
         chat_stream(request, user["id"]),
         media_type="text/event-stream",
@@ -1362,6 +1524,51 @@ class ImageLoadModelRequest(BaseModel):
     model: str
 
 
+class ImageUpscaleRequest(BaseModel):
+    image: str  # base64-encoded PNG
+    scale: int = 2  # 2 or 4
+
+
+class ImageInpaintRequest(BaseModel):
+    image: str       # base64 PNG — source image
+    mask: str        # base64 PNG — white=inpaint, black=keep
+    prompt: str
+    negative_prompt: Optional[str] = None
+    steps: Optional[int] = None
+    seed: Optional[int] = None
+    guidance_scale: Optional[float] = None
+    strength: Optional[float] = None
+
+
+@app.get("/image/inspire")
+async def image_inspire(user: dict = Depends(get_current_user)):
+    """Ask the LLM to generate a creative image prompt idea."""
+    system = (
+        "You are a creative director who generates vivid, detailed text-to-image prompts. "
+        "Generate exactly ONE unique, imaginative prompt for an AI image generator. "
+        "Be specific about subject, setting, lighting, mood, and composition. "
+        "Vary widely between styles: landscapes, portraits, fantasy, sci-fi, nature, architecture, abstract, etc. "
+        "Output ONLY the prompt text, nothing else — no quotes, no explanation, no numbering."
+    )
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.post(
+                f"{OLLAMA_BASE_URL}/api/generate",
+                json={
+                    "model": LLM_MODEL,
+                    "system": system,
+                    "prompt": "Give me a fresh, creative image generation prompt.",
+                    "stream": False,
+                    "options": {"temperature": 1.2, "num_predict": 150},
+                },
+            )
+            resp.raise_for_status()
+            text = resp.json().get("response", "").strip().strip('"').strip("'")
+            return {"prompt": text}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Could not generate idea: {e}")
+
+
 @app.get("/image/models")
 async def image_models_proxy(user: dict = Depends(get_current_user)):
     """Proxy to image-api /models — returns available image generation models."""
@@ -1429,6 +1636,74 @@ async def image_generate_proxy(req: ImageGenerateRequest, user: dict = Depends(g
         raise HTTPException(status_code=e.response.status_code, detail=detail)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Image generation failed: {e}")
+    finally:
+        _image_gen_active = False
+
+
+@app.post("/image/upscale")
+async def image_upscale_proxy(req: ImageUpscaleRequest, user: dict = Depends(get_current_user)):
+    """Proxy to image-api /upscale for Real-ESRGAN upscaling."""
+    global _image_gen_active
+    if not req.image:
+        raise HTTPException(status_code=400, detail="image is required")
+
+    _image_gen_active = True
+    try:
+        async with httpx.AsyncClient(timeout=300.0) as client:
+            resp = await client.post(
+                f"{IMAGE_GEN_URL}/upscale",
+                json={"image": req.image, "scale": req.scale},
+            )
+            resp.raise_for_status()
+            return resp.json()
+    except httpx.ConnectError:
+        raise HTTPException(status_code=503, detail="Image service is not available")
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="Upscaling timed out")
+    except httpx.HTTPStatusError as e:
+        detail = e.response.json().get("detail", str(e)) if e.response.content else str(e)
+        raise HTTPException(status_code=e.response.status_code, detail=detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Upscaling failed: {e}")
+    finally:
+        _image_gen_active = False
+
+
+@app.post("/image/inpaint")
+async def image_inpaint_proxy(req: ImageInpaintRequest, user: dict = Depends(get_current_user)):
+    """Proxy to image-api /inpaint for masked image editing."""
+    global _image_gen_active
+    if not req.image or not req.mask:
+        raise HTTPException(status_code=400, detail="image and mask are required")
+    if not req.prompt.strip():
+        raise HTTPException(status_code=400, detail="prompt is required")
+
+    _image_gen_active = True
+    try:
+        async with httpx.AsyncClient(timeout=300.0) as client:
+            resp = await client.post(
+                f"{IMAGE_GEN_URL}/inpaint",
+                json={
+                    "image": req.image,
+                    "mask": req.mask,
+                    "prompt": req.prompt,
+                    "negative_prompt": req.negative_prompt,
+                    "steps": req.steps,
+                    "seed": req.seed,
+                    "guidance_scale": req.guidance_scale,
+                },
+            )
+            resp.raise_for_status()
+            return resp.json()
+    except httpx.ConnectError:
+        raise HTTPException(status_code=503, detail="Image service is not available")
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="Inpainting timed out")
+    except httpx.HTTPStatusError as e:
+        detail = e.response.json().get("detail", str(e)) if e.response.content else str(e)
+        raise HTTPException(status_code=e.response.status_code, detail=detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Inpainting failed: {e}")
     finally:
         _image_gen_active = False
 

@@ -1,29 +1,12 @@
 """
 image-api — Multi-model text-to-image service for Dave-in-a-Box.
 
-POST /generate  {prompt, aspect, steps, seed, model}
-  → {image (base64 PNG), prompt, elapsed_s, width, height, model}
-
-GET /health
-  → {ok, model_loaded, current_model}
-
-GET /progress
-  → {running, step, total_steps, elapsed_s}
-
-GET /models
-  → {models: [{id, name, description, default_steps, max_steps, guidance_scale}], current}
-
+POST /generate   {prompt, aspect, steps, seed, model}
+POST /inpaint    {image, mask, prompt, negative_prompt, steps, seed, guidance_scale}
+GET  /health
+GET  /progress
+GET  /models
 POST /models/load  {model}
-  → {ok, model, vram_mb}
-
-Supported models:
-  playground-v2.5         — Aesthetic champion, beats SDXL/DALL-E 3/MJ 5.2 (~6.7GB)
-  stable-diffusion-3.5    — Latest SD architecture, superior prompt adherence (~12GB)
-
-Aspect ratios:
-  square    → 1024×1024 (default)
-  landscape → 1344×768  (16:9)
-  portrait  → 768×1344
 """
 
 import os
@@ -79,6 +62,17 @@ MODELS = {
             "portrait":  (768, 1344),
         },
     },
+    "sd-inpaint": {
+        "hf_id": "runwayml/stable-diffusion-inpainting",
+        "name": "SD Inpainting",
+        "description": "Inpainting specialist — edit regions of existing images",
+        "default_steps": 35,
+        "max_steps": 50,
+        "guidance_scale": 12.0,
+        "loader": "inpaint",
+        "dimensions": {"square": (512, 512)},
+        "internal": True,
+    },
 }
 
 DEFAULT_MODEL = "playground-v2.5"
@@ -122,6 +116,14 @@ def _load_pipeline(model_key: str):
             token=HF_TOKEN or None,
             cache_dir=HF_CACHE,
         )
+    elif cfg["loader"] == "inpaint":
+        from diffusers import StableDiffusionInpaintPipeline
+        pipe = StableDiffusionInpaintPipeline.from_pretrained(
+            cfg["hf_id"],
+            torch_dtype=torch.float16,
+            token=HF_TOKEN or None,
+            cache_dir=HF_CACHE,
+        )
 
     pipe.to("cuda")
     vram = torch.cuda.memory_allocated() // 1024 // 1024
@@ -154,9 +156,78 @@ class LoadModelRequest(BaseModel):
     model: str
 
 
+class UpscaleRequest(BaseModel):
+    image: str  # base64-encoded PNG
+    scale: int = 2  # 2x or 4x
+
+
+class InpaintRequest(BaseModel):
+    image: str       # base64 PNG — source image
+    mask: str        # base64 PNG — white=inpaint, black=keep
+    prompt: str
+    negative_prompt: Optional[str] = None
+    steps: Optional[int] = None
+    seed: Optional[int] = None
+    guidance_scale: Optional[float] = None
+    strength: Optional[float] = None
+
+
+# ── Real-ESRGAN upscaler (lazy-loaded) ──
+# basicsr.data imports torchvision.transforms.functional_tensor which was removed
+# in torchvision 0.16+. We stub it before any basicsr/realesrgan import.
+def _patch_basicsr():
+    import sys, types
+    if "torchvision.transforms.functional_tensor" not in sys.modules:
+        import torchvision.transforms.functional as _tvf
+        _stub = types.ModuleType("torchvision.transforms.functional_tensor")
+        _stub.rgb_to_grayscale = _tvf.rgb_to_grayscale
+        sys.modules["torchvision.transforms.functional_tensor"] = _stub
+
+_upscaler_cache = {}
+
+def _get_upscaler(scale: int = 2):
+    """Lazy-load Real-ESRGAN upscaler model."""
+    if scale in _upscaler_cache:
+        return _upscaler_cache[scale]
+
+    _patch_basicsr()
+    from basicsr.archs.rrdbnet_arch import RRDBNet
+    from realesrgan.utils import RealESRGANer
+
+    model_name = "RealESRGAN_x4plus" if scale == 4 else "RealESRGAN_x2plus"
+    model_url = (
+        "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth"
+        if scale == 4 else
+        "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.1/RealESRGAN_x2plus.pth"
+    )
+    model_net = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=scale)
+
+    model_path = os.path.join(HF_CACHE, f"{model_name}.pth")
+    if not os.path.exists(model_path):
+        import urllib.request
+        logger.info(f"Downloading {model_name} weights...")
+        os.makedirs(HF_CACHE, exist_ok=True)
+        urllib.request.urlretrieve(model_url, model_path)
+        logger.info(f"Downloaded {model_name} to {model_path}")
+
+    upscaler = RealESRGANer(
+        scale=scale,
+        model_path=model_path,
+        model=model_net,
+        tile=512,
+        tile_pad=10,
+        pre_pad=0,
+        half=True,
+        gpu_id=0,
+    )
+    _upscaler_cache[scale] = upscaler
+    return upscaler
+
+
 @app.get("/health")
 def health():
-    return {"ok": True, "model_loaded": _pipeline is not None, "current_model": _current_model}
+    vram_mb = torch.cuda.memory_allocated() // 1024 // 1024 if _pipeline else 0
+    return {"ok": True, "model_loaded": _pipeline is not None, "current_model": _current_model, "vram_mb": vram_mb}
 
 
 @app.get("/progress")
@@ -173,6 +244,8 @@ def list_models():
     """Returns available image models and current selection."""
     models = []
     for key, cfg in MODELS.items():
+        if cfg.get("internal"):
+            continue
         models.append({
             "id": key,
             "name": cfg["name"],
@@ -207,6 +280,24 @@ async def load_model(req: LoadModelRequest):
     _current_model = req.model
 
     return {"ok": True, "model": req.model, "vram_mb": torch.cuda.memory_allocated() // 1024 // 1024}
+
+
+@app.post("/models/unload")
+async def unload_model():
+    """Unload the current model from VRAM to free GPU memory."""
+    global _pipeline, _current_model
+    if _pipeline is None:
+        return {"ok": True, "was_loaded": False}
+    prev = _current_model
+    logger.info(f"Unloading {_current_model} to free VRAM")
+    _pipeline = None
+    _current_model = None
+    import gc
+    gc.collect()
+    torch.cuda.empty_cache()
+    vram = torch.cuda.memory_allocated() // 1024 // 1024
+    logger.info(f"Unloaded {prev} — VRAM after: {vram}MB")
+    return {"ok": True, "was_loaded": True, "freed_model": prev, "vram_mb": vram}
 
 
 @app.post("/generate")
@@ -312,4 +403,209 @@ async def generate(req: GenerateRequest):
         "width": w,
         "height": h,
         "model": cfg["name"],
+    }
+
+
+@app.post("/upscale")
+async def upscale(req: UpscaleRequest):
+    """Upscale an image using Real-ESRGAN. Accepts base64 PNG, returns base64 PNG."""
+    if not req.image:
+        raise HTTPException(status_code=400, detail="image is required")
+    scale = req.scale if req.scale in (2, 4) else 2
+
+    # Decode input image
+    try:
+        img_bytes = base64.b64decode(req.image)
+        img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid image: {e}")
+
+    import numpy as np
+    img_np = np.array(img)
+
+    # Evict Ollama models from VRAM first
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            ps = await client.get(f"{OLLAMA_URL}/api/ps")
+            loaded_models = [m.get("name", "") for m in ps.json().get("models", []) if m.get("name")]
+            for model_name in loaded_models:
+                logger.info(f"Evicting {model_name} from VRAM for upscale")
+                await client.post(f"{OLLAMA_URL}/api/generate", json={"model": model_name, "keep_alive": 0})
+            if loaded_models:
+                for _ in range(15):
+                    await asyncio.sleep(1)
+                    async with httpx.AsyncClient(timeout=5) as c2:
+                        ps2 = await c2.get(f"{OLLAMA_URL}/api/ps")
+                        if not ps2.json().get("models", []):
+                            break
+                await asyncio.sleep(2)
+    except Exception as e:
+        logger.warning(f"Could not evict Ollama models for upscale: {e}")
+
+    t0 = time.time()
+    try:
+        loop = asyncio.get_event_loop()
+
+        def _run_upscale():
+            upscaler = _get_upscaler(scale)
+            output, _ = upscaler.enhance(img_np, outscale=scale)
+            return output
+
+        output_np = await loop.run_in_executor(None, _run_upscale)
+    except Exception as e:
+        logger.error(f"Upscale failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Upscale failed: {e}")
+
+    # Encode result
+    output_img = Image.fromarray(output_np)
+    buf = io.BytesIO()
+    output_img.save(buf, format="PNG")
+    b64 = base64.b64encode(buf.getvalue()).decode()
+
+    elapsed = round(time.time() - t0, 2)
+    logger.info(f"Upscaled {img.width}x{img.height} -> {output_img.width}x{output_img.height} ({scale}x) in {elapsed}s")
+
+    return {
+        "image": b64,
+        "width": output_img.width,
+        "height": output_img.height,
+        "scale": scale,
+        "elapsed_s": elapsed,
+    }
+
+
+@app.post("/inpaint")
+async def inpaint(req: InpaintRequest):
+    """Inpaint a masked region of an image. Swaps to inpaint model, then restores previous."""
+    global _pipeline, _current_model
+
+    if not req.prompt.strip():
+        raise HTTPException(status_code=400, detail="prompt is required")
+    if not req.image or not req.mask:
+        raise HTTPException(status_code=400, detail="image and mask are required")
+
+    # Decode source image and mask
+    try:
+        src_img = Image.open(io.BytesIO(base64.b64decode(req.image))).convert("RGB")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid image: {e}")
+    try:
+        mask_img = Image.open(io.BytesIO(base64.b64decode(req.mask))).convert("L")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid mask: {e}")
+
+    orig_w, orig_h = src_img.size
+    inpaint_size = 512  # SD 1.5 inpaint native resolution
+
+    # Resize to inpaint dimensions
+    src_resized = src_img.resize((inpaint_size, inpaint_size), Image.LANCZOS)
+    mask_resized = mask_img.resize((inpaint_size, inpaint_size), Image.LANCZOS)
+
+    # Evict Ollama models
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            ps = await client.get(f"{OLLAMA_URL}/api/ps")
+            loaded_models = [m.get("name", "") for m in ps.json().get("models", []) if m.get("name")]
+            for model_name in loaded_models:
+                logger.info(f"Evicting {model_name} from VRAM for inpaint")
+                await client.post(f"{OLLAMA_URL}/api/generate", json={"model": model_name, "keep_alive": 0})
+            if loaded_models:
+                for _ in range(30):
+                    await asyncio.sleep(1)
+                    async with httpx.AsyncClient(timeout=5) as c2:
+                        ps2 = await c2.get(f"{OLLAMA_URL}/api/ps")
+                        if not ps2.json().get("models", []):
+                            break
+                await asyncio.sleep(3)
+    except Exception as e:
+        logger.warning(f"Could not evict Ollama models for inpaint: {e}")
+
+    # Swap to inpaint model if needed
+    prev_model = _current_model
+    if _current_model != "sd-inpaint":
+        logger.info(f"Swapping from {_current_model} to sd-inpaint")
+        _pipeline = None
+        torch.cuda.empty_cache()
+        loop = asyncio.get_event_loop()
+        _pipeline = await loop.run_in_executor(None, _load_pipeline, "sd-inpaint")
+        _current_model = "sd-inpaint"
+
+    if _pipeline is None:
+        raise HTTPException(status_code=503, detail="Inpaint model failed to load")
+
+    cfg = MODELS["sd-inpaint"]
+    steps = req.steps or cfg["default_steps"]
+    steps = max(1, min(steps, cfg["max_steps"]))
+    guidance = req.guidance_scale if req.guidance_scale is not None else cfg["guidance_scale"]
+    strength = req.strength if req.strength is not None else 1.0
+    strength = max(0.1, min(1.0, strength))
+    seed = req.seed if req.seed is not None else int(torch.randint(0, 2**32, (1,)).item())
+    generator = torch.Generator("cuda").manual_seed(seed)
+
+    _progress.update({"running": True, "step": 0, "total_steps": steps, "elapsed_s": 0.0, "started_at": time.time()})
+
+    def _step_callback(pipe, step_index, timestep, callback_kwargs):
+        _progress["step"] = step_index + 1
+        return callback_kwargs
+
+    t0 = time.time()
+    try:
+        loop = asyncio.get_event_loop()
+
+        def _run_inpaint():
+            logger.info(f"Starting inpaint ({steps} steps, guidance={guidance}, strength={strength}, {inpaint_size}x{inpaint_size})")
+            kwargs = dict(
+                prompt=req.prompt,
+                image=src_resized,
+                mask_image=mask_resized,
+                width=inpaint_size,
+                height=inpaint_size,
+                num_inference_steps=steps,
+                guidance_scale=guidance,
+                strength=strength,
+                generator=generator,
+                callback_on_step_end=_step_callback,
+            )
+            if req.negative_prompt:
+                kwargs["negative_prompt"] = req.negative_prompt
+            result = _pipeline(**kwargs)
+            return result
+
+        result = await loop.run_in_executor(None, _run_inpaint)
+    except Exception as e:
+        logger.error(f"Inpaint failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Inpaint failed: {e}")
+    finally:
+        _progress["running"] = False
+
+    # Resize back to original dimensions
+    out_img = result.images[0].resize((orig_w, orig_h), Image.LANCZOS)
+    buf = io.BytesIO()
+    out_img.save(buf, format="PNG")
+    b64 = base64.b64encode(buf.getvalue()).decode()
+
+    elapsed = round(time.time() - t0, 2)
+    logger.info(f"Inpainted {orig_w}x{orig_h} in {elapsed}s — {req.prompt[:60]}")
+
+    # Swap back to previous model in background (non-blocking)
+    if prev_model and prev_model != "sd-inpaint" and prev_model in MODELS:
+        async def _restore():
+            global _pipeline, _current_model
+            try:
+                _pipeline = None
+                torch.cuda.empty_cache()
+                loop = asyncio.get_event_loop()
+                _pipeline = await loop.run_in_executor(None, _load_pipeline, prev_model)
+                _current_model = prev_model
+                logger.info(f"Restored {prev_model} after inpaint")
+            except Exception as e:
+                logger.warning(f"Failed to restore {prev_model}: {e}")
+        asyncio.create_task(_restore())
+
+    return {
+        "image": b64,
+        "width": orig_w,
+        "height": orig_h,
+        "seed": seed,
+        "elapsed_s": elapsed,
     }
