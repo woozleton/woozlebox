@@ -1,5 +1,5 @@
 """
-indexer.py — file ingestion, chunking, embedding, and ChromaDB upsert.
+indexer.py - file ingestion, chunking, embedding, and ChromaDB upsert.
 
 Chunking strategy:
   - RecursiveCharacterTextSplitter
@@ -156,7 +156,7 @@ def index_vault(vault_path: str, user_id: str, embed_model: str, ollama_base_url
             if fhash in indexed_hashes:
                 stored_rel = indexed_filepath_by_hash.get(fhash, "")
                 if stored_rel != current_rel:
-                    # File was moved — update filepath/source metadata in-place
+                    # File was moved - update filepath/source metadata in-place
                     ids_to_update = indexed_ids_by_hash.get(fhash, [])
                     for chunk_id in ids_to_update:
                         chunk_index = int(chunk_id.split("_")[-1])

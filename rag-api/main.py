@@ -1,5 +1,5 @@
 """
-main.py — FastAPI RAG service for Dave-in-a-Box.
+main.py -FastAPI RAG service for Dave-in-a-Box.
 
 Chat flow (streaming SSE):
   1. Embed question via nomic-embed-text
@@ -49,48 +49,48 @@ KOKORO_URL        = os.environ.get("KOKORO_URL", "http://kokoro:8880")
 DEFAULT_VOICE     = os.environ.get("TTS_VOICE", "af_heart")
 IMAGE_GEN_URL     = os.environ.get("IMAGE_GEN_URL", "http://image-api:8100")
 MUSIC_GEN_URL     = os.environ.get("MUSIC_GEN_URL", "http://music-api:8200")
-_image_gen_active = False  # Guard flag — blocks Ollama calls while image gen is using the GPU
-_music_gen_active = False  # Guard flag — blocks Ollama calls while music gen is using the GPU
+_image_gen_active = False  # Guard flag -blocks Ollama calls while image gen is using the GPU
+_music_gen_active = False  # Guard flag -blocks Ollama calls while music gen is using the GPU
 DEFAULT_TOP_K     = 30
 NOT_FOUND_MSG     = "I couldn't find that in your vault."
 SUPPORTED_UPLOAD_EXTENSIONS = {".md", ".txt", ".pdf"}
 
 KOKORO_VOICES = [
-    # American English — Female
+    # American English -Female
     "af_heart", "af_bella", "af_nicole", "af_aoede", "af_kore",
     "af_sarah", "af_alloy", "af_nova", "af_sky", "af_jessica", "af_river",
-    # American English — Male
+    # American English -Male
     "am_fenrir", "am_michael", "am_puck", "am_echo", "am_eric",
     "am_liam", "am_onyx", "am_santa", "am_adam",
-    # British English — Female
+    # British English -Female
     "bf_emma", "bf_isabella", "bf_alice", "bf_lily",
-    # British English — Male
+    # British English -Male
     "bm_fable", "bm_george", "bm_lewis", "bm_daniel",
-    # Japanese — Female
+    # Japanese -Female
     "jf_alpha", "jf_gongitsune", "jf_tebukuro", "jf_nezumi",
-    # Japanese — Male
+    # Japanese -Male
     "jm_kumo",
-    # Mandarin Chinese — Female
+    # Mandarin Chinese -Female
     "zf_xiaobei", "zf_xiaoni", "zf_xiaoxiao", "zf_xiaoyi",
-    # Mandarin Chinese — Male
+    # Mandarin Chinese -Male
     "zm_yunjian", "zm_yunxi", "zm_yunxia", "zm_yunyang",
-    # Spanish — Female
+    # Spanish -Female
     "ef_dora",
-    # Spanish — Male
+    # Spanish -Male
     "em_alex", "em_santa",
-    # French — Female
+    # French -Female
     "ff_siwis",
-    # Hindi — Female
+    # Hindi -Female
     "hf_alpha", "hf_beta",
-    # Hindi — Male
+    # Hindi -Male
     "hm_omega", "hm_psi",
-    # Italian — Female
+    # Italian -Female
     "if_sara",
-    # Italian — Male
+    # Italian -Male
     "im_nicola",
-    # Brazilian Portuguese — Female
+    # Brazilian Portuguese -Female
     "pf_dora",
-    # Brazilian Portuguese — Male
+    # Brazilian Portuguese -Male
     "pm_alex", "pm_santa",
 ]
 
@@ -245,7 +245,7 @@ async def lifespan(app: FastAPI):
         _migrate_vault_files(admins[0]["username"])
 
     # Index vault for each active user
-    logger.info("Starting up — indexing vaults...")
+    logger.info("Starting up -indexing vaults...")
     loop = asyncio.get_event_loop()
     for user in users:
         if user.get("is_active"):
@@ -358,7 +358,7 @@ def sse(event: dict) -> str:
 
 # --- Web search ---
 async def web_search(query: str, num_results: int = 3) -> list[dict]:
-    """Search the web using Tavily — returns full extracted content directly."""
+    """Search the web using Tavily -returns full extracted content directly."""
     try:
         from tavily import TavilyClient
         client = TavilyClient(api_key=TAVILY_API_KEY)
@@ -434,7 +434,7 @@ async def chat_stream(request: ChatRequest, user_id: str) -> AsyncGenerator[str,
     timings["embed_ms"] = round((time.monotonic() - t_start) * 1000)
     yield sse({"type": "status", "step": "embed", "text": "Question understood", "done": True})
 
-    # Step 2: Smart vault search — semantic probe, full search only if relevant
+    # Step 2: Smart vault search -semantic probe, full search only if relevant
     vault_collection = None
     try:
         chroma_client = get_chroma_client()
@@ -450,7 +450,7 @@ async def chat_stream(request: ChatRequest, user_id: str) -> AsyncGenerator[str,
         logger.info(f"Vault probe: '{request.message[:60]}' → best_dist={probe_dist:.3f}, threshold={threshold}")
 
         if probe_dist <= threshold:
-            # Relevant content exists — do the full search
+            # Relevant content exists -do the full search
             t_vault = time.monotonic()
             yield sse({"type": "status", "step": "vault", "text": "Reading through your vault…"})
             try:
@@ -482,9 +482,9 @@ async def chat_stream(request: ChatRequest, user_id: str) -> AsyncGenerator[str,
             else:
                 yield sse({"type": "status", "step": "vault", "text": "Nothing relevant found in vault", "done": True})
         else:
-            logger.info(f"Vault skipped — probe distance {probe_dist:.3f} > threshold {threshold}")
+            logger.info(f"Vault skipped -probe distance {probe_dist:.3f} > threshold {threshold}")
 
-    # Step 3: Web search (optional) — skip if vault already has relevant results
+    # Step 3: Web search (optional) -skip if vault already has relevant results
     web_sources = []
     web_search_query = ""
     if request.web_search:
@@ -522,7 +522,7 @@ async def chat_stream(request: ChatRequest, user_id: str) -> AsyncGenerator[str,
             except Exception as e:
                 logger.warning(f"Search query rewrite failed: {e}")
 
-        # Clean the query — extract site: hint and strip meta-instructions
+        # Clean the query -extract site: hint and strip meta-instructions
         search_query = raw_msg.rstrip("?!")
         # Detect site hints like "search reddit - X", "search X on reddit", "find X on twitter"
         # Sites that work well with site: operator (scrapeable)
@@ -533,7 +533,7 @@ async def chat_stream(request: ChatRequest, user_id: str) -> AsyncGenerator[str,
             "hn": "site:news.ycombinator.com",
             "hacker news": "site:news.ycombinator.com",
         }
-        # Sites that block scrapers — append as keyword instead so Google finds their content via cache/previews
+        # Sites that block scrapers -append as keyword instead so Google finds their content via cache/previews
         SITE_KEYWORD_MAP = {
             "reddit": "reddit",
             "twitter": "twitter",
@@ -551,7 +551,7 @@ async def chat_stream(request: ChatRequest, user_id: str) -> AsyncGenerator[str,
                     site_keyword = kw
                     break
         # Strip meta-instructions (including site names)
-        search_query = re.sub(r"^(search|look up|find|google|ask)\s+(reddit|twitter|youtube|wikipedia|github|stackoverflow|hacker news|hn|the web|online|google|bing)[\s\-–:]+", "", search_query, flags=re.IGNORECASE).strip()
+        search_query = re.sub(r"^(search|look up|find|google|ask)\s+(reddit|twitter|youtube|wikipedia|github|stackoverflow|hacker news|hn|the web|online|google|bing)[\s\-:]+", "", search_query, flags=re.IGNORECASE).strip()
         search_query = re.sub(r"\s+on\s+(reddit|twitter|youtube|wikipedia|github|stackoverflow|hacker news)$", "", search_query, flags=re.IGNORECASE).strip()
         if site_operator and site_operator not in search_query:
             search_query = f"{search_query} {site_operator}"
@@ -579,9 +579,9 @@ async def chat_stream(request: ChatRequest, user_id: str) -> AsyncGenerator[str,
             suffix = f"→ {domains}"
         else:
             suffix = "no results found"
-        yield sse({"type": "status", "step": "web", "text": f"Web search complete — {suffix}", "done": True})
+        yield sse({"type": "status", "step": "web", "text": f"Web search complete -{suffix}", "done": True})
 
-    # Step 4: (fallthrough — always proceed to LLM)
+    # Step 4: (fallthrough -always proceed to LLM)
 
     # Step 5: Build context
     context_parts = []
@@ -635,7 +635,7 @@ async def chat_stream(request: ChatRequest, user_id: str) -> AsyncGenerator[str,
         if has_real_content:
             web_instruction = "\n\nYou have been given real web page content in the [WEB SEARCH RESULTS] above. Answer the user's question using that content directly. Do NOT tell the user to visit a website. Do NOT say you lack real-time access. Summarize and report the actual information from the content."
         else:
-            web_instruction = "\n\nWeb search was performed but the pages could not be fully retrieved (JavaScript-rendered or blocked). Summarize what you can from the snippets and titles. Do not tell the user to visit a website — tell them the pages weren't fully accessible and share what little was retrieved."
+            web_instruction = "\n\nWeb search was performed but the pages could not be fully retrieved (JavaScript-rendered or blocked). Summarize what you can from the snippets and titles. Do not tell the user to visit a website -tell them the pages weren't fully accessible and share what little was retrieved."
 
     # Memory tool instructions
     memory_instruction = ""
@@ -678,7 +678,7 @@ Answer concisely."""
                 total_chars = sum(len(m["content"]) for m in conv_check["messages"])
                 pct = (total_chars // 4) / ctx_limit * 100
                 if pct >= request.compact_threshold:
-                    logger.info(f"Context at {pct:.1f}% — auto-compacting conversation {request.conversation_id}")
+                    logger.info(f"Context at {pct:.1f}% -auto-compacting conversation {request.conversation_id}")
                     yield sse({"type": "status", "step": "compact", "text": "Compacting conversation history…"})
                     history_text = "\n\n".join(
                         f"{m['role'].upper()}: {m['content']}" for m in conv_check["messages"]
@@ -1349,7 +1349,7 @@ async def get_suggestions(model: str = None, user: dict = Depends(get_current_us
     prompt = (
         f"Here are excerpts from a user's personal document vault:\n\n{sample_text}\n\n"
         "Based on this content, write exactly 4 specific, interesting questions the user might want to ask about their documents. "
-        "The questions should be practical and specific to the actual content — not generic questions about the files themselves. "
+        "The questions should be practical and specific to the actual content -not generic questions about the files themselves. "
         "Rules: each question on its own line, ends with ?, under 70 chars, no numbering, no bullets, no explanations."
     )
     try:
@@ -1405,7 +1405,7 @@ def auth_status():
 
 @app.get("/auth/brand")
 def auth_brand():
-    """Public endpoint — returns admin's brand settings for the login screen."""
+    """Public endpoint -returns admin's brand settings for the login screen."""
     for user in db.list_users():
         if user.get("role") == "admin":
             try:
@@ -1608,8 +1608,8 @@ class ImageUpscaleRequest(BaseModel):
 
 
 class ImageInpaintRequest(BaseModel):
-    image: str       # base64 PNG — source image
-    mask: str        # base64 PNG — white=inpaint, black=keep
+    image: str       # base64 PNG -source image
+    mask: str        # base64 PNG -white=inpaint, black=keep
     prompt: str
     negative_prompt: Optional[str] = None
     steps: Optional[int] = None
@@ -1626,7 +1626,7 @@ async def image_inspire(user: dict = Depends(get_current_user)):
         "Generate exactly ONE unique, imaginative prompt for an AI image generator. "
         "Be specific about subject, setting, lighting, mood, and composition. "
         "Vary widely between styles: landscapes, portraits, fantasy, sci-fi, nature, architecture, abstract, etc. "
-        "Output ONLY the prompt text, nothing else — no quotes, no explanation, no numbering."
+        "Output ONLY the prompt text, nothing else -no quotes, no explanation, no numbering."
     )
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
@@ -1649,7 +1649,7 @@ async def image_inspire(user: dict = Depends(get_current_user)):
 
 @app.get("/image/models")
 async def image_models_proxy(user: dict = Depends(get_current_user)):
-    """Proxy to image-api /models — returns available image generation models."""
+    """Proxy to image-api /models -returns available image generation models."""
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
             resp = await client.get(f"{IMAGE_GEN_URL}/models")
@@ -1660,7 +1660,7 @@ async def image_models_proxy(user: dict = Depends(get_current_user)):
 
 @app.post("/image/models/load")
 async def image_load_model_proxy(req: ImageLoadModelRequest, user: dict = Depends(get_current_user)):
-    """Proxy to image-api /models/load — switch image generation model."""
+    """Proxy to image-api /models/load -switch image generation model."""
     try:
         async with httpx.AsyncClient(timeout=120.0) as client:
             resp = await client.post(f"{IMAGE_GEN_URL}/models/load", json={"model": req.model})
@@ -1786,6 +1786,53 @@ async def image_inpaint_proxy(req: ImageInpaintRequest, user: dict = Depends(get
         _image_gen_active = False
 
 
+class SessionNameRequest(BaseModel):
+    prompt: str
+
+
+@app.post("/image/name-session")
+async def image_name_session(req: SessionNameRequest, user: dict = Depends(get_current_user)):
+    """Generate a concise session name from an image prompt using the smallest LLM."""
+    if not req.prompt.strip():
+        return {"name": ""}
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            name_model = LLM_MODEL
+            try:
+                tags_resp = await client.get(f"{OLLAMA_BASE_URL}/api/tags")
+                all_models = tags_resp.json().get("models", [])
+                llm_models = [m for m in all_models
+                              if "nomic-bert" not in m.get("details", {}).get("families", [])
+                              and "bert" not in m.get("details", {}).get("family", "")]
+                if llm_models:
+                    llm_models.sort(key=lambda m: m.get("size", float("inf")))
+                    name_model = llm_models[0].get("model") or llm_models[0].get("name", LLM_MODEL)
+            except Exception:
+                pass
+
+            resp = await client.post(
+                f"{OLLAMA_BASE_URL}/api/generate",
+                json={
+                    "model": name_model,
+                    "system": (
+                        "Generate a short, descriptive title (3-6 words) for an image generation session based on the prompt. "
+                        "Capture the main subject and mood. "
+                        "Output ONLY the title text, no quotes, no explanation."
+                    ),
+                    "prompt": req.prompt[:200],
+                    "stream": False,
+                    "options": {"temperature": 0.5, "num_predict": 15},
+                },
+            )
+            resp.raise_for_status()
+            name = resp.json().get("response", "").strip().strip('"').strip("'").strip()
+            name = name.split("\n")[0].strip()[:60]
+            return {"name": name}
+    except Exception as e:
+        logger.warning(f"Image session naming failed: {e}")
+        return {"name": ""}
+
+
 # --- Music generation proxy ---
 
 @app.get("/music/inspire")
@@ -1795,7 +1842,7 @@ async def music_inspire(user: dict = Depends(get_current_user)):
         "You are a music producer who generates creative text-to-music prompts for an AI music generator. "
         "Generate exactly ONE unique, vivid music prompt describing genre, mood, instruments, tempo feel, and vibe. "
         "Vary widely between styles: pop, rock, jazz, electronic, classical, hip-hop, folk, ambient, metal, world, funk, cinematic, etc. "
-        "Output ONLY the prompt text, nothing else — no quotes, no explanation, no numbering. Keep it to 1-2 sentences."
+        "Output ONLY the prompt text, nothing else -no quotes, no explanation, no numbering. Keep it to 1-2 sentences."
     )
     try:
         async with httpx.AsyncClient(timeout=120.0) as client:
@@ -1865,7 +1912,7 @@ async def name_song(req: SongNameRequest, user: dict = Depends(get_current_user)
                     "system": (
                         "You are a creative music producer. Given a song's style description and optional lyrics, "
                         "generate exactly ONE short, catchy song title (1-5 words). "
-                        "Be creative and evocative. Output ONLY the title — no quotes, no explanation, no punctuation except what's part of the title."
+                        "Be creative and evocative. Output ONLY the title -no quotes, no explanation, no punctuation except what's part of the title."
                     ),
                     "prompt": context,
                     "stream": False,
@@ -1881,6 +1928,98 @@ async def name_song(req: SongNameRequest, user: dict = Depends(get_current_user)
         return {"title": ""}
 
 
+class CoverArtRequest(BaseModel):
+    prompt: str
+    title: Optional[str] = None
+    lyrics: Optional[str] = None
+
+
+@app.post("/music/cover-art")
+async def music_cover_art(req: CoverArtRequest, user: dict = Depends(get_current_user)):
+    """Generate album cover art for a song using SDXL Turbo via image-api.
+
+    Flow: LLM generates an image prompt from the song context, then image-api
+    renders a 512x512 cover image with SDXL Turbo (fast, low VRAM).
+    """
+    if not req.prompt.strip():
+        raise HTTPException(status_code=400, detail="prompt is required")
+
+    # Step 1: Generate an image prompt using the smallest LLM
+    image_prompt = None
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            art_model = LLM_MODEL
+            try:
+                tags_resp = await client.get(f"{OLLAMA_BASE_URL}/api/tags")
+                all_models = tags_resp.json().get("models", [])
+                llm_models = [m for m in all_models
+                              if "nomic-bert" not in m.get("details", {}).get("families", [])
+                              and "bert" not in m.get("details", {}).get("family", "")]
+                if llm_models:
+                    llm_models.sort(key=lambda m: m.get("size", float("inf")))
+                    art_model = llm_models[0].get("model") or llm_models[0].get("name", LLM_MODEL)
+            except Exception:
+                pass
+
+            context = f"Song style: {req.prompt}"
+            if req.title:
+                context = f"Song title: {req.title}\n{context}"
+            if req.lyrics:
+                context += f"\nLyrics excerpt: {req.lyrics[:300]}"
+
+            resp = await client.post(
+                f"{OLLAMA_BASE_URL}/api/generate",
+                json={
+                    "model": art_model,
+                    "system": (
+                        "You are an album cover art director. Given a song description, generate a short visual prompt "
+                        "for an album cover image. Describe the mood, colors, composition, and artistic style. "
+                        "Think abstract, artistic, and evocative. Do NOT include text or words in the image. "
+                        "Output ONLY the image prompt, 1-2 sentences, no quotes or explanation."
+                    ),
+                    "prompt": context,
+                    "stream": False,
+                    "options": {"temperature": 0.9, "num_predict": 80},
+                },
+            )
+            resp.raise_for_status()
+            image_prompt = resp.json().get("response", "").strip().strip('"').strip("'").strip()
+            image_prompt = image_prompt.split("\n")[0].strip()
+    except Exception as e:
+        logger.warning(f"Cover art prompt generation failed: {e}")
+
+    if not image_prompt:
+        # Fallback: derive a simple prompt from the song style
+        image_prompt = f"Abstract album cover art, {req.prompt[:100]}, artistic, vibrant colors, no text"
+
+    # Step 2: Generate the image via image-api with SDXL Turbo
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            resp = await client.post(
+                f"{IMAGE_GEN_URL}/generate",
+                json={
+                    "prompt": image_prompt,
+                    "model": "sdxl-turbo",
+                    "aspect": "square",
+                    "steps": 4,
+                    "guidance_scale": 0.0,
+                },
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            return {
+                "image": data.get("image"),
+                "prompt": image_prompt,
+                "width": data.get("width", 512),
+                "height": data.get("height", 512),
+            }
+    except httpx.ConnectError:
+        raise HTTPException(status_code=503, detail="Image generation service is not available")
+    except Exception as e:
+        logger.warning(f"Cover art image generation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Cover art generation failed: {e}")
+
+
 class SongWriteRequest(BaseModel):
     description: str
     language: Optional[str] = "en"
@@ -1893,7 +2032,7 @@ async def write_song(req: SongWriteRequest, user: dict = Depends(get_current_use
         raise HTTPException(status_code=400, detail="description is required")
 
     system_prompt = """You are a professional songwriter and music producer. Given a brief description, generate:
-1. A concise music STYLE prompt (genre, mood, instruments, tempo feel) — this describes the sound, NOT the lyrics
+1. A concise music STYLE prompt (genre, mood, instruments, tempo feel) -this describes the sound, NOT the lyrics
 2. Full structured LYRICS with section tags like [verse], [chorus], [bridge], [outro]
 
 Rules:
@@ -1901,7 +2040,7 @@ Rules:
 - Lyrics should have at least 2 verses and a chorus
 - Use [verse], [chorus], [bridge], [pre-chorus], [outro] tags on their own lines
 - Write natural, singable lyrics that match the described mood
-- Keep lyrics concise — each section should be 2-4 lines
+- Keep lyrics concise -each section should be 2-4 lines
 - Do NOT include any explanation, just the output
 
 Respond in EXACTLY this format:
@@ -2131,6 +2270,66 @@ def rename_conv(cid: str, body: ConversationPatch, user: dict = Depends(get_curr
 def move_conv(cid: str, body: ConversationMove, user: dict = Depends(get_current_user)):
     db.move_conversation(cid, user["id"], body.topic_id)
     return {"ok": True}
+
+
+@app.post("/conversations/{cid}/smart-title")
+async def smart_title_conv(cid: str, user: dict = Depends(get_current_user)):
+    """Generate a concise LLM-based title for a conversation from its first messages."""
+    conv = db.get_conversation(cid, user["id"])
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    # Gather first few messages for context
+    msgs = conv.get("messages", [])
+    context_parts = []
+    for m in msgs[:4]:
+        role = m.get("role", "user")
+        content = m.get("content", "")[:300]
+        context_parts.append(f"{role}: {content}")
+    context = "\n".join(context_parts)
+    if not context.strip():
+        return {"title": conv.get("title", "New Chat")}
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            title_model = LLM_MODEL
+            try:
+                tags_resp = await client.get(f"{OLLAMA_BASE_URL}/api/tags")
+                all_models = tags_resp.json().get("models", [])
+                llm_models = [m for m in all_models
+                              if "nomic-bert" not in m.get("details", {}).get("families", [])
+                              and "bert" not in m.get("details", {}).get("family", "")]
+                if llm_models:
+                    llm_models.sort(key=lambda m: m.get("size", float("inf")))
+                    title_model = llm_models[0].get("model") or llm_models[0].get("name", LLM_MODEL)
+            except Exception:
+                pass
+
+            resp = await client.post(
+                f"{OLLAMA_BASE_URL}/api/generate",
+                json={
+                    "model": title_model,
+                    "system": (
+                        "Generate a short, descriptive title (3-7 words) for this conversation. "
+                        "The title should capture the main topic or question. "
+                        "Output ONLY the title text, no quotes, no explanation."
+                    ),
+                    "prompt": context,
+                    "stream": False,
+                    "options": {"temperature": 0.5, "num_predict": 20},
+                },
+            )
+            resp.raise_for_status()
+            title = resp.json().get("response", "").strip().strip('"').strip("'").strip()
+            title = title.split("\n")[0].strip()[:80]
+
+            if title:
+                db.rename_conversation(cid, user["id"], title)
+                return {"title": title}
+    except Exception as e:
+        logger.warning(f"Smart title generation failed: {e}")
+
+    return {"title": conv.get("title", "New Chat")}
 
 
 # --- Vault file management endpoints ---

@@ -1,5 +1,5 @@
 """
-db.py — SQLite-backed storage for Dave-in-a-Box.
+db.py - SQLite-backed storage for Dave-in-a-Box.
 
 Database location: /app/data/conversations.db (persisted via Docker volume rag_data).
 

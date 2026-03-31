@@ -1,5 +1,5 @@
 """
-image-api — Multi-model text-to-image service for Dave-in-a-Box.
+image-api - Multi-model text-to-image service for Dave-in-a-Box.
 
 POST /generate   {prompt, aspect, steps, seed, model}
 POST /inpaint    {image, mask, prompt, negative_prompt, steps, seed, guidance_scale}
@@ -30,14 +30,14 @@ logger = logging.getLogger(__name__)
 HF_TOKEN = os.environ.get("HF_TOKEN", "")
 HF_CACHE = os.environ.get("HF_HOME", "/root/.cache/huggingface")
 
-# Ollama connection — used to evict loaded models from VRAM before inference
+# Ollama connection -used to evict loaded models from VRAM before inference
 OLLAMA_URL = os.environ.get("OLLAMA_BASE_URL", "http://ollama:11434")
 
 MODELS = {
     "playground-v2.5": {
         "hf_id": "playgroundai/playground-v2.5-1024px-aesthetic",
         "name": "Playground v2.5",
-        "description": "Best aesthetics — outperforms SDXL, DALL-E 3 and Midjourney 5.2",
+        "description": "Best aesthetics -outperforms SDXL, DALL-E 3 and Midjourney 5.2",
         "default_steps": 25,
         "max_steps": 50,
         "guidance_scale": 3.0,
@@ -51,7 +51,7 @@ MODELS = {
     "stable-diffusion-3.5": {
         "hf_id": "stabilityai/stable-diffusion-3.5-medium",
         "name": "Stable Diffusion 3.5",
-        "description": "Latest SD architecture — superior text rendering and prompt adherence",
+        "description": "Latest SD architecture -superior text rendering and prompt adherence",
         "default_steps": 28,
         "max_steps": 50,
         "guidance_scale": 7.0,
@@ -62,10 +62,24 @@ MODELS = {
             "portrait":  (768, 1344),
         },
     },
+    "sdxl-turbo": {
+        "hf_id": "stabilityai/sdxl-turbo",
+        "name": "SDXL Turbo",
+        "description": "Fast 1-4 step generation - small VRAM footprint, good for quick previews and cover art",
+        "default_steps": 4,
+        "max_steps": 4,
+        "guidance_scale": 0.0,
+        "loader": "sdxl-turbo",
+        "dimensions": {
+            "square":    (512, 512),
+            "landscape": (672, 384),
+            "portrait":  (384, 672),
+        },
+    },
     "sd-inpaint": {
         "hf_id": "runwayml/stable-diffusion-inpainting",
         "name": "SD Inpainting",
-        "description": "Inpainting specialist — edit regions of existing images",
+        "description": "Inpainting specialist - edit regions of existing images",
         "default_steps": 35,
         "max_steps": 50,
         "guidance_scale": 12.0,
@@ -80,7 +94,7 @@ DEFAULT_MODEL = "playground-v2.5"
 _pipeline = None
 _current_model = None
 
-# Live progress state — updated by the pipeline callback during inference
+# Live progress state -updated by the pipeline callback during inference
 _progress = {"running": False, "step": 0, "total_steps": 0, "elapsed_s": 0.0, "started_at": 0.0}
 
 app = FastAPI(title="image-api")
@@ -116,6 +130,15 @@ def _load_pipeline(model_key: str):
             token=HF_TOKEN or None,
             cache_dir=HF_CACHE,
         )
+    elif cfg["loader"] == "sdxl-turbo":
+        from diffusers import AutoPipelineForText2Image
+        pipe = AutoPipelineForText2Image.from_pretrained(
+            cfg["hf_id"],
+            torch_dtype=torch.float16,
+            variant="fp16",
+            token=HF_TOKEN or None,
+            cache_dir=HF_CACHE,
+        )
     elif cfg["loader"] == "inpaint":
         from diffusers import StableDiffusionInpaintPipeline
         pipe = StableDiffusionInpaintPipeline.from_pretrained(
@@ -127,7 +150,7 @@ def _load_pipeline(model_key: str):
 
     pipe.to("cuda")
     vram = torch.cuda.memory_allocated() // 1024 // 1024
-    logger.info(f"{cfg['name']} ready in {time.time()-t0:.1f}s — VRAM: {vram}MB")
+    logger.info(f"{cfg['name']} ready in {time.time()-t0:.1f}s -VRAM: {vram}MB")
     return pipe
 
 
@@ -162,8 +185,8 @@ class UpscaleRequest(BaseModel):
 
 
 class InpaintRequest(BaseModel):
-    image: str       # base64 PNG — source image
-    mask: str        # base64 PNG — white=inpaint, black=keep
+    image: str       # base64 PNG -source image
+    mask: str        # base64 PNG -white=inpaint, black=keep
     prompt: str
     negative_prompt: Optional[str] = None
     steps: Optional[int] = None
@@ -296,7 +319,7 @@ async def unload_model():
     gc.collect()
     torch.cuda.empty_cache()
     vram = torch.cuda.memory_allocated() // 1024 // 1024
-    logger.info(f"Unloaded {prev} — VRAM after: {vram}MB")
+    logger.info(f"Unloaded {prev} -VRAM after: {vram}MB")
     return {"ok": True, "was_loaded": True, "freed_model": prev, "vram_mb": vram}
 
 
@@ -357,7 +380,7 @@ async def generate(req: GenerateRequest):
     _progress.update({"running": True, "step": 0, "total_steps": steps, "elapsed_s": 0.0, "started_at": time.time()})
 
     def _step_callback(pipe, step_index, timestep, callback_kwargs):
-        """Called by diffusers after each denoising step — updates live progress."""
+        """Called by diffusers after each denoising step -updates live progress."""
         _progress["step"] = step_index + 1
         return callback_kwargs
 
@@ -394,7 +417,7 @@ async def generate(req: GenerateRequest):
     b64 = base64.b64encode(buf.getvalue()).decode()
 
     elapsed = round(time.time() - t0, 2)
-    logger.info(f"Generated {w}x{h} in {elapsed}s — {req.prompt[:60]}")
+    logger.info(f"Generated {w}x{h} in {elapsed}s -{req.prompt[:60]}")
 
     return {
         "image": b64,
@@ -585,7 +608,7 @@ async def inpaint(req: InpaintRequest):
     b64 = base64.b64encode(buf.getvalue()).decode()
 
     elapsed = round(time.time() - t0, 2)
-    logger.info(f"Inpainted {orig_w}x{orig_h} in {elapsed}s — {req.prompt[:60]}")
+    logger.info(f"Inpainted {orig_w}x{orig_h} in {elapsed}s -{req.prompt[:60]}")
 
     # Swap back to previous model in background (non-blocking)
     if prev_model and prev_model != "sd-inpaint" and prev_model in MODELS:

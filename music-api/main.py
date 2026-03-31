@@ -1,5 +1,5 @@
 """
-music-api — Text-to-music service for Dave-in-a-Box using ACE-Step 1.5.
+music-api - Text-to-music service for Dave-in-a-Box using ACE-Step 1.5.
 
 POST /generate   {prompt, lyrics, duration, infer_steps, guidance_scale, seed, instrumental, batch_size, vocal_language}
 GET  /health
@@ -81,7 +81,7 @@ def _load_model():
     _model_loaded = True
 
     vram = torch.cuda.memory_allocated() // 1024 // 1024
-    logger.info(f"ACE-Step ready in {time.time()-t0:.1f}s — VRAM: {vram}MB")
+    logger.info(f"ACE-Step ready in {time.time()-t0:.1f}s -VRAM: {vram}MB")
 
 
 @app.on_event("startup")
@@ -150,7 +150,7 @@ async def unload_model():
     gc.collect()
     torch.cuda.empty_cache()
     vram = torch.cuda.memory_allocated() // 1024 // 1024
-    logger.info(f"Unloaded ACE-Step — VRAM after: {vram}MB")
+    logger.info(f"Unloaded ACE-Step -VRAM after: {vram}MB")
     return {"ok": True, "was_loaded": True, "freed_model": "ace-step-1.5", "vram_mb": vram}
 
 
@@ -306,7 +306,7 @@ async def generate(req: MusicGenerateRequest):
         _progress["running"] = False
 
     elapsed = round(time.time() - t0, 2)
-    logger.info(f"Generated track in {elapsed}s — {req.prompt[:60]}")
+    logger.info(f"Generated track in {elapsed}s -{req.prompt[:60]}")
 
     return {
         "audio": audio_b64,
