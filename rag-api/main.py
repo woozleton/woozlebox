@@ -48,7 +48,9 @@ DB_DIR            = os.environ.get("DB_DIR", "/app/data")
 KOKORO_URL        = os.environ.get("KOKORO_URL", "http://kokoro:8880")
 DEFAULT_VOICE     = os.environ.get("TTS_VOICE", "af_heart")
 IMAGE_GEN_URL     = os.environ.get("IMAGE_GEN_URL", "http://image-api:8100")
+MUSIC_GEN_URL     = os.environ.get("MUSIC_GEN_URL", "http://music-api:8200")
 _image_gen_active = False  # Guard flag — blocks Ollama calls while image gen is using the GPU
+_music_gen_active = False  # Guard flag — blocks Ollama calls while music gen is using the GPU
 DEFAULT_TOP_K     = 30
 NOT_FOUND_MSG     = "I couldn't find that in your vault."
 SUPPORTED_UPLOAD_EXTENSIONS = {".md", ".txt", ".pdf"}
@@ -389,6 +391,19 @@ async def _evict_image_model():
                 await client.post(f"{IMAGE_GEN_URL}/models/unload")
     except Exception as e:
         logger.debug(f"Image model eviction skipped: {e}")
+
+
+async def _evict_music_model():
+    """Unload the music-api model from VRAM before LLM inference."""
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(f"{MUSIC_GEN_URL}/health")
+            data = resp.json()
+            if data.get("model_loaded"):
+                logger.info("Evicting music model from VRAM before LLM call")
+                await client.post(f"{MUSIC_GEN_URL}/models/unload")
+    except Exception as e:
+        logger.debug(f"Music model eviction skipped: {e}")
 
 
 # --- Streaming chat generator ---
@@ -958,13 +973,22 @@ async def models_ps(user: dict = Depends(get_current_user)):
                 loaded.append({"name": data["current_model"], "type": "image", "vram_mb": data.get("vram_mb", 0)})
     except Exception:
         pass
+    # Music model
+    try:
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            resp = await client.get(f"{MUSIC_GEN_URL}/health")
+            data = resp.json()
+            if data.get("model_loaded") and data.get("current_model"):
+                loaded.append({"name": data["current_model"], "type": "music", "vram_mb": data.get("vram_mb", 0)})
+    except Exception:
+        pass
     return {"loaded": loaded}
 
 
 @app.post("/models/warmup")
 async def models_warmup(request: Request, user: dict = Depends(get_current_user)):
     """Preload an LLM into VRAM. Evicts image model and other LLMs first."""
-    global _image_gen_active
+    global _image_gen_active, _music_gen_active
     model = LLM_MODEL
     try:
         body = await request.json()
@@ -974,12 +998,17 @@ async def models_warmup(request: Request, user: dict = Depends(get_current_user)
         pass
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            # Evict image model
+            # Evict image and music models
             try:
                 await client.post(f"{IMAGE_GEN_URL}/models/unload")
             except Exception:
                 pass
+            try:
+                await client.post(f"{MUSIC_GEN_URL}/models/unload")
+            except Exception:
+                pass
             _image_gen_active = False
+            _music_gen_active = False
 
             # Evict any currently loaded Ollama models that aren't the target
             try:
@@ -1044,6 +1073,13 @@ async def prepare_studio(request: Request, user: dict = Depends(get_current_user
     except Exception as e:
         logger.warning(f"prepare-studio evict failed: {e}")
 
+    # Evict music model
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            await client.post(f"{MUSIC_GEN_URL}/models/unload")
+    except Exception:
+        pass
+
     # Preload the image model into VRAM
     loaded_model = None
     try:
@@ -1070,6 +1106,47 @@ async def prepare_studio(request: Request, user: dict = Depends(get_current_user
         logger.warning(f"prepare-studio image load failed: {e}")
 
     return {"ok": True, "evicted": evicted, "image_model": loaded_model}
+
+
+@app.post("/models/prepare-music-studio")
+async def prepare_music_studio(request: Request, user: dict = Depends(get_current_user)):
+    """Evict Ollama + image models from VRAM, then confirm music model is ready."""
+    evicted = []
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            # Evict all Ollama models
+            ps = await client.get(f"{OLLAMA_BASE_URL}/api/ps")
+            loaded = [m["name"] for m in ps.json().get("models", [])]
+            for model_name in loaded:
+                try:
+                    await client.post(
+                        f"{OLLAMA_BASE_URL}/api/generate",
+                        json={"model": model_name, "prompt": "", "keep_alive": 0, "stream": False},
+                    )
+                    evicted.append(model_name)
+                except Exception:
+                    pass
+    except Exception as e:
+        logger.warning(f"prepare-music-studio evict failed: {e}")
+
+    # Evict image model
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            await client.post(f"{IMAGE_GEN_URL}/models/unload")
+    except Exception:
+        pass
+
+    # Load music model into VRAM (if not already loaded)
+    music_ready = False
+    try:
+        async with httpx.AsyncClient(timeout=180.0) as client:
+            resp = await client.post(f"{MUSIC_GEN_URL}/models/load")
+            data = resp.json()
+            music_ready = data.get("ok", False)
+    except Exception as e:
+        logger.warning(f"prepare-music-studio load failed: {e}")
+
+    return {"ok": True, "evicted": evicted, "music_ready": music_ready}
 
 
 @app.get("/models/info")
@@ -1132,11 +1209,12 @@ async def context_info(model: str = None, conversation_id: str = None, user: dic
 
 @app.post("/chat")
 async def chat(request: ChatRequest, user: dict = Depends(get_current_user)):
-    if _image_gen_active:
-        raise HTTPException(status_code=503, detail="GPU is busy generating an image, please wait")
+    if _image_gen_active or _music_gen_active:
+        raise HTTPException(status_code=503, detail="GPU is busy, please wait")
     if not request.message.strip():
         raise HTTPException(status_code=400, detail="Message cannot be empty")
     await _evict_image_model()
+    await _evict_music_model()
     return StreamingResponse(
         chat_stream(request, user["id"]),
         media_type="text/event-stream",
@@ -1232,7 +1310,7 @@ async def stream_reindex(user: dict = Depends(get_current_user)):
 
 @app.get("/suggestions")
 async def get_suggestions(model: str = None, user: dict = Depends(get_current_user)):
-    if _image_gen_active:
+    if _image_gen_active or _music_gen_active:
         return {"suggestions": []}
     use_model = model or LLM_MODEL
     user_id = user["id"]
@@ -1706,6 +1784,268 @@ async def image_inpaint_proxy(req: ImageInpaintRequest, user: dict = Depends(get
         raise HTTPException(status_code=500, detail=f"Inpainting failed: {e}")
     finally:
         _image_gen_active = False
+
+
+# --- Music generation proxy ---
+
+@app.get("/music/inspire")
+async def music_inspire(user: dict = Depends(get_current_user)):
+    """Ask the smallest LLM to generate a creative music prompt idea."""
+    system = (
+        "You are a music producer who generates creative text-to-music prompts for an AI music generator. "
+        "Generate exactly ONE unique, vivid music prompt describing genre, mood, instruments, tempo feel, and vibe. "
+        "Vary widely between styles: pop, rock, jazz, electronic, classical, hip-hop, folk, ambient, metal, world, funk, cinematic, etc. "
+        "Output ONLY the prompt text, nothing else — no quotes, no explanation, no numbering. Keep it to 1-2 sentences."
+    )
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            # Pick smallest non-embedding LLM
+            song_model = LLM_MODEL
+            try:
+                tags_resp = await client.get(f"{OLLAMA_BASE_URL}/api/tags")
+                all_models = tags_resp.json().get("models", [])
+                llm_models = [m for m in all_models
+                              if "nomic-bert" not in m.get("details", {}).get("families", [])
+                              and "bert" not in m.get("details", {}).get("family", "")]
+                if llm_models:
+                    llm_models.sort(key=lambda m: m.get("size", float("inf")))
+                    song_model = llm_models[0].get("model") or llm_models[0].get("name", LLM_MODEL)
+            except Exception:
+                pass
+
+            resp = await client.post(
+                f"{OLLAMA_BASE_URL}/api/generate",
+                json={
+                    "model": song_model,
+                    "system": system,
+                    "prompt": "Give me a fresh, creative music generation prompt.",
+                    "stream": False,
+                    "options": {"temperature": 1.2, "num_predict": 100},
+                },
+            )
+            resp.raise_for_status()
+            text = resp.json().get("response", "").strip().strip('"').strip("'")
+            return {"prompt": text}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Could not generate idea: {e}")
+
+
+class SongNameRequest(BaseModel):
+    prompt: str
+    lyrics: Optional[str] = None
+
+
+@app.post("/music/name-song")
+async def name_song(req: SongNameRequest, user: dict = Depends(get_current_user)):
+    """Ask the smallest LLM to generate a creative song title."""
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            # Pick smallest non-embedding LLM
+            song_model = LLM_MODEL
+            try:
+                tags_resp = await client.get(f"{OLLAMA_BASE_URL}/api/tags")
+                all_models = tags_resp.json().get("models", [])
+                llm_models = [m for m in all_models
+                              if "nomic-bert" not in m.get("details", {}).get("families", [])
+                              and "bert" not in m.get("details", {}).get("family", "")]
+                if llm_models:
+                    llm_models.sort(key=lambda m: m.get("size", float("inf")))
+                    song_model = llm_models[0].get("model") or llm_models[0].get("name", LLM_MODEL)
+            except Exception:
+                pass
+
+            context = f"Style: {req.prompt}"
+            if req.lyrics:
+                context += f"\n\nLyrics:\n{req.lyrics[:500]}"
+
+            resp = await client.post(
+                f"{OLLAMA_BASE_URL}/api/generate",
+                json={
+                    "model": song_model,
+                    "system": (
+                        "You are a creative music producer. Given a song's style description and optional lyrics, "
+                        "generate exactly ONE short, catchy song title (1-5 words). "
+                        "Be creative and evocative. Output ONLY the title — no quotes, no explanation, no punctuation except what's part of the title."
+                    ),
+                    "prompt": context,
+                    "stream": False,
+                    "options": {"temperature": 1.0, "num_predict": 20},
+                },
+            )
+            resp.raise_for_status()
+            title = resp.json().get("response", "").strip().strip('"').strip("'").strip()
+            # Take only first line if multi-line
+            title = title.split("\n")[0].strip()
+            return {"title": title}
+    except Exception as e:
+        return {"title": ""}
+
+
+class SongWriteRequest(BaseModel):
+    description: str
+    language: Optional[str] = "en"
+
+
+@app.post("/music/write-song")
+async def write_song(req: SongWriteRequest, user: dict = Depends(get_current_user)):
+    """Use the LLM to generate a music style prompt and full lyrics from a brief description."""
+    if not req.description.strip():
+        raise HTTPException(status_code=400, detail="description is required")
+
+    system_prompt = """You are a professional songwriter and music producer. Given a brief description, generate:
+1. A concise music STYLE prompt (genre, mood, instruments, tempo feel) — this describes the sound, NOT the lyrics
+2. Full structured LYRICS with section tags like [verse], [chorus], [bridge], [outro]
+
+Rules:
+- The style prompt should be 1-2 sentences describing genre, mood, instruments, and vibe
+- Lyrics should have at least 2 verses and a chorus
+- Use [verse], [chorus], [bridge], [pre-chorus], [outro] tags on their own lines
+- Write natural, singable lyrics that match the described mood
+- Keep lyrics concise — each section should be 2-4 lines
+- Do NOT include any explanation, just the output
+
+Respond in EXACTLY this format:
+STYLE: <style prompt here>
+
+LYRICS:
+<full lyrics here>"""
+
+    user_msg = req.description.strip()
+    if req.language and req.language != "en":
+        user_msg += f"\n\nWrite the lyrics in language code: {req.language}"
+
+    try:
+        async with httpx.AsyncClient(timeout=180.0) as client:
+            # Pick the smallest non-embedding LLM model available
+            song_model = LLM_MODEL
+            try:
+                tags_resp = await client.get(f"{OLLAMA_BASE_URL}/api/tags")
+                all_models = tags_resp.json().get("models", [])
+                # Filter out embedding models (nomic-bert family, etc.)
+                llm_models = []
+                for m in all_models:
+                    families = m.get("details", {}).get("families", [])
+                    family = m.get("details", {}).get("family", "")
+                    if "nomic-bert" in families or "bert" in family:
+                        continue
+                    llm_models.append(m)
+                if llm_models:
+                    llm_models.sort(key=lambda m: m.get("size", float("inf")))
+                    song_model = llm_models[0].get("model") or llm_models[0].get("name", LLM_MODEL)
+                    logger.info(f"Songwrite using smallest LLM: {song_model}")
+            except Exception:
+                pass
+
+            # Ensure the model is loaded
+            try:
+                await client.post(
+                    f"{OLLAMA_BASE_URL}/api/chat",
+                    json={
+                        "model": song_model,
+                        "messages": [{"role": "user", "content": "hi"}],
+                        "options": {"num_predict": 1},
+                        "stream": False,
+                    },
+                )
+            except Exception:
+                pass
+
+            resp = await client.post(
+                f"{OLLAMA_BASE_URL}/api/chat",
+                json={
+                    "model": song_model,
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_msg},
+                    ],
+                    "stream": False,
+                    "options": {"temperature": 0.9, "num_predict": 1024},
+                },
+            )
+            resp.raise_for_status()
+            content = resp.json().get("message", {}).get("content", "")
+
+        # Parse STYLE: and LYRICS: sections
+        style = ""
+        lyrics = ""
+        if "STYLE:" in content and "LYRICS:" in content:
+            parts = content.split("LYRICS:", 1)
+            style = parts[0].replace("STYLE:", "").strip()
+            lyrics = parts[1].strip()
+        elif "LYRICS:" in content:
+            lyrics = content.split("LYRICS:", 1)[1].strip()
+            style = req.description
+        else:
+            # Fallback: treat entire response as lyrics
+            style = req.description
+            lyrics = content.strip()
+
+        return {"ok": True, "style": style, "lyrics": lyrics}
+    except httpx.ConnectError:
+        raise HTTPException(status_code=503, detail="LLM service is not available")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Song writing failed: {e}")
+
+
+class MusicGenerateRequest(BaseModel):
+    prompt: str
+    lyrics: Optional[str] = None
+    duration: Optional[float] = 30.0
+    infer_steps: Optional[int] = 20
+    guidance_scale: Optional[float] = 7.0
+    seed: Optional[int] = None
+    instrumental: Optional[bool] = False
+    vocal_language: Optional[str] = None
+    bpm: Optional[int] = None
+
+
+@app.get("/music/health")
+async def music_health(user: dict = Depends(get_current_user)):
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(f"{MUSIC_GEN_URL}/health")
+            return resp.json()
+    except Exception:
+        return {"ok": False, "model_loaded": False}
+
+
+@app.get("/music/progress")
+async def music_progress(user: dict = Depends(get_current_user)):
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(f"{MUSIC_GEN_URL}/progress")
+            return resp.json()
+    except Exception:
+        return {"running": False, "step": 0, "total_steps": 0, "elapsed_s": 0.0}
+
+
+@app.post("/music/generate")
+async def music_generate_proxy(req: MusicGenerateRequest, user: dict = Depends(get_current_user)):
+    """Proxy to music-api for text-to-music generation."""
+    global _music_gen_active
+    if not req.prompt.strip():
+        raise HTTPException(status_code=400, detail="prompt is required")
+
+    _music_gen_active = True
+    try:
+        async with httpx.AsyncClient(timeout=600.0) as client:
+            resp = await client.post(
+                f"{MUSIC_GEN_URL}/generate",
+                json=req.model_dump(exclude_none=True),
+            )
+            resp.raise_for_status()
+            return resp.json()
+    except httpx.ConnectError:
+        raise HTTPException(status_code=503, detail="Music generation service is not available")
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="Music generation timed out")
+    except httpx.HTTPStatusError as e:
+        detail = e.response.json().get("detail", str(e)) if e.response.content else str(e)
+        raise HTTPException(status_code=e.response.status_code, detail=detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Music generation failed: {e}")
+    finally:
+        _music_gen_active = False
 
 
 # --- Topic endpoints ---
