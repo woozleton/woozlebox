@@ -6,8 +6,9 @@ Database location: /app/data/conversations.db (persisted via Docker volume rag_d
 Schema:
   users(id, username, password_hash, role, settings, created_at, is_active)
   sessions(token, user_id, created_at, last_seen, expires_at)
-  topics(id, name, description, system_prompt, user_id, created_at)
-  conversations(id, title, topic_id, user_id, created_at, updated_at)
+  folders(id, name, user_id, created_at)
+  folder_meta(folder_id, description, system_prompt)
+  conversations(id, title, folder_id, user_id, created_at, updated_at)
   messages(id, conversation_id, role, content, sources, web_sources, model_used, created_at)
   memory(id, fact, user_id, created_at)
 
@@ -62,19 +63,23 @@ def init_db():
                 expires_at TEXT NOT NULL
             );
 
-            CREATE TABLE IF NOT EXISTS topics (
-                id            TEXT PRIMARY KEY,
-                name          TEXT NOT NULL,
+            CREATE TABLE IF NOT EXISTS folders (
+                id         TEXT PRIMARY KEY,
+                name       TEXT NOT NULL,
+                user_id    TEXT REFERENCES users(id) ON DELETE CASCADE,
+                created_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS folder_meta (
+                folder_id     TEXT PRIMARY KEY REFERENCES folders(id) ON DELETE CASCADE,
                 description   TEXT,
-                system_prompt TEXT,
-                user_id       TEXT REFERENCES users(id) ON DELETE CASCADE,
-                created_at    TEXT NOT NULL
+                system_prompt TEXT
             );
 
             CREATE TABLE IF NOT EXISTS conversations (
                 id         TEXT PRIMARY KEY,
                 title      TEXT NOT NULL DEFAULT 'New Chat',
-                topic_id   TEXT REFERENCES topics(id) ON DELETE SET NULL,
+                folder_id  TEXT REFERENCES folders(id) ON DELETE SET NULL,
                 user_id    TEXT REFERENCES users(id) ON DELETE CASCADE,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
@@ -103,7 +108,7 @@ def init_db():
             CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
         """)
         conn.executescript("""
-            CREATE INDEX IF NOT EXISTS idx_topics_user        ON topics(user_id);
+            CREATE INDEX IF NOT EXISTS idx_folders_user         ON folders(user_id);
             CREATE INDEX IF NOT EXISTS idx_conversations_user ON conversations(user_id);
             CREATE INDEX IF NOT EXISTS idx_memory_user        ON memory(user_id);
         """)
@@ -237,57 +242,74 @@ def purge_expired_sessions():
         conn.execute("DELETE FROM sessions WHERE expires_at < ?", (_now(),))
 
 
-# ── Topics ──
+# ── Folders ──
 
-def create_topic(user_id: str, name: str, description: str = None, system_prompt: str = None) -> str:
-    pid = str(uuid.uuid4())
+def create_folder(user_id: str, name: str, description: str = None, system_prompt: str = None) -> str:
+    fid = str(uuid.uuid4())
     with _conn() as conn:
         conn.execute(
-            "INSERT INTO topics(id, name, description, system_prompt, user_id, created_at) VALUES (?,?,?,?,?,?)",
-            (pid, name, description, system_prompt, user_id, _now()),
+            "INSERT INTO folders(id, name, user_id, created_at) VALUES (?,?,?,?)",
+            (fid, name, user_id, _now()),
         )
-    return pid
+        if description is not None or system_prompt is not None:
+            conn.execute(
+                "INSERT INTO folder_meta(folder_id, description, system_prompt) VALUES (?,?,?)",
+                (fid, description, system_prompt),
+            )
+    return fid
 
 
-def list_topics(user_id: str) -> list[dict]:
+def list_folders(user_id: str) -> list[dict]:
     with _conn() as conn:
-        rows = conn.execute(
-            "SELECT * FROM topics WHERE user_id=? ORDER BY created_at ASC", (user_id,)
-        ).fetchall()
+        rows = conn.execute("""
+            SELECT f.id, f.name, f.user_id, f.created_at,
+                   fm.description, fm.system_prompt
+            FROM folders f
+            LEFT JOIN folder_meta fm ON fm.folder_id = f.id
+            WHERE f.user_id=? ORDER BY f.created_at ASC
+        """, (user_id,)).fetchall()
     return [dict(r) for r in rows]
 
 
-def get_topic(pid: str, user_id: str) -> Optional[dict]:
+def get_folder(fid: str, user_id: str) -> Optional[dict]:
     with _conn() as conn:
-        row = conn.execute(
-            "SELECT * FROM topics WHERE id=? AND user_id=?", (pid, user_id)
-        ).fetchone()
+        row = conn.execute("""
+            SELECT f.id, f.name, f.user_id, f.created_at,
+                   fm.description, fm.system_prompt
+            FROM folders f
+            LEFT JOIN folder_meta fm ON fm.folder_id = f.id
+            WHERE f.id=? AND f.user_id=?
+        """, (fid, user_id)).fetchone()
     return dict(row) if row else None
 
 
-def update_topic(pid: str, user_id: str, name: str = None, description: str = None, system_prompt: str = None):
+def update_folder(fid: str, user_id: str, name: str = None, description: str = None, system_prompt: str = None):
     with _conn() as conn:
         if name is not None:
-            conn.execute("UPDATE topics SET name=? WHERE id=? AND user_id=?", (name, pid, user_id))
-        if description is not None:
-            conn.execute("UPDATE topics SET description=? WHERE id=? AND user_id=?", (description, pid, user_id))
-        conn.execute("UPDATE topics SET system_prompt=? WHERE id=? AND user_id=?", (system_prompt, pid, user_id))
+            conn.execute("UPDATE folders SET name=? WHERE id=? AND user_id=?", (name, fid, user_id))
+        if description is not None or system_prompt is not None:
+            conn.execute("""
+                INSERT INTO folder_meta(folder_id, description, system_prompt) VALUES (?,?,?)
+                ON CONFLICT(folder_id) DO UPDATE SET
+                    description = COALESCE(excluded.description, folder_meta.description),
+                    system_prompt = excluded.system_prompt
+            """, (fid, description, system_prompt))
 
 
-def delete_topic(pid: str, user_id: str):
+def delete_folder(fid: str, user_id: str):
     with _conn() as conn:
-        conn.execute("DELETE FROM topics WHERE id=? AND user_id=?", (pid, user_id))
+        conn.execute("DELETE FROM folders WHERE id=? AND user_id=?", (fid, user_id))
 
 
 # ── Conversations ──
 
-def create_conversation(user_id: str, title: str = "New Chat", topic_id: str = None) -> str:
+def create_conversation(user_id: str, title: str = "New Chat", folder_id: str = None) -> str:
     cid = str(uuid.uuid4())
     now = _now()
     with _conn() as conn:
         conn.execute(
-            "INSERT INTO conversations(id, title, topic_id, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?)",
-            (cid, title, topic_id, user_id, now, now),
+            "INSERT INTO conversations(id, title, folder_id, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?)",
+            (cid, title, folder_id, user_id, now, now),
         )
     return cid
 
@@ -295,7 +317,7 @@ def create_conversation(user_id: str, title: str = "New Chat", topic_id: str = N
 def list_conversations(user_id: str) -> list[dict]:
     with _conn() as conn:
         rows = conn.execute("""
-            SELECT c.id, c.title, c.topic_id, c.user_id, c.created_at, c.updated_at,
+            SELECT c.id, c.title, c.folder_id, c.user_id, c.created_at, c.updated_at,
                    COUNT(m.id) AS message_count
             FROM conversations c
             LEFT JOIN messages m ON m.conversation_id = c.id
@@ -342,10 +364,10 @@ def delete_conversation(cid: str, user_id: str):
 
 
 def delete_all_user_data(user_id: str):
-    """Delete all conversations, topics, and memory for a user (keeps the account)."""
+    """Delete all conversations, folders, and memory for a user (keeps the account)."""
     with _conn() as conn:
         conn.execute("DELETE FROM conversations WHERE user_id=?", (user_id,))
-        conn.execute("DELETE FROM topics WHERE user_id=?", (user_id,))
+        conn.execute("DELETE FROM folders WHERE user_id=?", (user_id,))
         conn.execute("DELETE FROM memory WHERE user_id=?", (user_id,))
 
 
@@ -357,11 +379,11 @@ def rename_conversation(cid: str, user_id: str, title: str):
         )
 
 
-def move_conversation(cid: str, user_id: str, topic_id: Optional[str]):
+def move_conversation(cid: str, user_id: str, folder_id: Optional[str]):
     with _conn() as conn:
         conn.execute(
-            "UPDATE conversations SET topic_id=?, updated_at=? WHERE id=? AND user_id=?",
-            (topic_id, _now(), cid, user_id),
+            "UPDATE conversations SET folder_id=?, updated_at=? WHERE id=? AND user_id=?",
+            (folder_id, _now(), cid, user_id),
         )
 
 

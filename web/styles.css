@@ -429,11 +429,11 @@
       letter-spacing: 0.08em;
       padding: 10px 8px 4px;
     }
-    .topic-row { min-height: 42px; }
-    .topic-row.active .sb-folder-icon path { fill: var(--accent); stroke: var(--accent); }
-    body.sidebar-collapsed #topics-section { display: none; }
-    body.sidebar-collapsed #topics-divider { display: none; }
-    body.sidebar-collapsed #playgrounds-section { display: none !important; }
+    .folder-row { min-height: 42px; }
+    .folder-row.active .sb-folder-icon path { fill: var(--accent); stroke: var(--accent); }
+    body.sidebar-collapsed #chat-folders-section { display: none; }
+    body.sidebar-collapsed #chat-folders-divider { display: none; }
+    body.sidebar-collapsed #image-folders-section { display: none !important; }
     body.sidebar-collapsed #conv-header { display: none !important; }
     body.sidebar-collapsed #studio-sessions-header { display: none !important; }
     body.sidebar-collapsed #studio-sessions-list { display: none !important; }
@@ -526,21 +526,21 @@
     #ctx-menu button:hover { background: var(--surface3); }
     #ctx-menu button.danger { color: var(--danger); }
 
-    #topic-crumb {
+    #folder-crumb {
       display: flex; align-items: center; gap: 5px;
       font-size: 0.68rem; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase;
       color: var(--text-faint);
       white-space: nowrap;
       padding: 0 4px 8px;
     }
-    #topic-crumb-trigger:hover { color: var(--text-dim); }
-    #topic-crumb-menu {
+    #folder-crumb-trigger:hover { color: var(--text-dim); }
+    #folder-crumb-menu {
       display: none; position: fixed;
       background: none; border: none;
       border-radius: 0; padding: 0; min-width: 160px;
       z-index: 50;
     }
-    #topic-crumb-menu.open { display: block; }
+    #folder-crumb-menu.open { display: block; }
     .crumb-menu-item {
       display: flex; align-items: center; gap: 5px;
       padding: 5px 0; border-radius: 0; cursor: pointer;
@@ -1772,28 +1772,28 @@
     /* Music-specific overrides */
     body.sidebar-collapsed #music-sessions-header { display: none !important; }
     body.sidebar-collapsed #music-sessions-list { display: none !important; }
-    body.sidebar-collapsed #music-collections-section { display: none !important; }
+    body.sidebar-collapsed #music-folders-section { display: none !important; }
 
-    /* Music collection modal */
-    #mcol-modal {
+    /* Music Folder modal */
+    #music-folder-modal {
       display: none; position: fixed; inset: 0; z-index: 400;
       background: rgba(0,0,0,0.55); align-items: center; justify-content: center;
     }
-    #mcol-modal.open { display: flex; }
-    #mcol-modal-inner {
+    #music-folder-modal.open { display: flex; }
+    #music-folder-modal-inner {
       background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
       width: 420px; max-width: 94vw; display: flex; flex-direction: column;
       overflow: hidden;
     }
-    #mcol-modal-header {
+    #music-folder-modal-header {
       display: flex; align-items: center; justify-content: space-between;
       padding: 16px 20px 12px; border-bottom: 1px solid var(--border);
     }
-    #mcol-modal-header h3 { margin: 0; font-size: 0.95rem; font-weight: 600; color: var(--text); }
-    #mcol-modal-header button { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1.1rem; }
-    #mcol-modal-header button:hover { color: var(--text); }
-    #mcol-modal-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
-    #mcol-modal-footer {
+    #music-folder-modal-header h3 { margin: 0; font-size: 0.95rem; font-weight: 600; color: var(--text); }
+    #music-folder-modal-header button { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1.1rem; }
+    #music-folder-modal-header button:hover { color: var(--text); }
+    #music-folder-modal-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+    #music-folder-modal-footer {
       display: flex; justify-content: flex-end; gap: 8px;
       padding: 12px 20px; border-top: 1px solid var(--border);
     }
@@ -2459,23 +2459,23 @@
       color: #fff; cursor: pointer; padding: 5px 10px; font-size: 0.78rem; white-space: nowrap;
     }
     .memory-add-row button:hover { background: var(--accent); }
-    .topic-list { display: flex; flex-direction: column; gap: 4px; }
-    .topic-item {
+    .folder-list { display: flex; flex-direction: column; gap: 4px; }
+    .folder-item {
       display: flex; align-items: center; gap: 6px;
       background: var(--surface3); border-radius: 6px; padding: 6px 8px;
       font-size: 0.78rem; color: var(--text-dim); cursor: pointer;
     }
-    .topic-item.active { border: 1px solid var(--accent); color: var(--text); }
-    .topic-item span { flex: 1; }
-    .topic-item button { background: none; border: none; color: var(--text-faint); cursor: pointer; padding: 0; font-size: 0.8rem; }
-    .topic-item button:hover { color: var(--danger); }
-    .topic-add-row { display: flex; gap: 6px; margin-top: 4px; }
-    .topic-add-row input { flex: 1; }
-    .topic-add-row button {
+    .folder-item.active { border: 1px solid var(--accent); color: var(--text); }
+    .folder-item span { flex: 1; }
+    .folder-item button { background: none; border: none; color: var(--text-faint); cursor: pointer; padding: 0; font-size: 0.8rem; }
+    .folder-item button:hover { color: var(--danger); }
+    .folder-add-row { display: flex; gap: 6px; margin-top: 4px; }
+    .folder-add-row input { flex: 1; }
+    .folder-add-row button {
       background: var(--accent-dim); border: none; border-radius: 6px;
       color: #fff; cursor: pointer; padding: 5px 10px; font-size: 0.78rem; white-space: nowrap;
     }
-    .topic-add-row button:hover { background: var(--accent); }
+    .folder-add-row button:hover { background: var(--accent); }
     .color-swatches { display: flex; gap: 6px; flex-wrap: wrap; }
     .color-swatch {
       width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
@@ -2648,63 +2648,63 @@
     #confirm-ok-btn.primary { background: var(--accent); }
     #confirm-ok-btn:hover { opacity: 0.88; }
 
-    /* Topic edit modal */
-    #topic-modal {
+    /* Folder edit modal */
+    #folder-modal {
       display: none; position: fixed; inset: 0; z-index: 400;
       background: rgba(0,0,0,0.55); align-items: center; justify-content: center;
     }
-    #topic-modal.open { display: flex; }
-    #topic-modal-inner {
+    #folder-modal.open { display: flex; }
+    #folder-modal-inner {
       background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
       width: 520px; max-width: 94vw; display: flex; flex-direction: column;
       overflow: hidden;
     }
-    #topic-modal-header {
+    #folder-modal-header {
       display: flex; align-items: center; justify-content: space-between;
       padding: 16px 20px 12px; border-bottom: 1px solid var(--border);
     }
-    #topic-modal-header h3 { margin: 0; font-size: 0.95rem; font-weight: 600; color: var(--text); }
-    #topic-modal-header button { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1.1rem; }
-    #topic-modal-header button:hover { color: var(--text); }
-    #topic-modal-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
-    #topic-modal-footer {
+    #folder-modal-header h3 { margin: 0; font-size: 0.95rem; font-weight: 600; color: var(--text); }
+    #folder-modal-header button { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1.1rem; }
+    #folder-modal-header button:hover { color: var(--text); }
+    #folder-modal-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+    #folder-modal-footer {
       display: flex; justify-content: flex-end; gap: 8px;
       padding: 12px 20px; border-top: 1px solid var(--border);
     }
     .pm-field { display: flex; flex-direction: column; gap: 6px; }
     .pm-label { font-size: 0.8rem; color: var(--text-dim); font-weight: 500; }
     .pm-hint { font-size: 0.7rem; color: var(--text-faint); line-height: 1.4; }
-    .pm-cancel {
+    .folder-cancel {
       background: var(--surface3); border: 1px solid var(--border); border-radius: 7px;
       color: var(--text-dim); cursor: pointer; padding: 7px 16px; font-size: 0.82rem;
     }
-    .pm-cancel:hover { color: var(--text); border-color: var(--text-dim); }
-    .pm-save {
+    .folder-cancel:hover { color: var(--text); border-color: var(--text-dim); }
+    .folder-save {
       background: var(--accent); border: none; border-radius: 7px;
       color: #fff; cursor: pointer; padding: 7px 18px; font-size: 0.82rem; font-weight: 500;
     }
-    .pm-save:hover { opacity: 0.9; }
+    .folder-save:hover { opacity: 0.9; }
 
-    /* Playground modal */
-    #playground-modal {
+    /* Image Folder modal */
+    #image-folder-modal {
       display: none; position: fixed; inset: 0; z-index: 400;
       background: rgba(0,0,0,0.55); align-items: center; justify-content: center;
     }
-    #playground-modal.open { display: flex; }
-    #playground-modal-inner {
+    #image-folder-modal.open { display: flex; }
+    #image-folder-modal-inner {
       background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
       width: 420px; max-width: 94vw; display: flex; flex-direction: column;
       overflow: hidden;
     }
-    #playground-modal-header {
+    #image-folder-modal-header {
       display: flex; align-items: center; justify-content: space-between;
       padding: 16px 20px 12px; border-bottom: 1px solid var(--border);
     }
-    #playground-modal-header h3 { margin: 0; font-size: 0.95rem; font-weight: 600; color: var(--text); }
-    #playground-modal-header button { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1.1rem; }
-    #playground-modal-header button:hover { color: var(--text); }
-    #playground-modal-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
-    #playground-modal-footer {
+    #image-folder-modal-header h3 { margin: 0; font-size: 0.95rem; font-weight: 600; color: var(--text); }
+    #image-folder-modal-header button { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1.1rem; }
+    #image-folder-modal-header button:hover { color: var(--text); }
+    #image-folder-modal-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+    #image-folder-modal-footer {
       display: flex; justify-content: flex-end; gap: 8px;
       padding: 12px 20px; border-top: 1px solid var(--border);
     }
@@ -3149,8 +3149,8 @@
       body.sidebar-collapsed #conv-search-wrap { display: block; }
       body.sidebar-collapsed #conv-list { display: block; }
       body.sidebar-collapsed #sidebar-bottom { display: flex; }
-      body.sidebar-collapsed #topics-section { display: block; }
-      body.sidebar-collapsed #topics-divider { display: block; }
+      body.sidebar-collapsed #chat-folders-section { display: block; }
+      body.sidebar-collapsed #chat-folders-divider { display: block; }
 
       /* Chat area: full width, reduced padding */
       #chat-window { padding: 16px 10px 8px; }
@@ -3180,8 +3180,8 @@
         right: 8px;
       }
 
-      /* Topic crumb: compact */
-      #topic-crumb { padding: 0 2px 6px; }
+      /* Folder crumb: compact */
+      #folder-crumb { padding: 0 2px 6px; }
       #ctx-bar-wrap { display: none !important; } /* hide context meter on phone */
 
       /* Mobile header -show with left padding for hamburger */
@@ -3267,7 +3267,7 @@
       /* Modals: wider on mobile */
       #confirm-modal-inner,
       #add-user-modal-inner,
-      #topic-modal-inner { max-width: 96vw; }
+      #folder-modal-inner { max-width: 96vw; }
       #file-modal-inner { width: 100vw !important; height: 100vh !important; max-width: 100vw !important; border-radius: 0; }
       #search-modal > div { max-width: 96vw; }
 
@@ -3285,7 +3285,7 @@
       /* Touch-friendly targets */
       .sb-item { padding: 8px 10px; min-height: 40px; }
       .sb-item-menu { opacity: 1; padding: 4px 8px; } /* Always visible on touch */
-      .topic-menu-btn { opacity: 1; }
+      .folder-menu-btn { opacity: 1; }
       .vault-folder-actions { opacity: 1; }
       .bubble-actions { opacity: 1; pointer-events: auto; }
       .strip-btn { width: 40px; height: 40px; }

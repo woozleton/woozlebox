@@ -168,16 +168,16 @@
       </button>
     </div>
 
-    <!-- Topics section -->
-    <!-- Chat: Topics + Sessions -->
-    <div id="topics-section" class="sb-section">
-      <div id="topics-header" class="sb-section-header">
-        <span>Topics</span>
-        <button id="topic-new-btn" title="New topic">+</button>
+    <!-- Folders section -->
+    <!-- Chat: Folders + Sessions -->
+    <div id="chat-folders-section" class="sb-section">
+      <div id="chat-folders-header" class="sb-section-header">
+        <span>Folders</span>
+        <button id="folder-new-btn" title="New folder">+</button>
       </div>
-      <div id="topics-list"></div>
+      <div id="chat-folders-list"></div>
     </div>
-    <div id="topics-divider" class="sb-divider"></div>
+    <div id="chat-folders-divider" class="sb-divider"></div>
     <div id="conv-header" class="sb-section-header">
       <span>Sessions</span>
       <button id="conv-new-btn" title="New conversation">+</button>
@@ -185,45 +185,45 @@
     <div id="conv-search-wrap" style="display:none"></div>
     <div id="conv-list" class="sb-list"></div>
 
-    <!-- Image Studio: Playgrounds + Sessions -->
-    <div id="playgrounds-section" class="sb-section" style="display:none;">
-      <div id="playgrounds-header" class="sb-section-header">
-        <span>Playgrounds</span>
-        <button id="playground-new-btn" title="New playground">+</button>
+    <!-- Image Studio: Folders + Sessions -->
+    <div id="image-folders-section" class="sb-section" style="display:none;">
+      <div id="image-folders-header" class="sb-section-header">
+        <span>Folders</span>
+        <button id="image-folder-new-btn" title="New folder">+</button>
       </div>
-      <div id="playgrounds-list"></div>
+      <div id="image-folders-list"></div>
     </div>
-    <div id="playgrounds-divider" class="sb-divider" style="display:none;"></div>
+    <div id="image-folders-divider" class="sb-divider" style="display:none;"></div>
     <div id="studio-sessions-header" class="sb-section-header" style="display:none;">
       <span>Sessions</span>
       <button id="studio-new-session-btn" title="New session">+</button>
     </div>
     <div id="studio-sessions-list" class="sb-list" style="display:none;"></div>
 
-    <!-- Music Studio: Collections + Sessions -->
-    <div id="music-collections-section" class="sb-section" style="display:none;">
-      <div id="music-collections-header" class="sb-section-header">
-        <span>Collections</span>
-        <button id="mcol-new-btn" title="New collection">+</button>
+    <!-- Music Studio: Folders + Sessions -->
+    <div id="music-folders-section" class="sb-section" style="display:none;">
+      <div id="music-folders-header" class="sb-section-header">
+        <span>Folders</span>
+        <button id="music-folder-new-btn" title="New folder">+</button>
       </div>
-      <div id="music-collections-list"></div>
+      <div id="music-folders-list"></div>
     </div>
-    <div id="music-collections-divider" class="sb-divider" style="display:none;"></div>
+    <div id="music-folders-divider" class="sb-divider" style="display:none;"></div>
     <div id="music-sessions-header" class="sb-section-header" style="display:none;">
       <span>Sessions</span>
       <button id="music-new-session-btn" title="New session">+</button>
     </div>
     <div id="music-sessions-list" class="sb-list" style="display:none;"></div>
 
-    <!-- Video Studio: Collections + Sessions -->
-    <div id="video-collections-section" class="sb-section" style="display:none;">
-      <div id="video-collections-header" class="sb-section-header">
-        <span>Collections</span>
-        <button id="vcol-new-btn" title="New collection">+</button>
+    <!-- Video Studio: Folders + Sessions -->
+    <div id="video-folders-section" class="sb-section" style="display:none;">
+      <div id="video-folders-header" class="sb-section-header">
+        <span>Folders</span>
+        <button id="video-folder-new-btn" title="New folder">+</button>
       </div>
-      <div id="video-collections-list"></div>
+      <div id="video-folders-list"></div>
     </div>
-    <div id="video-collections-divider" class="sb-divider" style="display:none;"></div>
+    <div id="video-folders-divider" class="sb-divider" style="display:none;"></div>
     <div id="video-sessions-header" class="sb-section-header" style="display:none;">
       <span>Sessions</span>
       <button id="video-new-session-btn" title="New session">+</button>
@@ -265,12 +265,12 @@
     </div>
 
     <div id="input-area">
-      <div id="topic-crumb">
-        <span id="topic-crumb-trigger" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;">
+      <div id="folder-crumb">
+        <span id="folder-crumb-trigger" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;">
           <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
             <path d="M1.5 3.5C1.5 2.948 1.948 2.5 2.5 2.5H6.086a1 1 0 0 1 .707.293L7.914 3.914A1 1 0 0 0 8.621 4.2H13.5c.552 0 1 .448 1 1v7.3c0 .552-.448 1-1 1h-11c-.552 0-1-.448-1-1V3.5z"/>
           </svg>
-          <span id="topic-crumb-name"></span>
+          <span id="folder-crumb-name"></span>
           <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.5;"><polyline points="6 9 12 15 18 9"/></svg>
         </span>
         <div id="ctx-bar-wrap" style="display:none;align-items:center;gap:5px;margin-left:auto;padding-left:10px;font-size:0.7rem;color:var(--text-faint);">
@@ -282,7 +282,7 @@
           <span id="ctx-label">0%</span>
         </div>
       </div>
-      <div id="topic-crumb-menu"></div>
+      <div id="folder-crumb-menu"></div>
       <div id="image-preview-bar"></div>
       <div id="queue-tray"></div>
       <div id="input-box">
@@ -952,7 +952,7 @@
           <!-- Clear All Data -->
           <div class="setting-group">
             <button id="clear-all-data-btn" class="accent-btn danger" style="align-self:flex-start;">Clear All My Data</button>
-            <div class="setting-desc">Delete all conversations, topics, memory, image sessions, and music tracks. Your account and settings are kept.</div>
+            <div class="setting-desc">Delete all conversations, folders, memory, image sessions, and music tracks. Your account and settings are kept.</div>
           </div>
 
           <!-- Delete Account -->
@@ -978,7 +978,7 @@
             <div class="setting-group">
               <div class="setting-label"><span>System Prompt</span></div>
               <textarea id="default-prompt-input" class="setting-input" rows="4" placeholder="You are a personal AI assistant. When relevant context from the user's vault is provided, prioritize it in your answer. Otherwise, answer using your general knowledge."></textarea>
-              <div class="setting-desc">Sets the AI's base behavior. Each topic can override this with its own prompt.</div>
+              <div class="setting-desc">Sets the AI's base behavior. Each folder can override this with its own prompt.</div>
             </div>
             <div class="setting-group">
               <div class="setting-label"><span>Temperature</span><span id="temp-val" class="setting-val">0.20</span></div>
@@ -1502,16 +1502,16 @@
 <div id="ctx-menu">
   <button id="ctx-rename">Rename</button>
   <div id="ctx-move-wrap" style="position:relative;">
-    <button id="ctx-move">Move to Topic ▸</button>
+    <button id="ctx-move">Move to Folder ▸</button>
     <div id="ctx-move-sub" style="display:none;position:absolute;left:100%;top:0;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px;min-width:140px;z-index:1001;"></div>
   </div>
   <button id="ctx-delete" class="danger">Delete</button>
 </div>
 
-<!-- TOPIC CONTEXT MENU -->
-<div id="topic-ctx-menu" style="display:none;position:fixed;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px;z-index:1000;min-width:120px;">
-  <button id="topic-ctx-edit" style="display:block;width:100%;text-align:left;background:none;border:none;color:var(--text-dim);cursor:pointer;padding:6px 12px;font-size:0.82rem;border-radius:5px;">Edit</button>
-  <button id="topic-ctx-delete" style="display:block;width:100%;text-align:left;background:none;border:none;color:var(--danger);cursor:pointer;padding:6px 12px;font-size:0.82rem;border-radius:5px;">Delete</button>
+<!-- FOLDER CONTEXT MENU -->
+<div id="folder-ctx-menu" style="display:none;position:fixed;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px;z-index:1000;min-width:120px;">
+  <button id="folder-ctx-edit" style="display:block;width:100%;text-align:left;background:none;border:none;color:var(--text-dim);cursor:pointer;padding:6px 12px;font-size:0.82rem;border-radius:5px;">Edit</button>
+  <button id="folder-ctx-delete" style="display:block;width:100%;text-align:left;background:none;border:none;color:var(--danger);cursor:pointer;padding:6px 12px;font-size:0.82rem;border-radius:5px;">Delete</button>
 </div>
 
 <!-- CONFIRM MODAL -->
@@ -1566,82 +1566,82 @@
   </div>
 </div>
 
-<!-- TOPIC EDIT MODAL -->
-<div id="topic-modal">
-  <div id="topic-modal-inner">
-    <div id="topic-modal-header">
-      <h3 id="topic-modal-title">New Topic</h3>
-      <button id="topic-modal-close">✕</button>
+<!-- FOLDER EDIT MODAL -->
+<div id="folder-modal">
+  <div id="folder-modal-inner">
+    <div id="folder-modal-header">
+      <h3 id="folder-modal-title">New Folder</h3>
+      <button id="folder-modal-close">✕</button>
     </div>
-    <div id="topic-modal-body">
-      <div class="pm-hint" style="margin-bottom:4px;">Topics organize your conversations and files into separate workspaces. Each topic can have its own AI behavior.</div>
+    <div id="folder-modal-body">
+      <div class="pm-hint" style="margin-bottom:4px;">Folders organize your conversations and files into separate workspaces. Each folder can have its own AI behavior.</div>
       <div class="pm-field">
-        <label class="pm-label" for="pm-name">Name</label>
-        <input type="text" id="pm-name" class="setting-input" placeholder="e.g. Research, Work, Personal" />
+        <label class="pm-label" for="folder-name">Name</label>
+        <input type="text" id="folder-name" class="setting-input" placeholder="e.g. Research, Work, Personal" />
       </div>
       <div class="pm-field">
-        <label class="pm-label" for="pm-desc">Description <span style="font-weight:400;color:var(--text-faint);">(optional)</span></label>
-        <textarea id="pm-desc" class="setting-input" rows="2" placeholder="What this topic is for…"></textarea>
+        <label class="pm-label" for="folder-desc">Description <span style="font-weight:400;color:var(--text-faint);">(optional)</span></label>
+        <textarea id="folder-desc" class="setting-input" rows="2" placeholder="What this folder is for…"></textarea>
       </div>
       <div class="pm-field">
-        <label class="pm-label" for="pm-prompt">System Prompt <span style="font-weight:400;color:var(--text-faint);">(optional)</span></label>
-        <textarea id="pm-prompt" class="setting-input" rows="5" placeholder="Instructions for the AI when working in this topic...&#10;&#10;e.g. Always cite sources. Be precise and concise."></textarea>
-        <div class="pm-hint">Custom AI instructions for every chat in this topic. Leave blank to use the default.</div>
+        <label class="pm-label" for="folder-prompt">System Prompt <span style="font-weight:400;color:var(--text-faint);">(optional)</span></label>
+        <textarea id="folder-prompt" class="setting-input" rows="5" placeholder="Instructions for the AI when working in this folder...&#10;&#10;e.g. Always cite sources. Be precise and concise."></textarea>
+        <div class="pm-hint">Custom AI instructions for every chat in this folder. Leave blank to use the default.</div>
       </div>
     </div>
-    <div id="topic-modal-footer">
-      <button class="pm-cancel" id="pm-cancel">Cancel</button>
-      <button class="pm-save" id="pm-save">Save Topic</button>
+    <div id="folder-modal-footer">
+      <button class="folder-cancel" id="folder-cancel">Cancel</button>
+      <button class="folder-save" id="folder-save">Save Folder</button>
     </div>
   </div>
 </div>
 
-<!-- PLAYGROUND MODAL -->
-<div id="playground-modal">
-  <div id="playground-modal-inner">
-    <div id="playground-modal-header">
-      <h3 id="playground-modal-title">New Playground</h3>
-      <button id="playground-modal-close">✕</button>
+<!-- IMAGE FOLDER MODAL -->
+<div id="image-folder-modal">
+  <div id="image-folder-modal-inner">
+    <div id="image-folder-modal-header">
+      <h3 id="image-folder-modal-title">New Folder</h3>
+      <button id="image-folder-modal-close">✕</button>
     </div>
-    <div id="playground-modal-body">
-      <div class="pm-hint" style="margin-bottom:4px;">Playgrounds organize your generated images into separate collections.</div>
+    <div id="image-folder-modal-body">
+      <div class="pm-hint" style="margin-bottom:4px;">Folders organize your generated images into separate groups.</div>
       <div class="pm-field">
-        <label class="pm-label" for="pg-name">Name</label>
-        <input type="text" id="pg-name" class="setting-input" placeholder="e.g. Landscapes, Portraits, Logos" />
+        <label class="pm-label" for="image-folder-name">Name</label>
+        <input type="text" id="image-folder-name" class="setting-input" placeholder="e.g. Landscapes, Portraits, Logos" />
       </div>
       <div class="pm-field">
-        <label class="pm-label" for="pg-desc">Description <span style="font-weight:400;color:var(--text-faint);">(optional)</span></label>
-        <input type="text" id="pg-desc" class="setting-input" placeholder="What this playground is for…" />
+        <label class="pm-label" for="image-folder-desc">Description <span style="font-weight:400;color:var(--text-faint);">(optional)</span></label>
+        <input type="text" id="image-folder-desc" class="setting-input" placeholder="What this folder is for…" />
       </div>
     </div>
-    <div id="playground-modal-footer">
-      <button class="pm-cancel" id="pg-cancel">Cancel</button>
-      <button class="pm-save" id="pg-save">Create Playground</button>
+    <div id="image-folder-modal-footer">
+      <button class="folder-cancel" id="image-folder-cancel">Cancel</button>
+      <button class="folder-save" id="image-folder-save">Create Folder</button>
     </div>
   </div>
 </div>
 
-<!-- MUSIC COLLECTION MODAL -->
-<div id="mcol-modal">
-  <div id="mcol-modal-inner">
-    <div id="mcol-modal-header">
-      <h3 id="mcol-modal-title">New Collection</h3>
-      <button id="mcol-modal-close">✕</button>
+<!-- MUSIC FOLDER MODAL -->
+<div id="music-folder-modal">
+  <div id="music-folder-modal-inner">
+    <div id="music-folder-modal-header">
+      <h3 id="music-folder-modal-title">New Folder</h3>
+      <button id="music-folder-modal-close">✕</button>
     </div>
-    <div id="mcol-modal-body">
-      <div class="pm-hint" style="margin-bottom:4px;">Collections organize your generated music into separate groups.</div>
+    <div id="music-folder-modal-body">
+      <div class="pm-hint" style="margin-bottom:4px;">Folders organize your generated music into separate groups.</div>
       <div class="pm-field">
-        <label class="pm-label" for="mcol-name">Name</label>
-        <input type="text" id="mcol-name" class="setting-input" placeholder="e.g. Ambient, Pop, Soundtracks" />
+        <label class="pm-label" for="music-folder-name">Name</label>
+        <input type="text" id="music-folder-name" class="setting-input" placeholder="e.g. Ambient, Pop, Soundtracks" />
       </div>
       <div class="pm-field">
-        <label class="pm-label" for="mcol-desc">Description <span style="font-weight:400;color:var(--text-faint);">(optional)</span></label>
-        <input type="text" id="mcol-desc" class="setting-input" placeholder="What this collection is for…" />
+        <label class="pm-label" for="music-folder-desc">Description <span style="font-weight:400;color:var(--text-faint);">(optional)</span></label>
+        <input type="text" id="music-folder-desc" class="setting-input" placeholder="What this folder is for…" />
       </div>
     </div>
-    <div id="mcol-modal-footer">
-      <button class="pm-cancel" id="mcol-cancel">Cancel</button>
-      <button class="pm-save" id="mcol-save">Create Collection</button>
+    <div id="music-folder-modal-footer">
+      <button class="folder-cancel" id="music-folder-cancel">Cancel</button>
+      <button class="folder-save" id="music-folder-save">Create Folder</button>
     </div>
   </div>
 </div>
@@ -2372,13 +2372,13 @@ document.getElementById("change-pw-btn").addEventListener("click", async () => {
 document.getElementById("clear-all-data-btn").addEventListener("click", async () => {
   const confirmed = await showConfirm({
     title: "Clear All Data",
-    message: "This will permanently delete all your conversations, topics, memory, image sessions, music tracks, and video clips. Your account and settings will be kept. Continue?",
+    message: "This will permanently delete all your conversations, folders, memory, image sessions, music tracks, and video clips. Your account and settings will be kept. Continue?",
     okLabel: "Clear Everything",
     okClass: "danger",
   });
   if (!confirmed) return;
   try {
-    // Clear server-side data (conversations, topics, memory)
+    // Clear server-side data (conversations, folders, memory)
     await apiFetch("/users/me/data", { method: "DELETE" });
     // Clear client-side IndexedDB (image studio + music studio + video studio)
     await new Promise((resolve) => { const r = indexedDB.deleteDatabase("diab_studio"); r.onsuccess = resolve; r.onerror = resolve; });
@@ -2387,9 +2387,9 @@ document.getElementById("clear-all-data-btn").addEventListener("click", async ()
     // Clear related localStorage keys
     localStorage.removeItem("diab_studio_session");
     localStorage.removeItem("diab_music_session");
-    localStorage.removeItem("diab_music_collection");
+    localStorage.removeItem("diab_music_folder");
     localStorage.removeItem("diab_video_session");
-    localStorage.removeItem("diab_video_collection");
+    localStorage.removeItem("diab_video_folder");
     showToast("All data cleared.");
     closeSettings();
     loadConversations();
@@ -2408,67 +2408,67 @@ document.getElementById("delete-account-btn").addEventListener("click", async ()
   if (res.ok) { clearSession(); showLoginScreen(); }
 });
 
-// ── Topics ──
-let topics = [];
-let activeTopicId = localStorage.getItem("diab_topic") || null;
-let editingTopicId = null;
-let topicCtxTargetId = null;
+// ── Chat Folders ──
+let chatFolders = [];
+let activeChatFolderId = localStorage.getItem("diab_chat_folder") || null;
+let editingFolderId = null;
+let folderCtxTargetId = null;
 
-async function ensureDefaultTopic() {
-  if (topics.length === 0) {
-    // Auto-create a General topic instead of blocking with a modal
+async function ensureDefaultFolder() {
+  if (chatFolders.length === 0) {
+    // Auto-create a General folder instead of blocking with a modal
     try {
-      const res = await apiFetch("/topics", {
+      const res = await apiFetch("/folders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: "General" }),
       });
       if (res.ok) {
         const created = await res.json();
-        topics.push(created);
+        chatFolders.push(created);
       }
     } catch (_) {}
   }
-  // Always keep activeTopicId valid
-  const valid = topics.find(p => p.id === activeTopicId);
-  if (!valid && topics.length > 0) {
-    activeTopicId = topics[0].id;
-    localStorage.setItem("diab_topic", activeTopicId);
+  // Always keep activeChatFolderId valid
+  const valid = chatFolders.find(p => p.id === activeChatFolderId);
+  if (!valid && chatFolders.length > 0) {
+    activeChatFolderId = chatFolders[0].id;
+    localStorage.setItem("diab_chat_folder", activeChatFolderId);
   }
 }
 
-function updateTopicCrumb() {
-  const p = topics.find(p => p.id === activeTopicId);
-  document.getElementById("topic-crumb-name").textContent = p ? p.name : "";
+function updateFolderCrumb() {
+  const p = chatFolders.find(p => p.id === activeChatFolderId);
+  document.getElementById("folder-crumb-name").textContent = p ? p.name : "";
 }
 
-document.getElementById("topic-crumb-trigger").addEventListener("click", e => {
+document.getElementById("folder-crumb-trigger").addEventListener("click", e => {
   e.stopPropagation();
-  const crumb = document.getElementById("topic-crumb-name");
-  const menu = document.getElementById("topic-crumb-menu");
+  const crumb = document.getElementById("folder-crumb-name");
+  const menu = document.getElementById("folder-crumb-menu");
   const isOpen = menu.classList.contains("open");
   menu.innerHTML = "";
-  topics.forEach(p => {
+  chatFolders.forEach(p => {
     const item = document.createElement("div");
-    item.className = "crumb-menu-item" + (p.id === activeTopicId ? " active" : "");
-    const isActive = p.id === activeTopicId;
+    item.className = "crumb-menu-item" + (p.id === activeChatFolderId ? " active" : "");
+    const isActive = p.id === activeChatFolderId;
     const folderSvg = isActive
       ? `<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" style="flex-shrink:0;"><path d="M1.5 3.5C1.5 2.948 1.948 2.5 2.5 2.5H6.086a1 1 0 0 1 .707.293L7.914 3.914A1 1 0 0 0 8.621 4.2H13.5c.552 0 1 .448 1 1v7.3c0 .552-.448 1-1 1h-11c-.552 0-1-.448-1-1V3.5z"/></svg>`
       : `<svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;"><path d="M1.5 3.5C1.5 2.948 1.948 2.5 2.5 2.5H6.086a1 1 0 0 1 .707.293L7.914 3.914A1 1 0 0 0 8.621 4.2H13.5c.552 0 1 .448 1 1v7.3c0 .552-.448 1-1 1h-11c-.552 0-1-.448-1-1V3.5z" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"/></svg>`;
     item.innerHTML = `${folderSvg}<span style="flex:1;">${esc(p.name)}</span>`;
     item.addEventListener("click", e => {
       e.stopPropagation();
-      activeTopicId = p.id;
-      localStorage.setItem("diab_topic", p.id);
-      renderTopicsSidebar();
-      updateTopicCrumb();
+      activeChatFolderId = p.id;
+      localStorage.setItem("diab_chat_folder", p.id);
+      renderFoldersSidebar();
+      updateFolderCrumb();
       renderSidebar(allConversations, false);
       menu.classList.remove("open");
     });
     menu.appendChild(item);
   });
   if (!isOpen) {
-    const rect = document.getElementById("topic-crumb-trigger").getBoundingClientRect();
+    const rect = document.getElementById("folder-crumb-trigger").getBoundingClientRect();
     menu.style.left = rect.left + "px";
     menu.style.top = (rect.top - 8) + "px";
     menu.style.transform = "translateY(-100%)";
@@ -2477,32 +2477,32 @@ document.getElementById("topic-crumb-trigger").addEventListener("click", e => {
   menu.classList.toggle("open", !isOpen);
 });
 document.addEventListener("click", () => {
-  document.getElementById("topic-crumb-menu").classList.remove("open");
+  document.getElementById("folder-crumb-menu").classList.remove("open");
 });
 
-function renderTopicsSidebar() {
-  const list = document.getElementById("topics-list");
+function renderFoldersSidebar() {
+  const list = document.getElementById("chat-folders-list");
   list.innerHTML = "";
-  topics.forEach(p => {
+  chatFolders.forEach(p => {
     const row = document.createElement("div");
-    row.className = "sb-folder-row topic-row" + (p.id === activeTopicId ? " active" : "");
+    row.className = "sb-folder-row folder-row" + (p.id === activeChatFolderId ? " active" : "");
     row.dataset.id = p.id;
     row.innerHTML = `
-      <svg class="sb-folder-icon topic-row-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg class="sb-folder-icon folder-row-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M1.5 3.5C1.5 2.948 1.948 2.5 2.5 2.5H6.086a1 1 0 0 1 .707.293L7.914 3.914A1 1 0 0 0 8.621 4.2H13.5c.552 0 1 .448 1 1v7.3c0 .552-.448 1-1 1h-11c-.552 0-1-.448-1-1V3.5z" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"/>
       </svg>
-      <div class="sb-folder-info topic-row-info">
-        <div class="sb-folder-name topic-row-name">${esc(p.name)}</div>
-        ${p.description ? `<div class="sb-folder-desc topic-row-desc">${esc(p.description)}</div>` : ""}
+      <div class="sb-folder-info folder-row-info">
+        <div class="sb-folder-name folder-row-name">${esc(p.name)}</div>
+        ${p.description ? `<div class="sb-folder-desc folder-row-desc">${esc(p.description)}</div>` : ""}
       </div>
-      <button class="sb-folder-menu topic-menu-btn" title="Topic options">⋯</button>`;
-    // Click to select (no deselect - a topic is always active)
+      <button class="sb-folder-menu folder-menu-btn" title="Folder options">⋯</button>`;
+    // Click to select (no deselect - a folder is always active)
     row.addEventListener("click", e => {
-      if (e.target.classList.contains("topic-menu-btn")) return;
-      activeTopicId = p.id;
-      localStorage.setItem("diab_topic", p.id);
-      renderTopicsSidebar();
-      updateTopicCrumb();
+      if (e.target.classList.contains("folder-menu-btn")) return;
+      activeChatFolderId = p.id;
+      localStorage.setItem("diab_chat_folder", p.id);
+      renderFoldersSidebar();
+      updateFolderCrumb();
       renderSidebar(allConversations, false);
     });
     // Drag-and-drop target
@@ -2515,23 +2515,23 @@ function renderTopicsSidebar() {
       e.preventDefault();
       row.classList.remove("drag-over");
       const cid = e.dataTransfer.getData("text/plain");
-      if (!cid || p.id === activeTopicId) {
-        // Moving within same topic or to same topic - still reassign
+      if (!cid || p.id === activeChatFolderId) {
+        // Moving within same folder or to same folder - still reassign
       }
       if (!cid) return;
       await apiFetch(`/conversations/${cid}/move`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic_id: p.id }),
+        body: JSON.stringify({ folder_id: p.id }),
       });
-      activeTopicId = p.id;
-      localStorage.setItem("diab_topic", p.id);
+      activeChatFolderId = p.id;
+      localStorage.setItem("diab_chat_folder", p.id);
       await loadConversations();
     });
-    row.querySelector(".topic-menu-btn").addEventListener("click", e => {
+    row.querySelector(".folder-menu-btn").addEventListener("click", e => {
       e.stopPropagation();
-      topicCtxTargetId = p.id;
-      const menu = document.getElementById("topic-ctx-menu");
+      folderCtxTargetId = p.id;
+      const menu = document.getElementById("folder-ctx-menu");
       menu.style.display = "block";
       menu.style.left = e.clientX + "px";
       menu.style.top = Math.min(e.clientY, window.innerHeight - 80) + "px";
@@ -2540,102 +2540,102 @@ function renderTopicsSidebar() {
   });
 }
 
-// Topic context menu
-document.getElementById("topic-ctx-edit").addEventListener("click", () => {
-  const p = topics.find(p => p.id === topicCtxTargetId);
-  if (p) openTopicModal(p);
-  document.getElementById("topic-ctx-menu").style.display = "none";
+// Folder context menu
+document.getElementById("folder-ctx-edit").addEventListener("click", () => {
+  const p = chatFolders.find(p => p.id === folderCtxTargetId);
+  if (p) openFolderModal(p);
+  document.getElementById("folder-ctx-menu").style.display = "none";
 });
-document.getElementById("topic-ctx-delete").addEventListener("click", async () => {
-  if (!topicCtxTargetId) return;
-  document.getElementById("topic-ctx-menu").style.display = "none";
-  if (topics.length <= 1) {
-    showToast("At least one topic must exist.");
+document.getElementById("folder-ctx-delete").addEventListener("click", async () => {
+  if (!folderCtxTargetId) return;
+  document.getElementById("folder-ctx-menu").style.display = "none";
+  if (chatFolders.length <= 1) {
+    showToast("At least one folder must exist.");
     return;
   }
-  const target = topics.find(p => p.id === topicCtxTargetId);
-  const fallback = topics.find(p => p.id !== topicCtxTargetId);
-  const chatCount = allConversations.filter(c => c.topic_id === topicCtxTargetId).length;
+  const target = chatFolders.find(p => p.id === folderCtxTargetId);
+  const fallback = chatFolders.find(p => p.id !== folderCtxTargetId);
+  const chatCount = allConversations.filter(c => c.folder_id === folderCtxTargetId).length;
   const msg = chatCount > 0
     ? `Delete "${target?.name}"? Its ${chatCount} chat${chatCount !== 1 ? "s" : ""} will be moved to "${fallback?.name}".`
-    : `Delete "${target?.name}"? This topic has no chats.`;
-  const confirmed = await showConfirm({ title: "Delete Topic", message: msg });
+    : `Delete "${target?.name}"? This folder has no chats.`;
+  const confirmed = await showConfirm({ title: "Delete Folder", message: msg });
   if (!confirmed) return;
-  // Move all chats from deleted topic to first remaining topic
-  const chatsToMove = allConversations.filter(c => c.topic_id === topicCtxTargetId);
+  // Move all chats from deleted folder to first remaining folder
+  const chatsToMove = allConversations.filter(c => c.folder_id === folderCtxTargetId);
   await Promise.all(chatsToMove.map(c =>
     apiFetch(`/conversations/${c.id}/move`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ topic_id: fallback.id }),
+      body: JSON.stringify({ folder_id: fallback.id }),
     })
   ));
-  await apiFetch(`/topics/${topicCtxTargetId}`, { method: "DELETE" });
-  if (activeTopicId === topicCtxTargetId) {
-    activeTopicId = fallback.id;
-    localStorage.setItem("diab_topic", fallback.id);
+  await apiFetch(`/folders/${folderCtxTargetId}`, { method: "DELETE" });
+  if (activeChatFolderId === folderCtxTargetId) {
+    activeChatFolderId = fallback.id;
+    localStorage.setItem("diab_chat_folder", fallback.id);
   }
-  topicCtxTargetId = null;
+  folderCtxTargetId = null;
   await loadConversations();
 });
 document.addEventListener("click", e => {
-  if (!e.target.closest("#topic-ctx-menu")) {
-    document.getElementById("topic-ctx-menu").style.display = "none";
+  if (!e.target.closest("#folder-ctx-menu")) {
+    document.getElementById("folder-ctx-menu").style.display = "none";
   }
 });
 
-// New topic button
-document.getElementById("topic-new-btn").addEventListener("click", () => openTopicModal(null));
+// New folder button
+document.getElementById("folder-new-btn").addEventListener("click", () => openFolderModal(null));
 
-// Topic modal
-let _topicModalResolve = null;
-function openTopicModal(topic, { required = false } = {}) {
-  editingTopicId = topic ? topic.id : null;
-  document.getElementById("topic-modal-title").textContent = topic ? "Edit Topic" : "New Topic";
-  document.getElementById("pm-name").value = topic?.name || "";
-  document.getElementById("pm-desc").value = topic?.description || "";
-  document.getElementById("pm-prompt").value = topic?.system_prompt || "";
-  // Hide close/cancel when a topic is required
-  document.getElementById("topic-modal-close").style.display = required ? "none" : "";
-  document.getElementById("pm-cancel").style.display = required ? "none" : "";
-  document.getElementById("topic-modal").classList.add("open");
-  document.getElementById("pm-name").focus();
+// Folder modal
+let _folderModalResolve = null;
+function openFolderModal(folder, { required = false } = {}) {
+  editingFolderId = folder ? folder.id : null;
+  document.getElementById("folder-modal-title").textContent = folder ? "Edit Folder" : "New Folder";
+  document.getElementById("folder-name").value = folder?.name || "";
+  document.getElementById("folder-desc").value = folder?.description || "";
+  document.getElementById("folder-prompt").value = folder?.system_prompt || "";
+  // Hide close/cancel when a folder is required
+  document.getElementById("folder-modal-close").style.display = required ? "none" : "";
+  document.getElementById("folder-cancel").style.display = required ? "none" : "";
+  document.getElementById("folder-modal").classList.add("open");
+  document.getElementById("folder-name").focus();
   if (required) {
-    return new Promise(resolve => { _topicModalResolve = resolve; });
+    return new Promise(resolve => { _folderModalResolve = resolve; });
   }
 }
-function closeTopicModal() {
-  document.getElementById("topic-modal").classList.remove("open");
-  document.getElementById("topic-modal-close").style.display = "";
-  document.getElementById("pm-cancel").style.display = "";
-  editingTopicId = null;
-  if (_topicModalResolve) { _topicModalResolve(); _topicModalResolve = null; }
+function closeFolderModal() {
+  document.getElementById("folder-modal").classList.remove("open");
+  document.getElementById("folder-modal-close").style.display = "";
+  document.getElementById("folder-cancel").style.display = "";
+  editingFolderId = null;
+  if (_folderModalResolve) { _folderModalResolve(); _folderModalResolve = null; }
 }
-document.getElementById("topic-modal-close").addEventListener("click", closeTopicModal);
-document.getElementById("pm-cancel").addEventListener("click", closeTopicModal);
-document.getElementById("pm-save").addEventListener("click", async () => {
-  const name = document.getElementById("pm-name").value.trim();
-  if (!name) { document.getElementById("pm-name").focus(); return; }
+document.getElementById("folder-modal-close").addEventListener("click", closeFolderModal);
+document.getElementById("folder-cancel").addEventListener("click", closeFolderModal);
+document.getElementById("folder-save").addEventListener("click", async () => {
+  const name = document.getElementById("folder-name").value.trim();
+  if (!name) { document.getElementById("folder-name").focus(); return; }
   const body = {
     name,
-    description: document.getElementById("pm-desc").value.trim() || null,
-    system_prompt: document.getElementById("pm-prompt").value.trim() || null,
+    description: document.getElementById("folder-desc").value.trim() || null,
+    system_prompt: document.getElementById("folder-prompt").value.trim() || null,
   };
-  if (editingTopicId) {
-    await apiFetch(`/topics/${editingTopicId}`, {
+  if (editingFolderId) {
+    await apiFetch(`/folders/${editingFolderId}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
     });
   } else {
-    const res = await apiFetch(`/topics`, {
+    const res = await apiFetch(`/folders`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
     });
     const data = await res.json();
     if (data.id) {
-      activeTopicId = data.id;
-      localStorage.setItem("diab_topic", data.id);
+      activeChatFolderId = data.id;
+      localStorage.setItem("diab_chat_folder", data.id);
     }
   }
-  closeTopicModal();
+  closeFolderModal();
   await loadConversations();
 });
 
@@ -2708,9 +2708,9 @@ mobileSidebarBackdrop.addEventListener("click", closeMobileSidebar);
 document.getElementById("conv-list").addEventListener("click", (e) => {
   if (isMobile() && e.target.closest(".conv-item")) closeMobileSidebar();
 });
-// Also close on topic click
-document.getElementById("topics-list").addEventListener("click", (e) => {
-  if (isMobile() && e.target.closest(".topic-row")) closeMobileSidebar();
+// Also close on folder click
+document.getElementById("chat-folders-list").addEventListener("click", (e) => {
+  if (isMobile() && e.target.closest(".folder-row")) closeMobileSidebar();
 });
 
 // On resize, clean up mobile state if switching to desktop
@@ -3545,10 +3545,10 @@ document.querySelectorAll(".studio-count-btn").forEach(btn => {
 const STUDIO_DB_NAME = "diab_studio";
 const STUDIO_DB_STORE = "images";
 const STUDIO_FAV_STORE = "favorites";
-const STUDIO_PG_STORE = "playgrounds";
+const IMAGE_FOLDER_STORE = "folders";
 function openStudioDB() {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(STUDIO_DB_NAME, 5);
+    const req = indexedDB.open(STUDIO_DB_NAME, 6);
     req.onupgradeneeded = (e) => {
       const db = req.result;
       if (!db.objectStoreNames.contains(STUDIO_DB_STORE)) {
@@ -3557,8 +3557,8 @@ function openStudioDB() {
       if (!db.objectStoreNames.contains(STUDIO_FAV_STORE)) {
         db.createObjectStore(STUDIO_FAV_STORE, { keyPath: "id" });
       }
-      if (!db.objectStoreNames.contains(STUDIO_PG_STORE)) {
-        db.createObjectStore(STUDIO_PG_STORE, { keyPath: "id" });
+      if (!db.objectStoreNames.contains(IMAGE_FOLDER_STORE)) {
+        db.createObjectStore(IMAGE_FOLDER_STORE, { keyPath: "id" });
       }
       if (!db.objectStoreNames.contains("trash")) {
         db.createObjectStore("trash", { keyPath: "id" });
@@ -3585,36 +3585,36 @@ function openStudioDB() {
   });
 }
 
-// ── Playgrounds CRUD ──
-async function savePlayground(pg) {
+// ── Image Folders CRUD ──
+async function saveImageFolder(pg) {
   const db = await openStudioDB();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(STUDIO_PG_STORE, "readwrite");
-    tx.objectStore(STUDIO_PG_STORE).put(pg);
+    const tx = db.transaction(IMAGE_FOLDER_STORE, "readwrite");
+    tx.objectStore(IMAGE_FOLDER_STORE).put(pg);
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
 }
-async function deletePlayground(id) {
+async function deleteImageFolder(id) {
   const db = await openStudioDB();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(STUDIO_PG_STORE, "readwrite");
-    tx.objectStore(STUDIO_PG_STORE).delete(id);
+    const tx = db.transaction(IMAGE_FOLDER_STORE, "readwrite");
+    tx.objectStore(IMAGE_FOLDER_STORE).delete(id);
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
 }
-async function loadAllPlaygrounds() {
+async function loadAllImageFolders() {
   const db = await openStudioDB();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(STUDIO_PG_STORE, "readonly");
-    const req = tx.objectStore(STUDIO_PG_STORE).getAll();
+    const tx = db.transaction(IMAGE_FOLDER_STORE, "readonly");
+    const req = tx.objectStore(IMAGE_FOLDER_STORE).getAll();
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
 }
-let studioPlaygrounds = [];
-let activePlaygroundId = localStorage.getItem("diab_playground") || null;
+let imageFolders = [];
+let activeImageFolderId = localStorage.getItem("diab_image_folder") || null;
 async function saveStudioImage(record) {
   const db = await openStudioDB();
   return new Promise((resolve, reject) => {
@@ -4014,7 +4014,7 @@ studioLightbox.querySelector(".lb-del").addEventListener("click", async e => {
     const rec = await new Promise(r => { const tx = db.transaction(STUDIO_DB_STORE, "readonly"); const g = tx.objectStore(STUDIO_DB_STORE).get(img.recordId); g.onsuccess = () => r(g.result); });
     if (rec) {
       const imgData = rec.images[img.imgIdx];
-      if (imgData) await saveToTrash({ id: _makeTrashId(), deletedAt: Date.now(), image: imgData.image, rawPrompt: rec.rawPrompt, body: rec.body, model: imgData.model, width: imgData.width, height: imgData.height, session_id: rec.session_id, playground_id: rec.playground_id });
+      if (imgData) await saveToTrash({ id: _makeTrashId(), deletedAt: Date.now(), image: imgData.image, rawPrompt: rec.rawPrompt, body: rec.body, model: imgData.model, width: imgData.width, height: imgData.height, session_id: rec.session_id, folder_id: rec.folder_id });
       _refreshTrashBadge();
       // New transaction for the update/delete
       rec.images.splice(img.imgIdx, 1);
@@ -4332,7 +4332,7 @@ _inpaint.saveBtn.addEventListener("click", async () => {
     rawPrompt: prompt,
     body: { prompt, negative_prompt: _inpaint.body.negative_prompt || "", inpaint: true, source_record: _inpaint.recordId },
     timestamp: Date.now(),
-    playground_id: activePlaygroundId,
+    folder_id: activeImageFolderId,
     session_id: activeStudioSessionId,
   };
   await saveStudioImage(newRecord);
@@ -4629,7 +4629,7 @@ async function restoreStudioImages(forceReload = false) {
   try {
     const records = await loadAllStudioImages();
     const filtered = records.filter(r =>
-      (r.playground_id || null) === (activePlaygroundId || null) &&
+      (r.folder_id || null) === (activeImageFolderId || null) &&
       (!activeStudioSessionId || r.session_id === activeStudioSessionId)
     );
     filtered.sort((a, b) => a.timestamp - b.timestamp);
@@ -5018,28 +5018,28 @@ function setView(view) {
   $("video-sidebar-btn").classList.toggle("active", view === "video");
 
   // Chat sections
-  $("topics-section").style.display = view === "chat" ? "" : "none";
-  $("topics-divider").style.display = view === "chat" ? "" : "none";
+  $("chat-folders-section").style.display = view === "chat" ? "" : "none";
+  $("chat-folders-divider").style.display = view === "chat" ? "" : "none";
   $("conv-header").style.display = view === "chat" ? "" : "none";
   $("conv-list").style.display = view === "chat" ? "" : "none";
   const csw = $("conv-search-wrap");
   if (csw) csw.style.display = view === "chat" ? "" : "none";
 
   // Image Studio sections
-  $("playgrounds-section").style.display = view === "studio" ? "" : "none";
-  $("playgrounds-divider").style.display = view === "studio" ? "" : "none";
+  $("image-folders-section").style.display = view === "studio" ? "" : "none";
+  $("image-folders-divider").style.display = view === "studio" ? "" : "none";
   $("studio-sessions-header").style.display = view === "studio" ? "" : "none";
   $("studio-sessions-list").style.display = view === "studio" ? "" : "none";
 
   // Music Studio sections
-  $("music-collections-section").style.display = view === "music" ? "" : "none";
-  $("music-collections-divider").style.display = view === "music" ? "" : "none";
+  $("music-folders-section").style.display = view === "music" ? "" : "none";
+  $("music-folders-divider").style.display = view === "music" ? "" : "none";
   $("music-sessions-header").style.display = view === "music" ? "" : "none";
   $("music-sessions-list").style.display = view === "music" ? "" : "none";
 
   // Video Studio sections
-  $("video-collections-section").style.display = view === "video" ? "" : "none";
-  $("video-collections-divider").style.display = view === "video" ? "" : "none";
+  $("video-folders-section").style.display = view === "video" ? "" : "none";
+  $("video-folders-divider").style.display = view === "video" ? "" : "none";
   $("video-sessions-header").style.display = view === "video" ? "" : "none";
   $("video-sessions-list").style.display = view === "video" ? "" : "none";
 
@@ -5188,7 +5188,7 @@ async function prepareModelsForView(view) {
 function showStudio() {
   setView("studio");
   loadStudioModels();
-  loadPlaygrounds();
+  loadImageFolders();
   _refreshTrashBadge();
   restoreStudioImages();
   initFavCount();
@@ -5202,7 +5202,7 @@ function hideStudio() {
 
 function showMusicStudio() {
   setView("music");
-  loadMusicCollections();
+  loadMusicFolders();
   renderMusicSessionsList();
   _ensureMusicSession();
   restoreMusicTracks();
@@ -5222,7 +5222,7 @@ function hideMusicStudio() {
 
 function showVideoStudio() {
   setView("video");
-  loadVideoCollections();
+  loadVideoFolders();
   renderVideoSessionsList();
   _ensureVideoSession();
   restoreVideoClips();
@@ -5276,8 +5276,8 @@ const musicFavCountLabel = document.getElementById("music-fav-count-label");
 
 // ── Music IndexedDB ──
 const MUSIC_DB_NAME = "diab_music";
-const MUSIC_DB_VER = 3;
-const MUSIC_COL_STORE = "collections";
+const MUSIC_DB_VER = 4;
+const MUSIC_FOLDER_STORE = "folders";
 function openMusicDB() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(MUSIC_DB_NAME, MUSIC_DB_VER);
@@ -5286,8 +5286,8 @@ function openMusicDB() {
       if (!db.objectStoreNames.contains("tracks")) db.createObjectStore("tracks", { keyPath: "id" });
       if (!db.objectStoreNames.contains("favorites")) db.createObjectStore("favorites", { keyPath: "id" });
       if (!db.objectStoreNames.contains("trash")) db.createObjectStore("trash", { keyPath: "id" });
-      if (!db.objectStoreNames.contains(MUSIC_COL_STORE)) db.createObjectStore(MUSIC_COL_STORE, { keyPath: "id" });
-      // v3 migration: assign collection_id to existing tracks
+      if (!db.objectStoreNames.contains(MUSIC_FOLDER_STORE)) db.createObjectStore(MUSIC_FOLDER_STORE, { keyPath: "id" });
+      // v3 migration: assign folder_id to existing tracks
       if (e.oldVersion < 3 && db.objectStoreNames.contains("tracks")) {
         try {
           const tx = req.transaction;
@@ -5296,7 +5296,7 @@ function openMusicDB() {
             const cursor = ev.target.result;
             if (cursor) {
               const rec = cursor.value;
-              if (!rec.collection_id) { rec.collection_id = null; cursor.update(rec); }
+              if (!rec.folder_id) { rec.folder_id = null; cursor.update(rec); }
               cursor.continue();
             }
           };
@@ -5408,36 +5408,36 @@ function _makeMusicTrashId() {
   return "mtrash_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
 }
 
-// ── Music collections CRUD ──
-async function saveMusicCollection(col) {
+// ── Music Folders CRUD ──
+async function saveMusicFolder(col) {
   const db = await openMusicDB();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(MUSIC_COL_STORE, "readwrite");
-    tx.objectStore(MUSIC_COL_STORE).put(col);
+    const tx = db.transaction(MUSIC_FOLDER_STORE, "readwrite");
+    tx.objectStore(MUSIC_FOLDER_STORE).put(col);
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
 }
-async function deleteMusicCollection(id) {
+async function deleteMusicFolder(id) {
   const db = await openMusicDB();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(MUSIC_COL_STORE, "readwrite");
-    tx.objectStore(MUSIC_COL_STORE).delete(id);
+    const tx = db.transaction(MUSIC_FOLDER_STORE, "readwrite");
+    tx.objectStore(MUSIC_FOLDER_STORE).delete(id);
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
 }
-async function loadAllMusicCollections() {
+async function loadAllMusicFolders() {
   const db = await openMusicDB();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(MUSIC_COL_STORE, "readonly");
-    const req = tx.objectStore(MUSIC_COL_STORE).getAll();
+    const tx = db.transaction(MUSIC_FOLDER_STORE, "readonly");
+    const req = tx.objectStore(MUSIC_FOLDER_STORE).getAll();
     req.onsuccess = () => resolve(req.result || []);
     req.onerror = () => reject(req.error);
   });
 }
-let musicCollections = [];
-let activeCollectionId = localStorage.getItem("diab_music_collection") || null;
+let musicFolders = [];
+let activeMusicFolderId = localStorage.getItem("diab_music_folder") || null;
 
 // ── Music sessions ──
 let activeMusicSessionId = localStorage.getItem("diab_music_session") || null;
@@ -5460,8 +5460,8 @@ async function _getMusicSessions() {
   const tracks = await loadAllMusicTracks();
   const map = {};
   for (const t of tracks) {
-    // Filter by active collection
-    if ((t.collection_id || null) !== (activeCollectionId || null)) continue;
+    // Filter by active music folder
+    if ((t.folder_id || null) !== (activeMusicFolderId || null)) continue;
     const sid = t.session_id || "default";
     if (!map[sid]) map[sid] = { session_id: sid, records: [], firstPrompt: "", latestTimestamp: 0, trackCount: 0 };
     map[sid].records.push(t);
@@ -5522,7 +5522,7 @@ function _makeMusicSessionItem(sess) {
 }
 
 function _showMusicSessionMenu(sess, itemEl, e) {
-  document.querySelectorAll(".ctx-menu, .mcol-sub-menu").forEach(m => m.remove());
+  document.querySelectorAll(".ctx-menu, .music-folder-sub-menu").forEach(m => m.remove());
   const menu = document.createElement("div");
   menu.className = "ctx-menu";
   menu.style.cssText = `position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:4px;min-width:160px;box-shadow:0 8px 24px rgba(0,0,0,0.3);`;
@@ -5551,23 +5551,23 @@ function _showMusicSessionMenu(sess, itemEl, e) {
   });
   menu.appendChild(renameItem);
 
-  // Move to Collection
-  if (musicCollections.length > 1) {
+  // Move to Folder
+  if (musicFolders.length > 1) {
     const moveWrap = document.createElement("div");
     moveWrap.style.position = "relative";
     const moveBtn = document.createElement("div");
     moveBtn.style.cssText = "padding:6px 12px;cursor:pointer;font-size:0.8rem;border-radius:6px;color:var(--text-dim);display:flex;align-items:center;justify-content:space-between;";
-    moveBtn.innerHTML = `Move to Collection <span>&#x25B8;</span>`;
+    moveBtn.innerHTML = `Move to Folder <span>&#x25B8;</span>`;
     moveBtn.addEventListener("mouseenter", () => {
       moveBtn.style.background = "var(--surface2)";
-      document.querySelectorAll(".mcol-sub-menu").forEach(m => m.remove());
+      document.querySelectorAll(".music-folder-sub-menu").forEach(m => m.remove());
       const sub = document.createElement("div");
-      sub.className = "mcol-sub-menu";
+      sub.className = "music-folder-sub-menu";
       sub.style.cssText = `position:fixed;z-index:1000;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:4px;box-shadow:0 8px 24px rgba(0,0,0,0.4);min-width:140px;`;
       const menuRect = menu.getBoundingClientRect();
       sub.style.left = (menuRect.right + 2) + "px";
       sub.style.top = moveBtn.getBoundingClientRect().top + "px";
-      musicCollections.filter(c => c.id !== activeCollectionId).forEach(col => {
+      musicFolders.filter(c => c.id !== activeMusicFolderId).forEach(col => {
         const item = document.createElement("div");
         item.style.cssText = "padding:6px 12px;cursor:pointer;font-size:0.78rem;border-radius:6px;color:var(--text-dim);";
         item.textContent = col.name;
@@ -5579,7 +5579,7 @@ function _showMusicSessionMenu(sess, itemEl, e) {
             const db = await openMusicDB();
             const tx = db.transaction("tracks", "readwrite");
             const store = tx.objectStore("tracks");
-            for (const rec of sess.records) { rec.collection_id = col.id; store.put(rec); }
+            for (const rec of sess.records) { rec.folder_id = col.id; store.put(rec); }
             await new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = rej; });
             sess.records.forEach(rec => {
               const el = musicCanvas.querySelector(`.music-result[data-music-id="${rec.id}"]`);
@@ -5612,7 +5612,7 @@ function _showMusicSessionMenu(sess, itemEl, e) {
         body: rec.body, coverArt: rec.coverArt || null, duration: rec.duration, elapsed_s: rec.elapsed_s,
         model: rec.model, seed: rec.seed, sample_rate: rec.sample_rate,
         format: rec.format || "mp3",
-        session_id: rec.session_id, collection_id: rec.collection_id,
+        session_id: rec.session_id, folder_id: rec.folder_id,
       });
       await deleteMusicTrack(rec.id);
     }
@@ -5631,8 +5631,8 @@ function _showMusicSessionMenu(sess, itemEl, e) {
   menu.style.left = rect.left + "px";
   document.body.appendChild(menu);
   const _closeMenu = (ev) => {
-    if (!menu.contains(ev.target) && !document.querySelector(".mcol-sub-menu")?.contains(ev.target)) {
-      menu.remove(); document.querySelectorAll(".mcol-sub-menu").forEach(m => m.remove());
+    if (!menu.contains(ev.target) && !document.querySelector(".music-folder-sub-menu")?.contains(ev.target)) {
+      menu.remove(); document.querySelectorAll(".music-folder-sub-menu").forEach(m => m.remove());
       document.removeEventListener("click", _closeMenu);
     }
   };
@@ -5647,46 +5647,46 @@ document.getElementById("music-new-session-btn").addEventListener("click", () =>
   musicPrompt.focus();
 });
 
-// ── Music collections ──
-async function loadMusicCollections() {
+// ── Music Folders ──
+async function loadMusicFolders() {
   try {
-    musicCollections = await loadAllMusicCollections();
-    if (musicCollections.length === 0) {
-      const defaultCol = { id: "mcol_" + Date.now(), name: "My Music", timestamp: Date.now() };
-      await saveMusicCollection(defaultCol);
-      musicCollections = [defaultCol];
+    musicFolders = await loadAllMusicFolders();
+    if (musicFolders.length === 0) {
+      const defaultCol = { id: "mfolder_" + Date.now(), name: "My Music", timestamp: Date.now() };
+      await saveMusicFolder(defaultCol);
+      musicFolders = [defaultCol];
     }
-    if (!activeCollectionId || !musicCollections.find(c => c.id === activeCollectionId)) {
-      activeCollectionId = musicCollections[0].id;
-      localStorage.setItem("diab_music_collection", activeCollectionId);
+    if (!activeMusicFolderId || !musicFolders.find(c => c.id === activeMusicFolderId)) {
+      activeMusicFolderId = musicFolders[0].id;
+      localStorage.setItem("diab_music_folder", activeMusicFolderId);
     }
-    renderMusicCollectionsSidebar();
-  } catch (e) { console.warn("Failed to load music collections:", e); }
+    renderMusicFoldersSidebar();
+  } catch (e) { console.warn("Failed to load music folders:", e); }
 }
 
-function renderMusicCollectionsSidebar() {
-  const list = document.getElementById("music-collections-list");
+function renderMusicFoldersSidebar() {
+  const list = document.getElementById("music-folders-list");
   if (!list) return;
   list.innerHTML = "";
-  musicCollections.forEach(col => {
+  musicFolders.forEach(col => {
     const row = document.createElement("div");
-    row.className = "sb-folder-row mcol-row" + (col.id === activeCollectionId ? " active" : "");
+    row.className = "sb-folder-row music-folder-row" + (col.id === activeMusicFolderId ? " active" : "");
     row.dataset.id = col.id;
-    const iconSvg = `<svg class="sb-folder-icon mcol-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
-    row.innerHTML = `${iconSvg}<div class="sb-folder-info mcol-row-info"><div class="sb-folder-name mcol-row-name">${esc(col.name)}</div>${col.description ? `<div class="sb-folder-desc mcol-row-desc">${esc(col.description)}</div>` : ""}</div><button class="sb-folder-menu mcol-menu-btn" title="Options">⋯</button>`;
+    const iconSvg = `<svg class="sb-folder-icon music-folder-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
+    row.innerHTML = `${iconSvg}<div class="sb-folder-info music-folder-row-info"><div class="sb-folder-name music-folder-row-name">${esc(col.name)}</div>${col.description ? `<div class="sb-folder-desc music-folder-row-desc">${esc(col.description)}</div>` : ""}</div><button class="sb-folder-menu music-folder-menu-btn" title="Options">⋯</button>`;
     row.addEventListener("click", e => {
-      if (e.target.classList.contains("mcol-menu-btn")) return;
-      if (col.id === activeCollectionId) return;
-      activeCollectionId = col.id;
-      localStorage.setItem("diab_music_collection", col.id);
-      renderMusicCollectionsSidebar();
+      if (e.target.classList.contains("music-folder-menu-btn")) return;
+      if (col.id === activeMusicFolderId) return;
+      activeMusicFolderId = col.id;
+      localStorage.setItem("diab_music_folder", col.id);
+      renderMusicFoldersSidebar();
       // Reset session and reload
       activeMusicSessionId = null;
       localStorage.removeItem("diab_music_session");
       restoreMusicTracks();
       renderMusicSessionsList();
     });
-    row.querySelector(".mcol-menu-btn").addEventListener("click", e => {
+    row.querySelector(".music-folder-menu-btn").addEventListener("click", e => {
       e.stopPropagation();
       showMusicColCtxMenu(col, e);
     });
@@ -5710,7 +5710,7 @@ function renderMusicCollectionsSidebar() {
         const tx = db.transaction("tracks", "readwrite");
         const store = tx.objectStore("tracks");
         for (const rec of matching) {
-          rec.collection_id = col.id;
+          rec.folder_id = col.id;
           store.put(rec);
         }
         await new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = rej; });
@@ -5727,28 +5727,28 @@ function renderMusicCollectionsSidebar() {
 }
 
 function showMusicColCtxMenu(col, e) {
-  document.querySelectorAll(".mcol-ctx-menu").forEach(el => el.remove());
+  document.querySelectorAll(".music-folder-ctx-menu").forEach(el => el.remove());
   const menu = document.createElement("div");
-  menu.className = "mcol-ctx-menu";
+  menu.className = "music-folder-ctx-menu";
   menu.style.cssText = `position:fixed;z-index:999;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:4px;box-shadow:0 8px 24px rgba(0,0,0,0.4);min-width:120px;`;
   menu.innerHTML = `
-    <div class="mcol-ctx-item" data-action="rename" style="padding:6px 12px;cursor:pointer;font-size:0.8rem;border-radius:6px;color:var(--text-dim);">Edit</div>
-    <div class="mcol-ctx-item" data-action="delete" style="padding:6px 12px;cursor:pointer;font-size:0.8rem;border-radius:6px;color:var(--danger);">Delete</div>
+    <div class="music-folder-ctx-item" data-action="rename" style="padding:6px 12px;cursor:pointer;font-size:0.8rem;border-radius:6px;color:var(--text-dim);">Edit</div>
+    <div class="music-folder-ctx-item" data-action="delete" style="padding:6px 12px;cursor:pointer;font-size:0.8rem;border-radius:6px;color:var(--danger);">Delete</div>
   `;
   menu.style.left = e.clientX + "px";
   menu.style.top = Math.min(e.clientY, window.innerHeight - 80) + "px";
   document.body.appendChild(menu);
   menu.querySelector('[data-action="rename"]').addEventListener("click", () => {
     menu.remove();
-    openMusicColModal(col);
+    openMusicFolderModal(col);
   });
   menu.querySelector('[data-action="delete"]').addEventListener("click", async () => {
     menu.remove();
-    if (musicCollections.length <= 1) { showToast("At least one collection must exist."); return; }
-    const confirmed = await showConfirm({ title: "Delete Collection", message: `Delete "${col.name}"? All tracks will be moved to trash.` });
+    if (musicFolders.length <= 1) { showToast("At least one folder must exist."); return; }
+    const confirmed = await showConfirm({ title: "Delete Folder", message: `Delete "${col.name}"? All tracks will be moved to trash.` });
     if (!confirmed) return;
     const allTracks = await loadAllMusicTracks();
-    const toDelete = allTracks.filter(r => r.collection_id === col.id);
+    const toDelete = allTracks.filter(r => r.folder_id === col.id);
     for (const t of toDelete) {
       await saveMusicToTrash({
         id: _makeMusicTrashId(), deletedAt: Date.now(),
@@ -5756,24 +5756,24 @@ function showMusicColCtxMenu(col, e) {
         body: t.body, coverArt: t.coverArt || null, duration: t.duration, elapsed_s: t.elapsed_s,
         model: t.model, seed: t.seed, sample_rate: t.sample_rate,
         format: t.format || "mp3",
-        session_id: t.session_id, collection_id: t.collection_id,
+        session_id: t.session_id, folder_id: t.folder_id,
       });
       await deleteMusicTrack(t.id);
     }
     _refreshMusicTrashBadge();
-    await deleteMusicCollection(col.id);
-    musicCollections = musicCollections.filter(c => c.id !== col.id);
-    if (activeCollectionId === col.id) {
-      activeCollectionId = musicCollections[0].id;
-      localStorage.setItem("diab_music_collection", activeCollectionId);
+    await deleteMusicFolder(col.id);
+    musicFolders = musicFolders.filter(c => c.id !== col.id);
+    if (activeMusicFolderId === col.id) {
+      activeMusicFolderId = musicFolders[0].id;
+      localStorage.setItem("diab_music_folder", activeMusicFolderId);
     }
-    renderMusicCollectionsSidebar();
+    renderMusicFoldersSidebar();
     activeMusicSessionId = null;
     localStorage.removeItem("diab_music_session");
     restoreMusicTracks();
     renderMusicSessionsList();
   });
-  menu.querySelectorAll(".mcol-ctx-item").forEach(item => {
+  menu.querySelectorAll(".music-folder-ctx-item").forEach(item => {
     item.addEventListener("mouseenter", () => item.style.background = "var(--surface2)");
     item.addEventListener("mouseleave", () => item.style.background = "");
   });
@@ -5785,52 +5785,52 @@ function showMusicColCtxMenu(col, e) {
   }, 10);
 }
 
-// Music collection modal
-let _editingCollectionId = null;
-function openMusicColModal(col) {
-  _editingCollectionId = col ? col.id : null;
-  document.getElementById("mcol-modal-title").textContent = col ? "Edit Collection" : "New Collection";
-  document.getElementById("mcol-name").value = col?.name || "";
-  document.getElementById("mcol-desc").value = col?.description || "";
-  document.getElementById("mcol-save").textContent = col ? "Save" : "Create Collection";
-  document.getElementById("mcol-modal").classList.add("open");
-  document.getElementById("mcol-name").focus();
+// Music Folder modal
+let _editingMusicFolderId = null;
+function openMusicFolderModal(col) {
+  _editingMusicFolderId = col ? col.id : null;
+  document.getElementById("music-folder-modal-title").textContent = col ? "Edit Folder" : "New Folder";
+  document.getElementById("music-folder-name").value = col?.name || "";
+  document.getElementById("music-folder-desc").value = col?.description || "";
+  document.getElementById("music-folder-save").textContent = col ? "Save" : "Create Folder";
+  document.getElementById("music-folder-modal").classList.add("open");
+  document.getElementById("music-folder-name").focus();
 }
-function closeMusicColModal() {
-  document.getElementById("mcol-modal").classList.remove("open");
-  _editingCollectionId = null;
+function closeMusicFolderModal() {
+  document.getElementById("music-folder-modal").classList.remove("open");
+  _editingMusicFolderId = null;
 }
-document.getElementById("mcol-modal-close").addEventListener("click", closeMusicColModal);
-document.getElementById("mcol-cancel").addEventListener("click", closeMusicColModal);
-document.getElementById("mcol-modal").addEventListener("click", (e) => {
-  if (e.target === e.currentTarget) closeMusicColModal();
+document.getElementById("music-folder-modal-close").addEventListener("click", closeMusicFolderModal);
+document.getElementById("music-folder-cancel").addEventListener("click", closeMusicFolderModal);
+document.getElementById("music-folder-modal").addEventListener("click", (e) => {
+  if (e.target === e.currentTarget) closeMusicFolderModal();
 });
-document.getElementById("mcol-name").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") document.getElementById("mcol-save").click();
-  if (e.key === "Escape") closeMusicColModal();
+document.getElementById("music-folder-name").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") document.getElementById("music-folder-save").click();
+  if (e.key === "Escape") closeMusicFolderModal();
 });
-document.getElementById("mcol-save").addEventListener("click", async () => {
-  const name = document.getElementById("mcol-name").value.trim();
-  const description = document.getElementById("mcol-desc").value.trim() || "";
-  if (!name) { document.getElementById("mcol-name").focus(); return; }
-  if (_editingCollectionId) {
-    const col = musicCollections.find(c => c.id === _editingCollectionId);
-    if (col) { col.name = name; col.description = description; await saveMusicCollection(col); }
+document.getElementById("music-folder-save").addEventListener("click", async () => {
+  const name = document.getElementById("music-folder-name").value.trim();
+  const description = document.getElementById("music-folder-desc").value.trim() || "";
+  if (!name) { document.getElementById("music-folder-name").focus(); return; }
+  if (_editingMusicFolderId) {
+    const col = musicFolders.find(c => c.id === _editingMusicFolderId);
+    if (col) { col.name = name; col.description = description; await saveMusicFolder(col); }
   } else {
-    const col = { id: "mcol_" + Date.now(), name, description, timestamp: Date.now() };
-    await saveMusicCollection(col);
-    musicCollections.push(col);
-    activeCollectionId = col.id;
-    localStorage.setItem("diab_music_collection", col.id);
+    const col = { id: "mfolder_" + Date.now(), name, description, timestamp: Date.now() };
+    await saveMusicFolder(col);
+    musicFolders.push(col);
+    activeMusicFolderId = col.id;
+    localStorage.setItem("diab_music_folder", col.id);
     activeMusicSessionId = null;
     localStorage.removeItem("diab_music_session");
     restoreMusicTracks();
     renderMusicSessionsList();
   }
-  closeMusicColModal();
-  renderMusicCollectionsSidebar();
+  closeMusicFolderModal();
+  renderMusicFoldersSidebar();
 });
-document.getElementById("mcol-new-btn").addEventListener("click", () => openMusicColModal(null));
+document.getElementById("music-folder-new-btn").addEventListener("click", () => openMusicFolderModal(null));
 
 // ── Music favorites panel ──
 function updateMusicFavCount(count) {
@@ -6382,7 +6382,7 @@ function createMusicResultCard(record) {
       body: record.body, coverArt: record.coverArt || null, duration: record.duration, elapsed_s: record.elapsed_s,
       model: record.model, seed: record.seed, sample_rate: record.sample_rate,
       format: record.format || "mp3",
-      session_id: record.session_id, collection_id: record.collection_id,
+      session_id: record.session_id, folder_id: record.folder_id,
     });
     await deleteMusicTrack(record.id);
     _refreshMusicTrashBadge();
@@ -6401,7 +6401,7 @@ async function restoreMusicTracks() {
   try {
     const tracks = await loadAllMusicTracks();
     const filtered = tracks.filter(t =>
-      (t.collection_id || null) === (activeCollectionId || null) &&
+      (t.folder_id || null) === (activeMusicFolderId || null) &&
       (!activeMusicSessionId || t.session_id === activeMusicSessionId)
     );
     const sessionTracks = filtered;
@@ -6566,7 +6566,7 @@ async function musicGenerate() {
       const record = {
         id: "music_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6) + "_" + i,
         session_id: sessionId,
-        collection_id: activeCollectionId || null,
+        folder_id: activeMusicFolderId || null,
         rawPrompt: rawPrompt,
         title: songTitle || null,
         lyrics: lyrics || (instrumental ? "[Instrumental]" : null),
@@ -6770,7 +6770,7 @@ async function _restoreFromMusicTrash(item) {
   const record = {
     id: "music_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
     session_id: item.session_id || _ensureMusicSession(),
-    collection_id: item.collection_id || activeCollectionId || null,
+    folder_id: item.folder_id || activeMusicFolderId || null,
     rawPrompt: item.rawPrompt,
     title: item.title || null,
     lyrics: item.lyrics,
@@ -6786,8 +6786,8 @@ async function _restoreFromMusicTrash(item) {
     timestamp: Date.now(),
   };
   await saveMusicTrack(record);
-  // If restored to active collection, re-render
-  if ((record.collection_id || null) === (activeCollectionId || null)) {
+  // If restored to active music folder, re-render
+  if ((record.folder_id || null) === (activeMusicFolderId || null)) {
     musicCanvas.appendChild(createMusicResultCard(record));
     musicCanvasEmpty.style.display = "none";
     renderMusicSessionsList();
@@ -6833,8 +6833,8 @@ let _videoStartingImage = null; // base64 for I2V
 
 // ── Video IndexedDB ──
 const VIDEO_DB_NAME = "diab_video";
-const VIDEO_DB_VER = 1;
-const VIDEO_COL_STORE = "vcollections";
+const VIDEO_DB_VER = 2;
+const VIDEO_FOLDER_STORE = "folders";
 function openVideoDB() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(VIDEO_DB_NAME, VIDEO_DB_VER);
@@ -6843,7 +6843,7 @@ function openVideoDB() {
       if (!db.objectStoreNames.contains("videos")) db.createObjectStore("videos", { keyPath: "id" });
       if (!db.objectStoreNames.contains("favorites")) db.createObjectStore("favorites", { keyPath: "id" });
       if (!db.objectStoreNames.contains("trash")) db.createObjectStore("trash", { keyPath: "id" });
-      if (!db.objectStoreNames.contains(VIDEO_COL_STORE)) db.createObjectStore(VIDEO_COL_STORE, { keyPath: "id" });
+      if (!db.objectStoreNames.contains(VIDEO_FOLDER_STORE)) db.createObjectStore(VIDEO_FOLDER_STORE, { keyPath: "id" });
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -6960,39 +6960,39 @@ async function emptyVideoTrash() {
   });
 }
 
-async function saveVideoCollection(col) {
+async function saveVideoFolder(col) {
   const db = await openVideoDB();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(VIDEO_COL_STORE, "readwrite");
-    tx.objectStore(VIDEO_COL_STORE).put(col);
+    const tx = db.transaction(VIDEO_FOLDER_STORE, "readwrite");
+    tx.objectStore(VIDEO_FOLDER_STORE).put(col);
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
 }
 
-async function deleteVideoCollection(id) {
+async function deleteVideoFolder(id) {
   const db = await openVideoDB();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(VIDEO_COL_STORE, "readwrite");
-    tx.objectStore(VIDEO_COL_STORE).delete(id);
+    const tx = db.transaction(VIDEO_FOLDER_STORE, "readwrite");
+    tx.objectStore(VIDEO_FOLDER_STORE).delete(id);
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
 }
 
-async function loadAllVideoCollections() {
+async function loadAllVideoFolders() {
   const db = await openVideoDB();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(VIDEO_COL_STORE, "readonly");
-    const req = tx.objectStore(VIDEO_COL_STORE).getAll();
+    const tx = db.transaction(VIDEO_FOLDER_STORE, "readonly");
+    const req = tx.objectStore(VIDEO_FOLDER_STORE).getAll();
     req.onsuccess = () => resolve(req.result || []);
     req.onerror = () => reject(req.error);
   });
 }
 
-// ── Video sessions & collections ──
-let videoCollections = [];
-let activeVideoCollectionId = localStorage.getItem("diab_video_collection") || null;
+// ── Video sessions & folders ──
+let videoFolders = [];
+let activeVideoFolderId = localStorage.getItem("diab_video_folder") || null;
 let activeVideoSessionId = localStorage.getItem("diab_video_session") || null;
 
 function _newVideoSessionId() {
@@ -7012,8 +7012,8 @@ async function _getVideoSessions() {
   const clips = await loadAllVideoClips();
   const map = {};
   for (const c of clips) {
-    if (activeVideoCollectionId && c.collection_id !== activeVideoCollectionId) continue;
-    if (!activeVideoCollectionId && c.collection_id) continue;
+    if (activeVideoFolderId && c.folder_id !== activeVideoFolderId) continue;
+    if (!activeVideoFolderId && c.folder_id) continue;
     const sid = c.session_id || "default";
     if (!map[sid]) map[sid] = { id: sid, clips: [], title: null, ts: 0 };
     map[sid].clips.push(c);
@@ -7055,31 +7055,31 @@ async function renderVideoSessionsList() {
   }
 }
 
-async function loadVideoCollections() {
-  videoCollections = await loadAllVideoCollections();
-  const listEl = document.getElementById("video-collections-list");
+async function loadVideoFolders() {
+  videoFolders = await loadAllVideoFolders();
+  const listEl = document.getElementById("video-folders-list");
   if (!listEl) return;
   listEl.innerHTML = "";
   // "All" item
   const allRow = document.createElement("div");
-  allRow.className = "sidebar-row" + (!activeVideoCollectionId ? " active" : "");
+  allRow.className = "sidebar-row" + (!activeVideoFolderId ? " active" : "");
   allRow.innerHTML = `<span style="flex:1;font-size:0.82rem;">All Videos</span>`;
   allRow.addEventListener("click", () => {
-    activeVideoCollectionId = null;
-    localStorage.removeItem("diab_video_collection");
-    loadVideoCollections();
+    activeVideoFolderId = null;
+    localStorage.removeItem("diab_video_folder");
+    loadVideoFolders();
     renderVideoSessionsList();
     restoreVideoClips();
   });
   listEl.appendChild(allRow);
-  for (const col of videoCollections) {
+  for (const col of videoFolders) {
     const row = document.createElement("div");
-    row.className = "sidebar-row" + (activeVideoCollectionId === col.id ? " active" : "");
+    row.className = "sidebar-row" + (activeVideoFolderId === col.id ? " active" : "");
     row.innerHTML = `<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.82rem;">${esc(col.name)}</span>`;
     row.addEventListener("click", () => {
-      activeVideoCollectionId = col.id;
-      localStorage.setItem("diab_video_collection", col.id);
-      loadVideoCollections();
+      activeVideoFolderId = col.id;
+      localStorage.setItem("diab_video_folder", col.id);
+      loadVideoFolders();
       renderVideoSessionsList();
       restoreVideoClips();
     });
@@ -7087,14 +7087,14 @@ async function loadVideoCollections() {
   }
 }
 
-document.getElementById("vcol-new-btn").addEventListener("click", async () => {
-  const name = prompt("Collection name:");
+document.getElementById("video-folder-new-btn").addEventListener("click", async () => {
+  const name = prompt("Folder name:");
   if (!name?.trim()) return;
-  const col = { id: "vcol_" + Date.now(), name: name.trim() };
-  await saveVideoCollection(col);
-  activeVideoCollectionId = col.id;
-  localStorage.setItem("diab_video_collection", col.id);
-  loadVideoCollections();
+  const col = { id: "vfolder_" + Date.now(), name: name.trim() };
+  await saveVideoFolder(col);
+  activeVideoFolderId = col.id;
+  localStorage.setItem("diab_video_folder", col.id);
+  loadVideoFolders();
   renderVideoSessionsList();
 });
 
@@ -7435,7 +7435,7 @@ async function videoGenerate() {
     const record = {
       id: "video_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
       session_id: activeVideoSessionId,
-      collection_id: activeVideoCollectionId || null,
+      folder_id: activeVideoFolderId || null,
       rawPrompt,
       title: null,
       body,
@@ -7614,7 +7614,7 @@ async function renderVideoTrashList() {
       record.timestamp = Date.now();
       await saveVideoClip(record);
       await deleteFromVideoTrash(item.id);
-      if ((record.collection_id || null) === (activeVideoCollectionId || null)) {
+      if ((record.folder_id || null) === (activeVideoFolderId || null)) {
         videoCanvas.appendChild(createVideoResultCard(record));
         videoCanvasEmpty.style.display = "none";
         renderVideoSessionsList();
@@ -7709,7 +7709,7 @@ async function _restoreFromTrash(item) {
   const id = `studio_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const sessionId = item.session_id || ("sess_" + id);
   const record = {
-    id, session_id: sessionId, playground_id: item.playground_id || activePlaygroundId,
+    id, session_id: sessionId, folder_id: item.folder_id || activeImageFolderId,
     rawPrompt: item.rawPrompt, body: item.body || {},
     images: [{ image: item.image, model: item.model, width: item.width, height: item.height, elapsed_s: 0 }],
     timestamp: Date.now(),
@@ -7719,8 +7719,8 @@ async function _restoreFromTrash(item) {
     tx.objectStore(STUDIO_DB_STORE).put(record);
     tx.oncomplete = res; tx.onerror = rej;
   });
-  // If restored to active playground/session, re-render
-  if (record.playground_id === activePlaygroundId) {
+  // If restored to active image folder/session, re-render
+  if (record.folder_id === activeImageFolderId) {
     appendStudioResult(record.images, record.rawPrompt, record.body, record.id);
     renderStudioSessionsList();
   }
@@ -7754,45 +7754,45 @@ document.getElementById("studio-trash-empty-btn").addEventListener("click", asyn
   studioTrashModal.classList.remove("open");
 });
 
-// ── Playgrounds ──
-async function loadPlaygrounds() {
+// ── Image Folders ──
+async function loadImageFolders() {
   try {
-    studioPlaygrounds = await loadAllPlaygrounds();
-    if (studioPlaygrounds.length === 0) {
-      // Create a default playground
+    imageFolders = await loadAllImageFolders();
+    if (imageFolders.length === 0) {
+      // Create a default image folder
       const defaultPg = { id: "pg_" + Date.now(), name: "My Images", timestamp: Date.now() };
-      await savePlayground(defaultPg);
-      studioPlaygrounds = [defaultPg];
+      await saveImageFolder(defaultPg);
+      imageFolders = [defaultPg];
     }
-    if (!activePlaygroundId || !studioPlaygrounds.find(p => p.id === activePlaygroundId)) {
-      activePlaygroundId = studioPlaygrounds[0].id;
-      localStorage.setItem("diab_playground", activePlaygroundId);
+    if (!activeImageFolderId || !imageFolders.find(p => p.id === activeImageFolderId)) {
+      activeImageFolderId = imageFolders[0].id;
+      localStorage.setItem("diab_image_folder", activeImageFolderId);
     }
-    renderPlaygroundsSidebar();
-  } catch (e) { console.warn("Failed to load playgrounds:", e); }
+    renderImageFoldersSidebar();
+  } catch (e) { console.warn("Failed to load image folders:", e); }
 }
 
-function renderPlaygroundsSidebar() {
-  const list = document.getElementById("playgrounds-list");
+function renderImageFoldersSidebar() {
+  const list = document.getElementById("image-folders-list");
   list.innerHTML = "";
-  studioPlaygrounds.forEach(pg => {
+  imageFolders.forEach(pg => {
     const row = document.createElement("div");
-    row.className = "sb-folder-row playground-row" + (pg.id === activePlaygroundId ? " active" : "");
+    row.className = "sb-folder-row image-folder-row" + (pg.id === activeImageFolderId ? " active" : "");
     row.dataset.id = pg.id;
-    const iconSvg = `<svg class="sb-folder-icon playground-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><rect x="6" y="11" width="12" height="7" rx="1"/><circle cx="8.5" cy="13.5" r="1" fill="currentColor" stroke="none"/><path d="M18 18l-3.5-3.5-5.5 4.5"/></svg>`;
-    row.innerHTML = `${iconSvg}<div class="sb-folder-info playground-row-info"><div class="sb-folder-name playground-row-name">${esc(pg.name)}</div>${pg.description ? `<div class="sb-folder-desc playground-row-desc">${esc(pg.description)}</div>` : ""}</div><button class="sb-folder-menu playground-menu-btn" title="Options">⋯</button>`;
+    const iconSvg = `<svg class="sb-folder-icon image-folder-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><rect x="6" y="11" width="12" height="7" rx="1"/><circle cx="8.5" cy="13.5" r="1" fill="currentColor" stroke="none"/><path d="M18 18l-3.5-3.5-5.5 4.5"/></svg>`;
+    row.innerHTML = `${iconSvg}<div class="sb-folder-info image-folder-row-info"><div class="sb-folder-name image-folder-row-name">${esc(pg.name)}</div>${pg.description ? `<div class="sb-folder-desc image-folder-row-desc">${esc(pg.description)}</div>` : ""}</div><button class="sb-folder-menu image-folder-menu-btn" title="Options">⋯</button>`;
     row.addEventListener("click", e => {
-      if (e.target.classList.contains("playground-menu-btn")) return;
-      if (pg.id === activePlaygroundId) return;
-      activePlaygroundId = pg.id;
-      localStorage.setItem("diab_playground", pg.id);
-      renderPlaygroundsSidebar();
+      if (e.target.classList.contains("image-folder-menu-btn")) return;
+      if (pg.id === activeImageFolderId) return;
+      activeImageFolderId = pg.id;
+      localStorage.setItem("diab_image_folder", pg.id);
+      renderImageFoldersSidebar();
       _studioRestored = false;
       restoreStudioImages(true);
     });
-    row.querySelector(".playground-menu-btn").addEventListener("click", e => {
+    row.querySelector(".image-folder-menu-btn").addEventListener("click", e => {
       e.stopPropagation();
-      showPlaygroundCtxMenu(pg, e);
+      showImageFolderCtxMenu(pg, e);
     });
     // Drag-and-drop target for studio sessions
     row.addEventListener("dragover", e => {
@@ -7820,7 +7820,7 @@ function renderPlaygroundsSidebar() {
         const tx = db.transaction("images", "readwrite");
         const store = tx.objectStore("images");
         for (const rec of matching) {
-          rec.playground_id = pg.id;
+          rec.folder_id = pg.id;
           store.put(rec);
         }
         await new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = rej; });
@@ -7870,7 +7870,7 @@ async function renderStudioSessionsList() {
   try {
     const records = await loadAllStudioImages();
     const filtered = records
-      .filter(r => r.playground_id === activePlaygroundId)
+      .filter(r => r.folder_id === activeImageFolderId)
       .sort((a, b) => b.timestamp - a.timestamp);
     if (!filtered.length) return;
 
@@ -7969,13 +7969,13 @@ function showGroupedSessionCtxMenu(sess, itemEl, e) {
   });
   menu.appendChild(renameItem);
 
-  // Move to Playground
+  // Move to Folder
   const moveWrap = document.createElement("div");
   moveWrap.style.position = "relative";
   const moveBtn = document.createElement("div");
   moveBtn.style.cssText = "padding:6px 12px;cursor:pointer;font-size:0.8rem;border-radius:6px;color:var(--text-dim);display:flex;align-items:center;justify-content:space-between;";
-  moveBtn.innerHTML = `Move to Playground <span>&#x25B8;</span>`;
-  const otherPgs = studioPlaygrounds.filter(pg => pg.id !== activePlaygroundId);
+  moveBtn.innerHTML = `Move to Folder <span>&#x25B8;</span>`;
+  const otherPgs = imageFolders.filter(pg => pg.id !== activeImageFolderId);
   if (otherPgs.length === 0) moveBtn.style.opacity = "0.4";
   moveBtn.addEventListener("mouseenter", () => {
     moveBtn.style.background = "var(--surface2)";
@@ -8000,7 +8000,7 @@ function showGroupedSessionCtxMenu(sess, itemEl, e) {
           const store = tx.objectStore(STUDIO_DB_STORE);
           for (const rec of sess.records) {
             const existing = await new Promise(r => { const g = store.get(rec.id); g.onsuccess = () => r(g.result); });
-            if (existing) { existing.playground_id = pg.id; store.put(existing); }
+            if (existing) { existing.folder_id = pg.id; store.put(existing); }
           }
         } catch {}
         sess.records.forEach(rec => {
@@ -8035,7 +8035,7 @@ function showGroupedSessionCtxMenu(sess, itemEl, e) {
         // Trash each image before deleting the record
         if (rec.images) {
           for (const imgData of rec.images) {
-            await saveToTrash({ id: _makeTrashId(), deletedAt: Date.now(), image: imgData.image, rawPrompt: rec.rawPrompt, body: rec.body, model: imgData.model, width: imgData.width, height: imgData.height, session_id: rec.session_id, playground_id: rec.playground_id });
+            await saveToTrash({ id: _makeTrashId(), deletedAt: Date.now(), image: imgData.image, rawPrompt: rec.rawPrompt, body: rec.body, model: imgData.model, width: imgData.width, height: imgData.height, session_id: rec.session_id, folder_id: rec.folder_id });
           }
         }
         await deleteStudioImage(rec.id);
@@ -8063,7 +8063,7 @@ function showGroupedSessionCtxMenu(sess, itemEl, e) {
   }, { once: true }), 0);
 }
 
-function showPlaygroundCtxMenu(pg, e) {
+function showImageFolderCtxMenu(pg, e) {
   // Remove any existing menu
   document.querySelectorAll(".pg-ctx-menu").forEach(el => el.remove());
   const menu = document.createElement("div");
@@ -8079,29 +8079,29 @@ function showPlaygroundCtxMenu(pg, e) {
 
   menu.querySelector('[data-action="rename"]').addEventListener("click", () => {
     menu.remove();
-    openPlaygroundModal(pg);
+    openImageFolderModal(pg);
   });
   menu.querySelector('[data-action="delete"]').addEventListener("click", async () => {
     menu.remove();
-    if (studioPlaygrounds.length <= 1) {
-      showToast("At least one playground must exist.");
+    if (imageFolders.length <= 1) {
+      showToast("At least one folder must exist.");
       return;
     }
-    const confirmed = await showConfirm({ title: "Delete Playground", message: `Delete "${pg.name}"? All images in this playground will be deleted.` });
+    const confirmed = await showConfirm({ title: "Delete Folder", message: `Delete "${pg.name}"? All images in this folder will be deleted.` });
     if (!confirmed) return;
-    // Delete all images in this playground
+    // Delete all images in this folder
     const allImages = await loadAllStudioImages();
-    const toDelete = allImages.filter(r => r.playground_id === pg.id);
+    const toDelete = allImages.filter(r => r.folder_id === pg.id);
     for (const img of toDelete) {
       await deleteStudioImage(img.id);
     }
-    await deletePlayground(pg.id);
-    studioPlaygrounds = studioPlaygrounds.filter(p => p.id !== pg.id);
-    if (activePlaygroundId === pg.id) {
-      activePlaygroundId = studioPlaygrounds[0].id;
-      localStorage.setItem("diab_playground", activePlaygroundId);
+    await deleteImageFolder(pg.id);
+    imageFolders = imageFolders.filter(p => p.id !== pg.id);
+    if (activeImageFolderId === pg.id) {
+      activeImageFolderId = imageFolders[0].id;
+      localStorage.setItem("diab_image_folder", activeImageFolderId);
     }
-    renderPlaygroundsSidebar();
+    renderImageFoldersSidebar();
     _studioRestored = false;
     restoreStudioImages(true);
   });
@@ -8120,50 +8120,50 @@ function showPlaygroundCtxMenu(pg, e) {
   }, 10);
 }
 
-// Playground modal
-let _editingPlaygroundId = null;
-function openPlaygroundModal(pg) {
-  _editingPlaygroundId = pg ? pg.id : null;
-  document.getElementById("playground-modal-title").textContent = pg ? "Edit Playground" : "New Playground";
-  document.getElementById("pg-name").value = pg?.name || "";
-  document.getElementById("pg-desc").value = pg?.description || "";
-  document.getElementById("pg-save").textContent = pg ? "Save" : "Create Playground";
-  document.getElementById("playground-modal").classList.add("open");
-  document.getElementById("pg-name").focus();
+// Image Folder modal
+let _editingImageFolderId = null;
+function openImageFolderModal(pg) {
+  _editingImageFolderId = pg ? pg.id : null;
+  document.getElementById("image-folder-modal-title").textContent = pg ? "Edit Folder" : "New Folder";
+  document.getElementById("image-folder-name").value = pg?.name || "";
+  document.getElementById("image-folder-desc").value = pg?.description || "";
+  document.getElementById("image-folder-save").textContent = pg ? "Save" : "Create Folder";
+  document.getElementById("image-folder-modal").classList.add("open");
+  document.getElementById("image-folder-name").focus();
 }
-function closePlaygroundModal() {
-  document.getElementById("playground-modal").classList.remove("open");
-  _editingPlaygroundId = null;
+function closeImageFolderModal() {
+  document.getElementById("image-folder-modal").classList.remove("open");
+  _editingImageFolderId = null;
 }
-document.getElementById("playground-modal-close").addEventListener("click", closePlaygroundModal);
-document.getElementById("pg-cancel").addEventListener("click", closePlaygroundModal);
-document.getElementById("playground-modal").addEventListener("click", (e) => {
-  if (e.target === e.currentTarget) closePlaygroundModal();
+document.getElementById("image-folder-modal-close").addEventListener("click", closeImageFolderModal);
+document.getElementById("image-folder-cancel").addEventListener("click", closeImageFolderModal);
+document.getElementById("image-folder-modal").addEventListener("click", (e) => {
+  if (e.target === e.currentTarget) closeImageFolderModal();
 });
-document.getElementById("pg-name").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") document.getElementById("pg-save").click();
-  if (e.key === "Escape") closePlaygroundModal();
+document.getElementById("image-folder-name").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") document.getElementById("image-folder-save").click();
+  if (e.key === "Escape") closeImageFolderModal();
 });
-document.getElementById("pg-save").addEventListener("click", async () => {
-  const name = document.getElementById("pg-name").value.trim();
-  const description = document.getElementById("pg-desc").value.trim() || "";
-  if (!name) { document.getElementById("pg-name").focus(); return; }
-  if (_editingPlaygroundId) {
-    const pg = studioPlaygrounds.find(p => p.id === _editingPlaygroundId);
-    if (pg) { pg.name = name; pg.description = description; await savePlayground(pg); }
+document.getElementById("image-folder-save").addEventListener("click", async () => {
+  const name = document.getElementById("image-folder-name").value.trim();
+  const description = document.getElementById("image-folder-desc").value.trim() || "";
+  if (!name) { document.getElementById("image-folder-name").focus(); return; }
+  if (_editingImageFolderId) {
+    const pg = imageFolders.find(p => p.id === _editingImageFolderId);
+    if (pg) { pg.name = name; pg.description = description; await saveImageFolder(pg); }
   } else {
     const pg = { id: "pg_" + Date.now(), name, description, timestamp: Date.now() };
-    await savePlayground(pg);
-    studioPlaygrounds.push(pg);
-    activePlaygroundId = pg.id;
-    localStorage.setItem("diab_playground", pg.id);
+    await saveImageFolder(pg);
+    imageFolders.push(pg);
+    activeImageFolderId = pg.id;
+    localStorage.setItem("diab_image_folder", pg.id);
     _studioRestored = false;
     restoreStudioImages(true);
   }
-  closePlaygroundModal();
-  renderPlaygroundsSidebar();
+  closeImageFolderModal();
+  renderImageFoldersSidebar();
 });
-document.getElementById("playground-new-btn").addEventListener("click", () => openPlaygroundModal(null));
+document.getElementById("image-folder-new-btn").addEventListener("click", () => openImageFolderModal(null));
 
 // Make sidebar row highlighting work
 ["new-chat-btn", "search-open-btn"].forEach(id => {
@@ -8762,7 +8762,7 @@ function _appendImageToGrid(grid, result, data, idx, id, rawPrompt, body, allRes
       if (rec) {
         const imgIdx = parseInt(wrap.dataset.idx);
         const imgData = rec.images[imgIdx];
-        if (imgData) await saveToTrash({ id: _makeTrashId(), deletedAt: Date.now(), image: imgData.image, rawPrompt: rec.rawPrompt, body: rec.body, model: imgData.model, width: imgData.width, height: imgData.height, session_id: rec.session_id, playground_id: rec.playground_id });
+        if (imgData) await saveToTrash({ id: _makeTrashId(), deletedAt: Date.now(), image: imgData.image, rawPrompt: rec.rawPrompt, body: rec.body, model: imgData.model, width: imgData.width, height: imgData.height, session_id: rec.session_id, folder_id: rec.folder_id });
         // New transaction for the update/delete
         rec.images.splice(imgIdx, 1);
         const tx2 = db.transaction(STUDIO_DB_STORE, "readwrite");
@@ -8803,7 +8803,7 @@ function _persistStudioRecord(id, results, rawPrompt, body) {
     rawPrompt,
     body: { ...body, _preset: preset },
     timestamp: Date.now(),
-    playground_id: activePlaygroundId,
+    folder_id: activeImageFolderId,
     session_id: activeStudioSessionId,
   };
   saveStudioImage(record).catch(e => console.warn("Failed to save studio image:", e));
@@ -8924,7 +8924,7 @@ function appendStudioResult(dataArr, rawPrompt, body, recordId) {
         const rec = await new Promise(r => { const tx = db.transaction(STUDIO_DB_STORE, "readonly"); const g = tx.objectStore(STUDIO_DB_STORE).get(id); g.onsuccess = () => r(g.result); });
         if (rec) {
           const imgData = rec.images[idx];
-          if (imgData) await saveToTrash({ id: _makeTrashId(), deletedAt: Date.now(), image: imgData.image, rawPrompt: rec.rawPrompt, body: rec.body, model: imgData.model, width: imgData.width, height: imgData.height, session_id: rec.session_id, playground_id: rec.playground_id });
+          if (imgData) await saveToTrash({ id: _makeTrashId(), deletedAt: Date.now(), image: imgData.image, rawPrompt: rec.rawPrompt, body: rec.body, model: imgData.model, width: imgData.width, height: imgData.height, session_id: rec.session_id, folder_id: rec.folder_id });
           _refreshTrashBadge();
           // New transaction for the update/delete
           rec.images.splice(idx, 1);
@@ -8962,7 +8962,7 @@ function appendStudioResult(dataArr, rawPrompt, body, recordId) {
       rawPrompt,
       body: { ...body, _preset: preset },
       timestamp: Date.now(),
-      playground_id: activePlaygroundId,
+      folder_id: activeImageFolderId,
       session_id: activeStudioSessionId,
     };
     saveStudioImage(record).catch(e => console.warn("Failed to save studio image:", e));
@@ -8991,13 +8991,13 @@ async function loadConversations() {
   try {
     const [convRes, projRes] = await Promise.all([
       apiFetch(`/conversations`),
-      apiFetch(`/topics`),
+      apiFetch(`/folders`),
     ]);
     allConversations = await convRes.json();
-    topics = await projRes.json();
-    await ensureDefaultTopic();
-    renderTopicsSidebar();
-    updateTopicCrumb();
+    chatFolders = await projRes.json();
+    await ensureDefaultFolder();
+    renderFoldersSidebar();
+    updateFolderCrumb();
     renderSidebar(allConversations, false);
   } catch(e) { console.error("loadConversations error:", e); }
 }
@@ -9054,15 +9054,15 @@ function renderSidebar(convs, flat = false) {
     convs.forEach(c => convList.appendChild(makeConvItem(c)));
     return;
   }
-  // Always filter by active topic
-  const filtered = activeTopicId
-    ? convs.filter(c => c.topic_id === activeTopicId)
+  // Always filter by active folder
+  const filtered = activeChatFolderId
+    ? convs.filter(c => c.folder_id === activeChatFolderId)
     : convs;
 
   if (!filtered.length) {
     const empty = document.createElement("div");
     empty.style.cssText = "padding:12px 10px;font-size:0.76rem;color:var(--text-faint);";
-    empty.textContent = "No chats in this topic yet.";
+    empty.textContent = "No chats in this folder yet.";
     convList.appendChild(empty);
     return;
   }
@@ -9113,12 +9113,12 @@ function openCtxMenu(e, id) {
   const sub = document.getElementById("ctx-move-sub");
   sub.innerHTML = "";
   sub.style.display = "none";
-  topics.forEach(p => {
+  chatFolders.forEach(p => {
     const btn = document.createElement("button");
     btn.style.cssText = "display:block;width:100%;text-align:left;background:none;border:none;color:var(--text-dim);cursor:pointer;padding:6px 12px;font-size:0.82rem;border-radius:5px;white-space:nowrap;";
     btn.textContent = p.name;
     const conv = allConversations.find(c => c.id === id);
-    if (conv && conv.topic_id === p.id) btn.style.color = "var(--accent)";
+    if (conv && conv.folder_id === p.id) btn.style.color = "var(--accent)";
     btn.addEventListener("mouseenter", () => btn.style.background = "var(--surface3)");
     btn.addEventListener("mouseleave", () => btn.style.background = "none");
     btn.addEventListener("click", async ev => {
@@ -9127,10 +9127,10 @@ function openCtxMenu(e, id) {
       await apiFetch(`/conversations/${id}/move`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic_id: p.id }),
+        body: JSON.stringify({ folder_id: p.id }),
       });
-      activeTopicId = p.id;
-      localStorage.setItem("diab_topic", p.id);
+      activeChatFolderId = p.id;
+      localStorage.setItem("diab_chat_folder", p.id);
       await loadConversations();
     });
     sub.appendChild(btn);
@@ -9176,8 +9176,8 @@ newChatBtn.addEventListener("click", async () => {
     setView("chat");
     prepareModelsForView("chat");
   }
-  await ensureDefaultTopic();
-  if (topics.length === 0) return;
+  await ensureDefaultFolder();
+  if (chatFolders.length === 0) return;
   activeConvId = null;
   chatWindow.innerHTML = "";
   chatWindow.appendChild(makeWelcome());
@@ -10984,8 +10984,8 @@ function renderQueueTray() {
 async function sendMessage() {
   const text = input.value.trim();
   if (!text) return;
-  await ensureDefaultTopic();
-  if (!activeTopicId || topics.length === 0) return;
+  await ensureDefaultFolder();
+  if (!activeChatFolderId || chatFolders.length === 0) return;
 
   // Capture any attached images before clearing
   const attachedImages = [...pendingImages];
@@ -11021,7 +11021,7 @@ async function sendMessage() {
     message: text,
     model: selectedModel,
     conversation_id: convId,
-    topic_id: activeTopicId || null,
+    folder_id: activeChatFolderId || null,
     temperature: parseFloat(tempSlider.value),
     threshold: parseFloat(threshSlider.value),
     top_k: parseInt(topkSlider.value),

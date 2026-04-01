@@ -275,7 +275,7 @@ class ChatRequest(BaseModel):
     message: str
     model: Optional[str] = None
     conversation_id: Optional[str] = None
-    topic_id: Optional[str] = None
+    folder_id: Optional[str] = None
     temperature: float = 0.2
     threshold: Optional[float] = None
     top_k: int = DEFAULT_TOP_K
@@ -291,14 +291,14 @@ class ConversationPatch(BaseModel):
     title: str
 
 class ConversationMove(BaseModel):
-    topic_id: str
+    folder_id: str
 
-class TopicCreate(BaseModel):
+class FolderCreate(BaseModel):
     name: str
     description: Optional[str] = None
     system_prompt: Optional[str] = None
 
-class TopicPatch(BaseModel):
+class FolderPatch(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     system_prompt: Optional[str] = None
@@ -658,11 +658,11 @@ async def chat_stream(request: ChatRequest, user_id: str) -> AsyncGenerator[str,
     base_instructions += f"\n\nCurrent date and time: {date_str}"
     base_instructions += f"\n\nYou are running locally as {request.model} via Ollama on the user's own machine. You are NOT cloud-based and you are NOT a different model. Do not claim to be any other model or service."
 
-    # Use topic system prompt if provided (overrides default)
-    if request.topic_id:
-        topic = db.get_topic(request.topic_id, user_id)
-        if topic and topic.get("system_prompt") is not None and topic["system_prompt"] != "":
-            base_instructions = topic["system_prompt"]
+    # Use folder system prompt if provided (overrides default)
+    if request.folder_id:
+        folder = db.get_folder(request.folder_id, user_id)
+        if folder and folder.get("system_prompt") is not None and folder["system_prompt"] != "":
+            base_instructions = folder["system_prompt"]
 
     # Inject memory facts
     memory_facts = db.list_memory(user_id)
@@ -869,7 +869,7 @@ Answer concisely."""
     # Step 8: Save to DB
     conv_id = request.conversation_id
     if not conv_id:
-        conv_id = db.create_conversation(user_id=user_id, topic_id=request.topic_id)
+        conv_id = db.create_conversation(user_id=user_id, topic_id=request.folder_id)
     db.auto_title(conv_id, user_id, request.message)
     db.add_message(conv_id, "user", request.message)
     db.add_message(conv_id, "assistant", clean_answer, sources=sources, web_sources=web_sources, model_used=model)
@@ -1612,7 +1612,7 @@ def delete_own_account(user: dict = Depends(get_current_user)):
 
 @app.delete("/users/me/data")
 def delete_own_data(user: dict = Depends(get_current_user)):
-    """Delete all conversations, topics, and memory for the current user (keeps account)."""
+    """Delete all conversations, folders, and memory for the current user (keeps account)."""
     db.delete_all_user_data(user["id"])
     return {"ok": True}
 
@@ -2355,25 +2355,25 @@ async def video_cover_art(req: VideoCoverArtRequest, user: dict = Depends(get_cu
         raise HTTPException(status_code=500, detail=f"Cover art generation failed: {e}")
 
 
-# --- Topic endpoints ---
+# --- Folder endpoints ---
 
-@app.get("/topics")
-def list_topics(user: dict = Depends(get_current_user)):
-    return db.list_topics(user["id"])
+@app.get("/folders")
+def list_folders(user: dict = Depends(get_current_user)):
+    return db.list_folders(user["id"])
 
-@app.post("/topics")
-def create_topic(body: TopicCreate, user: dict = Depends(get_current_user)):
-    pid = db.create_topic(user["id"], body.name, body.description, body.system_prompt)
+@app.post("/folders")
+def create_folder(body: FolderCreate, user: dict = Depends(get_current_user)):
+    pid = db.create_folder(user["id"], body.name, body.description, body.system_prompt)
     return {"id": pid}
 
-@app.patch("/topics/{pid}")
-def update_topic(pid: str, body: TopicPatch, user: dict = Depends(get_current_user)):
-    db.update_topic(pid, user["id"], body.name, body.description, body.system_prompt)
+@app.patch("/folders/{pid}")
+def update_folder(pid: str, body: FolderPatch, user: dict = Depends(get_current_user)):
+    db.update_folder(pid, user["id"], body.name, body.description, body.system_prompt)
     return {"ok": True}
 
-@app.delete("/topics/{pid}")
-def delete_topic(pid: str, user: dict = Depends(get_current_user)):
-    db.delete_topic(pid, user["id"])
+@app.delete("/folders/{pid}")
+def delete_folder(pid: str, user: dict = Depends(get_current_user)):
+    db.delete_folder(pid, user["id"])
     return {"ok": True}
 
 
@@ -2409,8 +2409,8 @@ def list_convs(user: dict = Depends(get_current_user)):
 
 
 @app.post("/conversations")
-def create_conv(topic_id: Optional[str] = None, user: dict = Depends(get_current_user)):
-    cid = db.create_conversation(user_id=user["id"], topic_id=topic_id)
+def create_conv(folder_id: Optional[str] = None, user: dict = Depends(get_current_user)):
+    cid = db.create_conversation(user_id=user["id"], folder_id=folder_id)
     return {"id": cid}
 
 
@@ -2436,7 +2436,7 @@ def rename_conv(cid: str, body: ConversationPatch, user: dict = Depends(get_curr
 
 @app.patch("/conversations/{cid}/move")
 def move_conv(cid: str, body: ConversationMove, user: dict = Depends(get_current_user)):
-    db.move_conversation(cid, user["id"], body.topic_id)
+    db.move_conversation(cid, user["id"], body.folder_id)
     return {"ok": True}
 
 
