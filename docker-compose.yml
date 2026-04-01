@@ -59,6 +59,7 @@ services:
       - TTS_VOICE=${TTS_VOICE:-af_heart}
       - IMAGE_GEN_URL=${IMAGE_GEN_URL:-http://image-api:8100}
       - MUSIC_GEN_URL=${MUSIC_GEN_URL:-http://music-api:8200}
+      - VIDEO_GEN_URL=${VIDEO_GEN_URL:-http://video-api:8300}
     depends_on:
       chromadb:
         condition: service_healthy
@@ -96,6 +97,25 @@ services:
     container_name: music-api
     ports:
       - "${MUSIC_GEN_PORT:-8200}:8200"
+    volumes:
+      - hf_cache:/root/.cache/huggingface
+    environment:
+      - HF_HOME=/root/.cache/huggingface
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+
+  video-api:
+    build: ./video-api
+    container_name: video-api
+    ports:
+      - "${VIDEO_GEN_PORT:-8300}:8300"
     volumes:
       - hf_cache:/root/.cache/huggingface
     environment:

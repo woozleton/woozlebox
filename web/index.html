@@ -1759,6 +1759,199 @@
       padding: 12px 20px; border-top: 1px solid var(--border);
     }
 
+    /* ══ VIDEO STUDIO ══ */
+    #video-studio {
+      display: none; flex-direction: column; height: 100%; overflow: hidden;
+    }
+    #video-studio.active { display: flex; }
+    html.video-preload #video-studio { display: flex; }
+    #video-studio-header {
+      display: flex; align-items: center; gap: 8px; padding: 12px 16px;
+      border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    #video-studio-header h2 { font-size: 1rem; font-weight: 600; margin: 0; white-space: nowrap; }
+    #video-studio-header .studio-subtitle {
+      font-size: 0.72rem; color: var(--text-dim); background: var(--surface2);
+      padding: 2px 8px; border-radius: 20px; white-space: nowrap;
+    }
+    #video-studio-header button {
+      background: none; border: none; color: var(--text-dim); cursor: pointer;
+      padding: 4px; display: flex; align-items: center; gap: 4px; font-size: 0.78rem; border-radius: 6px;
+    }
+    #video-studio-header button:hover { color: var(--text); background: var(--surface2); }
+    #video-studio-header #video-trash-btn { margin-left: auto; position: relative; }
+    #video-studio-header #video-trash-badge {
+      position: absolute; top: -2px; right: -6px; background: var(--accent);
+      color: #fff; font-size: 0.6rem; border-radius: 99px; min-width: 14px;
+      height: 14px; display: flex; align-items: center; justify-content: center;
+      padding: 0 3px; font-weight: 700;
+    }
+    #video-studio-header #video-trash-badge:empty { display: none; }
+    #video-body {
+      display: flex; flex: 1; overflow: hidden; position: relative;
+    }
+    #video-main {
+      flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0;
+    }
+    #video-canvas {
+      flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column-reverse; gap: 16px;
+    }
+    #video-canvas-empty {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      flex: 1; color: var(--text-dim); text-align: center; gap: 12px; padding: 40px; opacity: 0.6;
+    }
+    #video-canvas-empty p { max-width: 320px; font-size: 0.85rem; line-height: 1.5; }
+    #video-controls {
+      border-top: 1px solid var(--border); padding: 0 16px 16px;
+    }
+    #video-settings-crumb {
+      display: flex; align-items: center; padding: 8px 0 4px; cursor: pointer;
+    }
+    #video-settings-crumb.open #video-settings-panel { display: block; }
+    #video-settings-crumb.open .chevron-icon { transform: rotate(180deg); }
+    #video-settings-trigger {
+      display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-dim);
+      cursor: pointer; padding: 2px 0;
+    }
+    #video-settings-trigger:hover { color: var(--text); }
+    #video-settings-summary { opacity: 0.7; }
+    #video-settings-panel {
+      display: none; padding: 12px 0 4px; border-top: 1px solid var(--border); margin-top: 8px;
+    }
+    .video-settings-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px;
+    }
+    .video-image-upload {
+      border: 2px dashed var(--border); border-radius: 8px; padding: 16px;
+      text-align: center; cursor: pointer; color: var(--text-dim); font-size: 0.8rem;
+      transition: border-color 0.15s, background 0.15s; margin-bottom: 12px; position: relative;
+    }
+    .video-image-upload:hover, .video-image-upload.dragover {
+      border-color: var(--accent); background: rgba(var(--accent-rgb, 99,102,241), 0.05);
+    }
+    .video-image-upload img {
+      max-width: 200px; max-height: 120px; border-radius: 6px; margin-top: 8px;
+    }
+    .video-image-upload .remove-img {
+      position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.6);
+      border: none; color: #fff; border-radius: 50%; width: 20px; height: 20px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px;
+    }
+    #video-prompt-box {
+      display: flex; align-items: flex-end; gap: 4px; padding: 8px 0 0;
+      border-top: 1px solid var(--border); margin-top: 4px;
+    }
+    #video-prompt {
+      flex: 1; resize: none; border: none; background: transparent; color: var(--text);
+      font-size: 0.88rem; line-height: 1.5; padding: 6px 0; outline: none;
+      font-family: inherit; min-height: 24px; max-height: 120px;
+    }
+    #video-prompt-box button {
+      background: none; border: none; color: var(--text-dim); cursor: pointer;
+      padding: 6px; border-radius: 6px; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    #video-prompt-box button:hover { color: var(--text); background: var(--surface2); }
+    .video-result {
+      background: var(--surface); border-radius: 12px; overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .video-result-cover {
+      position: relative; width: 100%; aspect-ratio: 16/9; background: #000;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .video-result-cover video {
+      width: 100%; height: 100%; object-fit: contain;
+    }
+    .video-result-cover img {
+      width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0;
+    }
+    .video-result-body { padding: 10px 12px; }
+    .video-result-title {
+      font-weight: 600; font-size: 0.88rem; margin-bottom: 4px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .video-result-prompt {
+      font-size: 0.75rem; color: var(--text-dim); margin-bottom: 8px;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .video-result-pills {
+      display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px;
+    }
+    .video-result-pills span {
+      font-size: 0.65rem; background: var(--surface2); color: var(--text-dim);
+      padding: 2px 6px; border-radius: 4px; white-space: nowrap;
+    }
+    .video-result-actions {
+      display: flex; gap: 4px; justify-content: flex-end;
+    }
+    .video-gen-placeholder {
+      background: var(--surface); border-radius: 12px; padding: 24px;
+      border: 1px solid var(--border); text-align: center;
+    }
+    .video-gen-placeholder .progress-ring { margin: 0 auto 12px; }
+    .video-gen-placeholder .status-text { font-size: 0.82rem; color: var(--text-dim); margin-bottom: 8px; }
+    .video-gen-placeholder .progress-bar {
+      height: 3px; background: var(--surface2); border-radius: 2px; overflow: hidden; margin-bottom: 8px;
+    }
+    .video-gen-placeholder .progress-bar-fill {
+      height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s;
+    }
+    .video-gen-placeholder .stop-btn {
+      background: none; border: 1px solid var(--border); color: var(--text-dim);
+      padding: 4px 12px; border-radius: 6px; cursor: pointer; font-size: 0.78rem;
+    }
+    .video-gen-placeholder .stop-btn:hover { background: var(--surface2); }
+    /* Video favorites panel */
+    #video-fav-panel {
+      display: none; flex-direction: column; width: 280px; min-width: 200px;
+      border-left: 1px solid var(--border); overflow: hidden;
+    }
+    #video-fav-panel.open { display: flex; }
+    #video-fav-header {
+      display: flex; align-items: center; gap: 6px; padding: 10px 12px;
+      border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    #video-fav-header h3 { font-size: 0.85rem; font-weight: 600; margin: 0; }
+    #video-fav-content { flex: 1; overflow-y: auto; padding: 8px; }
+    #video-fav-empty {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 32px 16px; text-align: center; color: var(--text-dim); gap: 8px;
+    }
+    #video-fav-empty p { font-size: 0.78rem; }
+    /* Video trash modal */
+    #video-trash-modal {
+      display: none; position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.5); align-items: center; justify-content: center;
+    }
+    #video-trash-modal.open { display: flex; }
+    #video-trash-inner {
+      background: var(--surface); border-radius: 12px; width: 480px; max-width: 90vw;
+      max-height: 70vh; display: flex; flex-direction: column; overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    #video-trash-header {
+      display: flex; align-items: center; gap: 8px; padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    #video-trash-header h3 { font-size: 0.9rem; font-weight: 600; margin: 0; flex: 1; }
+    #video-trash-list { flex: 1; overflow-y: auto; padding: 8px; }
+    .video-trash-card {
+      display: flex; align-items: center; gap: 8px; padding: 8px;
+      border-radius: 8px; border: 1px solid var(--border); margin-bottom: 6px;
+    }
+    .video-trash-card-info { flex: 1; min-width: 0; }
+    .video-trash-card-prompt {
+      font-size: 0.82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .video-trash-card-meta { font-size: 0.7rem; color: var(--text-dim); }
+    .video-trash-card-actions { display: flex; gap: 4px; }
+    .video-trash-card-actions button {
+      background: none; border: none; color: var(--text-dim); cursor: pointer;
+      padding: 4px; border-radius: 4px;
+    }
+    .video-trash-card-actions button:hover { color: var(--text); background: var(--surface2); }
+
     /* ── Unified image action button -used on cards, lightbox, and favorites ── */
     .img-action-btn {
       width: 24px; height: 24px; border-radius: 5px;
@@ -3332,6 +3525,8 @@
     document.documentElement.classList.add("studio-preload");
   } else if(localStorage.getItem("diab_view")==="music"){
     document.documentElement.classList.add("music-preload");
+  } else if(localStorage.getItem("diab_view")==="video"){
+    document.documentElement.classList.add("video-preload");
   }
 </script>
 
@@ -3446,6 +3641,10 @@
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
         Music Studio
       </button>
+      <button class="sidebar-row" id="video-sidebar-btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+        Video Studio
+      </button>
       <button class="sidebar-row" id="search-open-btn">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         Search
@@ -3468,6 +3667,9 @@
       </button>
       <button class="strip-btn" id="strip-music-btn" title="Music Studio">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+      </button>
+      <button class="strip-btn" id="strip-video-btn" title="Video Studio">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
       </button>
       <button class="strip-btn" id="strip-search-btn" title="Search chats">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -3523,6 +3725,21 @@
       <button id="music-new-session-btn" title="New session">+</button>
     </div>
     <div id="music-sessions-list" class="sb-list" style="display:none;"></div>
+
+    <!-- Video Studio: Collections + Sessions -->
+    <div id="video-collections-section" class="sb-section" style="display:none;">
+      <div id="video-collections-header" class="sb-section-header">
+        <span>Collections</span>
+        <button id="vcol-new-btn" title="New collection">+</button>
+      </div>
+      <div id="video-collections-list"></div>
+    </div>
+    <div id="video-collections-divider" class="sb-divider" style="display:none;"></div>
+    <div id="video-sessions-header" class="sb-section-header" style="display:none;">
+      <span>Sessions</span>
+      <button id="video-new-session-btn" title="New session">+</button>
+    </div>
+    <div id="video-sessions-list" class="sb-list" style="display:none;"></div>
 
     <!-- Sidebar bottom -->
     <div id="sidebar-bottom">
@@ -3951,6 +4168,154 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- ═══ Video Studio ═══ -->
+  <div id="video-studio">
+    <div id="video-studio-header">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+      <h2>Video Studio</h2>
+      <span class="studio-subtitle" id="video-model-label">LTX Video 2.3</span>
+      <button id="video-trash-btn" title="Trash">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+        <span id="video-trash-badge"></span>
+      </button>
+      <button id="video-fav-toggle" title="Favorites">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        Favorites <span id="video-fav-badge" style="display:none">0</span>
+      </button>
+    </div>
+    <div id="video-body">
+      <div id="video-main">
+        <div id="video-canvas">
+          <div id="video-canvas-empty">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+            <p>Describe your video below and press <strong>Generate</strong> to create.</p>
+          </div>
+        </div>
+
+        <div id="video-controls">
+          <div id="video-settings-crumb">
+            <span id="video-settings-trigger">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+              <span id="video-settings-summary">704x480 · 97 frames · ~4s</span>
+              <svg class="chevron-icon" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.5;"><polyline points="6 9 12 15 18 9"/></svg>
+            </span>
+          </div>
+          <div id="video-settings-panel">
+            <!-- Image upload for I2V -->
+            <div class="video-image-upload" id="video-i2v-dropzone">
+              <input type="file" id="video-i2v-input" accept="image/*" style="display:none">
+              <div id="video-i2v-label">Drop an image here for image-to-video, or click to browse</div>
+              <img id="video-i2v-preview" style="display:none">
+              <button class="remove-img" id="video-i2v-remove" style="display:none" title="Remove image">&times;</button>
+            </div>
+            <!-- Resolution -->
+            <div class="video-settings-grid">
+              <div class="ss-group" title="Output video resolution">
+                <div class="ss-group-label">Resolution</div>
+                <select id="video-resolution" class="setting-input" style="padding:4px 8px;font-size:0.78rem;border-radius:6px;background:var(--surface2);color:var(--text);border:1px solid var(--border);width:100%;">
+                  <option value="704x480" selected>704 x 480</option>
+                  <option value="512x512">512 x 512</option>
+                  <option value="480x704">480 x 704 (Portrait)</option>
+                  <option value="1024x576">1024 x 576 (HD)</option>
+                </select>
+              </div>
+              <div class="ss-group" title="Number of frames to generate">
+                <div class="ss-group-label">Frames</div>
+                <div class="sc-slider">
+                  <input type="range" id="video-frames" min="9" max="257" value="97" step="8">
+                  <span class="field-val" id="video-frames-val">97 (~4.0s)</span>
+                </div>
+              </div>
+            </div>
+            <!-- Advanced (collapsed) -->
+            <div class="music-settings-section" style="margin-top:8px;">
+              <div class="music-advanced-toggle" id="video-advanced-toggle">
+                <svg class="chevron-icon" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.5;"><polyline points="9 6 15 12 9 18"/></svg>
+                Advanced
+              </div>
+              <div class="music-advanced-body" id="video-advanced-body">
+                <div class="video-settings-grid">
+                  <div class="ss-group" title="Number of diffusion inference steps">
+                    <div class="ss-group-label">Steps</div>
+                    <div class="sc-slider">
+                      <input type="range" id="video-steps" min="10" max="50" value="30" step="1">
+                      <span class="field-val" id="video-steps-val">30</span>
+                    </div>
+                  </div>
+                  <div class="ss-group" title="How closely the output follows the prompt">
+                    <div class="ss-group-label">Guidance</div>
+                    <div class="sc-slider">
+                      <input type="range" id="video-guidance" min="1" max="15" value="7.5" step="0.5">
+                      <span class="field-val" id="video-guidance-val">7.5</span>
+                    </div>
+                  </div>
+                  <div class="ss-group" title="Frames per second">
+                    <div class="ss-group-label">FPS</div>
+                    <select id="video-fps" class="setting-input" style="padding:4px 8px;font-size:0.78rem;border-radius:6px;background:var(--surface2);color:var(--text);border:1px solid var(--border);width:100%;">
+                      <option value="8">8</option>
+                      <option value="16">16</option>
+                      <option value="24" selected>24</option>
+                    </select>
+                  </div>
+                  <div class="ss-group" title="Fixed seed for reproducible results">
+                    <div class="ss-group-label">Seed</div>
+                    <div class="sc-seed-row">
+                      <input type="number" id="video-seed" placeholder="Random">
+                      <button id="video-random-seed" title="Random seed">&#x1f3b2;</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="video-prompt-box">
+            <textarea id="video-prompt" placeholder="Describe the video you want to create..." rows="1"></textarea>
+            <button id="video-suggest-btn" title="Suggest a prompt">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 1 7 7c0 3-1.86 5.1-4 6.32V17a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-1.68C6.86 14.1 5 12 5 9a7 7 0 0 1 7-7z"/><line x1="9" y1="21" x2="15" y2="21"/><line x1="10" y1="17" x2="14" y2="17"/></svg>
+            </button>
+            <button id="video-generate-btn" title="Generate (Enter)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Favorites panel -->
+      <div id="video-fav-panel">
+        <div id="video-fav-header">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="#f472b6" stroke="#f472b6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          <h3>Favorites</h3>
+          <span class="fav-count" id="video-fav-count-label">0</span>
+          <button id="video-fav-close" title="Close favorites" style="background:none;border:none;color:var(--text-dim);cursor:pointer;padding:4px;display:flex;align-items:center;margin-left:auto;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div id="video-fav-content">
+          <div id="video-fav-empty">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.3"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            <p>Click the heart on any video to add it to your favorites.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Video Trash modal -->
+  <div id="video-trash-modal">
+    <div id="video-trash-inner">
+      <div id="video-trash-header">
+        <h3>Trash</h3>
+        <span id="video-trash-count-label"></span>
+        <button id="video-trash-empty-btn" style="margin-left:auto;background:none;border:1px solid var(--border);color:var(--text-dim);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:0.75rem;">Empty Trash</button>
+        <button id="video-trash-close-btn" style="background:none;border:none;color:var(--text-dim);cursor:pointer;padding:4px;display:flex;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div id="video-trash-list"></div>
     </div>
   </div>
 
@@ -5010,13 +5375,15 @@ async function loadApp() {
     showStudio();
   } else if (_savedView === "music") {
     showMusicStudio();
+  } else if (_savedView === "video") {
+    showVideoStudio();
   } else {
     setView("chat");
   }
   loadModels();
   loadVoices();
   await loadConversations();
-  document.documentElement.classList.remove("studio-preload", "music-preload");
+  document.documentElement.classList.remove("studio-preload", "music-preload", "video-preload");
 }
 
 // ── DOM refs ──
@@ -5516,7 +5883,7 @@ document.getElementById("change-pw-btn").addEventListener("click", async () => {
 document.getElementById("clear-all-data-btn").addEventListener("click", async () => {
   const confirmed = await showConfirm({
     title: "Clear All Data",
-    message: "This will permanently delete all your conversations, topics, memory, image sessions, and music tracks. Your account and settings will be kept. Continue?",
+    message: "This will permanently delete all your conversations, topics, memory, image sessions, music tracks, and video clips. Your account and settings will be kept. Continue?",
     okLabel: "Clear Everything",
     okClass: "danger",
   });
@@ -5524,18 +5891,22 @@ document.getElementById("clear-all-data-btn").addEventListener("click", async ()
   try {
     // Clear server-side data (conversations, topics, memory)
     await apiFetch("/users/me/data", { method: "DELETE" });
-    // Clear client-side IndexedDB (image studio + music studio)
+    // Clear client-side IndexedDB (image studio + music studio + video studio)
     await new Promise((resolve) => { const r = indexedDB.deleteDatabase("diab_studio"); r.onsuccess = resolve; r.onerror = resolve; });
     await new Promise((resolve) => { const r = indexedDB.deleteDatabase("diab_music"); r.onsuccess = resolve; r.onerror = resolve; });
+    await new Promise((resolve) => { const r = indexedDB.deleteDatabase("diab_video"); r.onsuccess = resolve; r.onerror = resolve; });
     // Clear related localStorage keys
     localStorage.removeItem("diab_studio_session");
     localStorage.removeItem("diab_music_session");
     localStorage.removeItem("diab_music_collection");
+    localStorage.removeItem("diab_video_session");
+    localStorage.removeItem("diab_video_collection");
     showToast("All data cleared.");
     closeSettings();
     loadConversations();
     if (typeof restoreStudioImages === "function") restoreStudioImages(true);
     if (typeof restoreMusicTracks === "function") restoreMusicTracks();
+    if (typeof restoreVideoClips === "function") restoreVideoClips();
   } catch (e) {
     showToast("Error clearing data: " + (e.message || e));
   }
@@ -8137,7 +8508,7 @@ document.getElementById("music-write-song-btn").addEventListener("click", async 
 });
 
 // ── Centralized view switching ──
-const _modelReady = { chat: false, studio: false, music: false };
+const _modelReady = { chat: false, studio: false, music: false, video: false };
 let _prepareAbort = null;
 
 function setView(view) {
@@ -8148,11 +8519,14 @@ function setView(view) {
   chatArea.style.display = view === "chat" ? "" : "none";
   imageStudio.classList.toggle("active", view === "studio");
   musicStudio.classList.toggle("active", view === "music");
+  const _vs = document.getElementById("video-studio");
+  if (_vs) _vs.classList.toggle("active", view === "video");
 
   // Sidebar nav buttons
   $("new-chat-btn").classList.toggle("active", view === "chat");
   $("studio-sidebar-btn").classList.toggle("active", view === "studio");
   $("music-sidebar-btn").classList.toggle("active", view === "music");
+  $("video-sidebar-btn").classList.toggle("active", view === "video");
 
   // Chat sections
   $("topics-section").style.display = view === "chat" ? "" : "none";
@@ -8174,24 +8548,32 @@ function setView(view) {
   $("music-sessions-header").style.display = view === "music" ? "" : "none";
   $("music-sessions-list").style.display = view === "music" ? "" : "none";
 
+  // Video Studio sections
+  $("video-collections-section").style.display = view === "video" ? "" : "none";
+  $("video-collections-divider").style.display = view === "video" ? "" : "none";
+  $("video-sessions-header").style.display = view === "video" ? "" : "none";
+  $("video-sessions-list").style.display = view === "video" ? "" : "none";
+
   // Mobile sidebar
   if (isMobile() && typeof closeMobileSidebar === "function") closeMobileSidebar();
 
   // Focus prompt
   if (view === "studio") studioPrompt.focus();
   else if (view === "music") musicPrompt.focus();
+  else if (view === "video") { const vp = document.getElementById("video-prompt"); if (vp) vp.focus(); }
   else input.focus();
 }
 
 const _defaultPlaceholders = {
   studio: "Describe the image you want to create...",
   music: "Describe a song idea, or use the pen to have AI write it for you...",
+  video: "Describe the video you want to create...",
 };
 
 function _setModelLoading(view, loading, modelName) {
-  const prompt = view === "studio" ? studioPrompt : view === "music" ? musicPrompt : null;
-  const btn = view === "studio" ? studioGenerateBtn : view === "music" ? musicGenerateBtn : null;
-  const box = prompt?.closest("#studio-prompt-box, #music-prompt-box");
+  const prompt = view === "studio" ? studioPrompt : view === "music" ? musicPrompt : view === "video" ? document.getElementById("video-prompt") : null;
+  const btn = view === "studio" ? studioGenerateBtn : view === "music" ? musicGenerateBtn : view === "video" ? document.getElementById("video-generate-btn") : null;
+  const box = prompt?.closest("#studio-prompt-box, #music-prompt-box, #video-prompt-box");
   if (prompt) {
     if (loading) {
       prompt.placeholder = `Loading ${modelName || "model"}… please wait`;
@@ -8228,7 +8610,7 @@ async function prepareModelsForView(view) {
   }
 
   // Don't evict models if a generation is actively running
-  if (studioGenerating || _musicGenerating || isLoading) return;
+  if (studioGenerating || _musicGenerating || _videoGenerating || isLoading) return;
 
   // Check if target model already loaded
   try {
@@ -8247,9 +8629,16 @@ async function prepareModelsForView(view) {
     if (view === "music" && loaded.some(m => m.type === "music")) {
       _modelReady.music = true;
       _setModelLoading("music", false);
-      // Unload image model in background if loaded
       if (loaded.some(m => m.type === "image")) {
         apiFetch("/models/prepare-music-studio", { method: "POST" }).catch(() => {});
+      }
+      return;
+    }
+    if (view === "video" && loaded.some(m => m.type === "video")) {
+      _modelReady.video = true;
+      _setModelLoading("video", false);
+      if (loaded.some(m => m.type === "image") || loaded.some(m => m.type === "music")) {
+        apiFetch("/models/prepare-video-studio", { method: "POST" }).catch(() => {});
       }
       return;
     }
@@ -8259,7 +8648,7 @@ async function prepareModelsForView(view) {
   _modelReady[view] = false;
   const modelName = view === "studio"
     ? (studioModelSelect.options[studioModelSelect.selectedIndex]?.textContent || "image model")
-    : "ACE-Step";
+    : view === "video" ? "LTX Video" : "ACE-Step";
   _setModelLoading(view, true, modelName);
 
   const abort = new AbortController();
@@ -8286,6 +8675,16 @@ async function prepareModelsForView(view) {
       if (!abort.signal.aborted) {
         _modelReady.music = true;
         _setModelLoading("music", false);
+      }
+    } else if (view === "video") {
+      await apiFetch("/models/prepare-video-studio", {
+        method: "POST",
+        body: JSON.stringify({}),
+        signal: abort.signal,
+      });
+      if (!abort.signal.aborted) {
+        _modelReady.video = true;
+        _setModelLoading("video", false);
       }
     }
   } catch (e) {
@@ -8328,6 +8727,28 @@ function showMusicStudio() {
 }
 
 function hideMusicStudio() {
+  setView("chat");
+  prepareModelsForView("chat");
+}
+
+function showVideoStudio() {
+  setView("video");
+  loadVideoCollections();
+  renderVideoSessionsList();
+  _ensureVideoSession();
+  restoreVideoClips();
+  _refreshVideoTrashBadge();
+  if (localStorage.getItem("diab_video_fav_open") === "1") {
+    const vfp = document.getElementById("video-fav-panel");
+    const vft = document.getElementById("video-fav-toggle");
+    if (vfp) vfp.classList.add("open");
+    if (vft) vft.classList.add("active");
+    refreshVideoFavoritesPanel();
+  }
+  prepareModelsForView("video");
+}
+
+function hideVideoStudio() {
   setView("chat");
   prepareModelsForView("chat");
 }
@@ -9901,6 +10322,840 @@ document.getElementById("music-trash-empty-btn").addEventListener("click", async
   await emptyMusicTrash();
   updateMusicTrashBadge(0);
   musicTrashModal.classList.remove("open");
+});
+
+// ══════════════════════════════════════════════════════════════
+// VIDEO STUDIO
+// ══════════════════════════════════════════════════════════════
+
+const videoStudio = document.getElementById("video-studio");
+const videoCanvas = document.getElementById("video-canvas");
+const videoCanvasEmpty = document.getElementById("video-canvas-empty");
+const videoPrompt = document.getElementById("video-prompt");
+const videoGenerateBtn = document.getElementById("video-generate-btn");
+const videoFavPanel = document.getElementById("video-fav-panel");
+const videoFavToggle = document.getElementById("video-fav-toggle");
+const videoFavContent = document.getElementById("video-fav-content");
+const videoFavBadge = document.getElementById("video-fav-badge");
+const videoFavCountLabel = document.getElementById("video-fav-count-label");
+
+let _videoGenerating = false;
+let _videoStartingImage = null; // base64 for I2V
+
+// ── Video IndexedDB ──
+const VIDEO_DB_NAME = "diab_video";
+const VIDEO_DB_VER = 1;
+const VIDEO_COL_STORE = "vcollections";
+function openVideoDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(VIDEO_DB_NAME, VIDEO_DB_VER);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains("videos")) db.createObjectStore("videos", { keyPath: "id" });
+      if (!db.objectStoreNames.contains("favorites")) db.createObjectStore("favorites", { keyPath: "id" });
+      if (!db.objectStoreNames.contains("trash")) db.createObjectStore("trash", { keyPath: "id" });
+      if (!db.objectStoreNames.contains(VIDEO_COL_STORE)) db.createObjectStore(VIDEO_COL_STORE, { keyPath: "id" });
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function saveVideoClip(record) {
+  const db = await openVideoDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("videos", "readwrite");
+    tx.objectStore("videos").put(record);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function loadAllVideoClips() {
+  const db = await openVideoDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("videos", "readonly");
+    const req = tx.objectStore("videos").getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function deleteVideoClip(id) {
+  const db = await openVideoDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("videos", "readwrite");
+    tx.objectStore("videos").delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function saveVideoFavorite(record) {
+  const db = await openVideoDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("favorites", "readwrite");
+    tx.objectStore("favorites").put(record);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function deleteVideoFavorite(id) {
+  const db = await openVideoDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("favorites", "readwrite");
+    tx.objectStore("favorites").delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function loadAllVideoFavorites() {
+  const db = await openVideoDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("favorites", "readonly");
+    const req = tx.objectStore("favorites").getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function isVideoFavorite(id) {
+  const db = await openVideoDB();
+  return new Promise((resolve) => {
+    const tx = db.transaction("favorites", "readonly");
+    const req = tx.objectStore("favorites").get(id);
+    req.onsuccess = () => resolve(!!req.result);
+    req.onerror = () => resolve(false);
+  });
+}
+
+async function saveVideoToTrash(record) {
+  const db = await openVideoDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("trash", "readwrite");
+    tx.objectStore("trash").put({ ...record, deletedAt: Date.now() });
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function loadAllVideoTrash() {
+  const db = await openVideoDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("trash", "readonly");
+    const req = tx.objectStore("trash").getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function deleteFromVideoTrash(id) {
+  const db = await openVideoDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("trash", "readwrite");
+    tx.objectStore("trash").delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function emptyVideoTrash() {
+  const db = await openVideoDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("trash", "readwrite");
+    tx.objectStore("trash").clear();
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function saveVideoCollection(col) {
+  const db = await openVideoDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(VIDEO_COL_STORE, "readwrite");
+    tx.objectStore(VIDEO_COL_STORE).put(col);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function deleteVideoCollection(id) {
+  const db = await openVideoDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(VIDEO_COL_STORE, "readwrite");
+    tx.objectStore(VIDEO_COL_STORE).delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function loadAllVideoCollections() {
+  const db = await openVideoDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(VIDEO_COL_STORE, "readonly");
+    const req = tx.objectStore(VIDEO_COL_STORE).getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+// ── Video sessions & collections ──
+let videoCollections = [];
+let activeVideoCollectionId = localStorage.getItem("diab_video_collection") || null;
+let activeVideoSessionId = localStorage.getItem("diab_video_session") || null;
+
+function _newVideoSessionId() {
+  const arr = new Uint8Array(12);
+  crypto.getRandomValues(arr);
+  return "vsess_" + Array.from(arr, b => b.toString(16).padStart(2, "0")).join("");
+}
+
+function _ensureVideoSession() {
+  if (!activeVideoSessionId) {
+    activeVideoSessionId = _newVideoSessionId();
+    localStorage.setItem("diab_video_session", activeVideoSessionId);
+  }
+}
+
+async function _getVideoSessions() {
+  const clips = await loadAllVideoClips();
+  const map = {};
+  for (const c of clips) {
+    if (activeVideoCollectionId && c.collection_id !== activeVideoCollectionId) continue;
+    if (!activeVideoCollectionId && c.collection_id) continue;
+    const sid = c.session_id || "default";
+    if (!map[sid]) map[sid] = { id: sid, clips: [], title: null, ts: 0 };
+    map[sid].clips.push(c);
+    if (c.timestamp > map[sid].ts) { map[sid].ts = c.timestamp; map[sid].title = c.title || null; }
+  }
+  return Object.values(map).sort((a, b) => b.ts - a.ts);
+}
+
+async function renderVideoSessionsList() {
+  const list = document.getElementById("video-sessions-list");
+  if (!list) return;
+  const sessions = await _getVideoSessions();
+  list.innerHTML = "";
+  const now = Date.now();
+  const DAY = 86400000;
+  let lastGroup = "";
+  for (const s of sessions) {
+    const age = now - s.ts;
+    const group = age < DAY ? "Today" : age < 2 * DAY ? "Yesterday" : age < 7 * DAY ? "This Week" : "Older";
+    if (group !== lastGroup) {
+      const h = document.createElement("div");
+      h.className = "sb-date-group";
+      h.textContent = group;
+      list.appendChild(h);
+      lastGroup = group;
+    }
+    const row = document.createElement("div");
+    row.className = "sidebar-row video-session-item" + (s.id === activeVideoSessionId ? " active" : "");
+    const label = s.title || s.clips[0]?.rawPrompt?.slice(0, 40) || "Untitled";
+    const count = s.clips.length;
+    row.innerHTML = `<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.82rem;">${esc(label)}</span><span style="font-size:0.68rem;color:var(--text-dim);flex-shrink:0;">${count}</span>`;
+    row.addEventListener("click", () => {
+      activeVideoSessionId = s.id;
+      localStorage.setItem("diab_video_session", s.id);
+      restoreVideoClips();
+      renderVideoSessionsList();
+    });
+    list.appendChild(row);
+  }
+}
+
+async function loadVideoCollections() {
+  videoCollections = await loadAllVideoCollections();
+  const listEl = document.getElementById("video-collections-list");
+  if (!listEl) return;
+  listEl.innerHTML = "";
+  // "All" item
+  const allRow = document.createElement("div");
+  allRow.className = "sidebar-row" + (!activeVideoCollectionId ? " active" : "");
+  allRow.innerHTML = `<span style="flex:1;font-size:0.82rem;">All Videos</span>`;
+  allRow.addEventListener("click", () => {
+    activeVideoCollectionId = null;
+    localStorage.removeItem("diab_video_collection");
+    loadVideoCollections();
+    renderVideoSessionsList();
+    restoreVideoClips();
+  });
+  listEl.appendChild(allRow);
+  for (const col of videoCollections) {
+    const row = document.createElement("div");
+    row.className = "sidebar-row" + (activeVideoCollectionId === col.id ? " active" : "");
+    row.innerHTML = `<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.82rem;">${esc(col.name)}</span>`;
+    row.addEventListener("click", () => {
+      activeVideoCollectionId = col.id;
+      localStorage.setItem("diab_video_collection", col.id);
+      loadVideoCollections();
+      renderVideoSessionsList();
+      restoreVideoClips();
+    });
+    listEl.appendChild(row);
+  }
+}
+
+document.getElementById("vcol-new-btn").addEventListener("click", async () => {
+  const name = prompt("Collection name:");
+  if (!name?.trim()) return;
+  const col = { id: "vcol_" + Date.now(), name: name.trim() };
+  await saveVideoCollection(col);
+  activeVideoCollectionId = col.id;
+  localStorage.setItem("diab_video_collection", col.id);
+  loadVideoCollections();
+  renderVideoSessionsList();
+});
+
+// ── Video view switching ──
+function toggleVideoStudio() {
+  if (videoStudio.classList.contains("active")) return;
+  showVideoStudio();
+}
+document.getElementById("video-sidebar-btn").addEventListener("click", toggleVideoStudio);
+document.getElementById("strip-video-btn").addEventListener("click", toggleVideoStudio);
+document.getElementById("video-new-session-btn").addEventListener("click", () => {
+  activeVideoSessionId = _newVideoSessionId();
+  localStorage.setItem("diab_video_session", activeVideoSessionId);
+  document.querySelectorAll(".video-session-item").forEach(el => el.classList.remove("active"));
+  videoCanvas.querySelectorAll(".video-result").forEach(el => el.remove());
+  if (videoCanvasEmpty) videoCanvasEmpty.style.display = "";
+  videoPrompt.focus();
+});
+
+// ── Video settings panel ──
+document.getElementById("video-settings-trigger").addEventListener("click", function() {
+  document.getElementById("video-settings-crumb").classList.toggle("open");
+  document.getElementById("video-settings-panel").classList.toggle("open");
+});
+
+document.getElementById("video-advanced-toggle").addEventListener("click", function() {
+  const body = document.getElementById("video-advanced-body");
+  const open = body.style.display !== "block";
+  body.style.display = open ? "block" : "none";
+  this.querySelector(".chevron-icon").style.transform = open ? "rotate(90deg)" : "";
+});
+
+// Slider value displays
+document.getElementById("video-frames").addEventListener("input", function() {
+  const fps = parseInt(document.getElementById("video-fps").value) || 24;
+  const dur = (parseInt(this.value) / fps).toFixed(1);
+  document.getElementById("video-frames-val").textContent = `${this.value} (~${dur}s)`;
+  _updateVideoSettingsSummary();
+});
+document.getElementById("video-steps").addEventListener("input", function() {
+  document.getElementById("video-steps-val").textContent = this.value;
+});
+document.getElementById("video-guidance").addEventListener("input", function() {
+  document.getElementById("video-guidance-val").textContent = parseFloat(this.value).toFixed(1);
+});
+document.getElementById("video-fps").addEventListener("change", function() {
+  const frames = parseInt(document.getElementById("video-frames").value) || 97;
+  const dur = (frames / parseInt(this.value)).toFixed(1);
+  document.getElementById("video-frames-val").textContent = `${frames} (~${dur}s)`;
+  _updateVideoSettingsSummary();
+});
+document.getElementById("video-resolution").addEventListener("change", _updateVideoSettingsSummary);
+
+function _updateVideoSettingsSummary() {
+  const res = document.getElementById("video-resolution").value;
+  const frames = document.getElementById("video-frames").value;
+  const fps = document.getElementById("video-fps").value;
+  const dur = (parseInt(frames) / parseInt(fps)).toFixed(1);
+  document.getElementById("video-settings-summary").textContent = `${res} · ${frames} frames · ~${dur}s`;
+}
+
+document.getElementById("video-random-seed").addEventListener("click", () => {
+  document.getElementById("video-seed").value = "";
+});
+
+// ── I2V image upload ──
+const videoI2VDropzone = document.getElementById("video-i2v-dropzone");
+const videoI2VInput = document.getElementById("video-i2v-input");
+const videoI2VPreview = document.getElementById("video-i2v-preview");
+const videoI2VLabel = document.getElementById("video-i2v-label");
+const videoI2VRemove = document.getElementById("video-i2v-remove");
+
+function _handleVideoI2VFile(file) {
+  if (!file || !file.type.startsWith("image/")) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    _videoStartingImage = e.target.result.split(",")[1]; // base64 without prefix
+    videoI2VPreview.src = e.target.result;
+    videoI2VPreview.style.display = "block";
+    videoI2VLabel.style.display = "none";
+    videoI2VRemove.style.display = "flex";
+  };
+  reader.readAsDataURL(file);
+}
+
+videoI2VDropzone.addEventListener("click", (e) => {
+  if (e.target === videoI2VRemove || e.target.closest(".remove-img")) return;
+  videoI2VInput.click();
+});
+videoI2VInput.addEventListener("change", () => {
+  if (videoI2VInput.files[0]) _handleVideoI2VFile(videoI2VInput.files[0]);
+});
+videoI2VDropzone.addEventListener("dragover", (e) => { e.preventDefault(); videoI2VDropzone.classList.add("dragover"); });
+videoI2VDropzone.addEventListener("dragleave", () => videoI2VDropzone.classList.remove("dragover"));
+videoI2VDropzone.addEventListener("drop", (e) => {
+  e.preventDefault();
+  videoI2VDropzone.classList.remove("dragover");
+  if (e.dataTransfer.files[0]) _handleVideoI2VFile(e.dataTransfer.files[0]);
+});
+videoI2VRemove.addEventListener("click", (e) => {
+  e.stopPropagation();
+  _videoStartingImage = null;
+  videoI2VPreview.style.display = "none";
+  videoI2VLabel.style.display = "";
+  videoI2VRemove.style.display = "none";
+  videoI2VInput.value = "";
+});
+
+// ── Inspire button ──
+document.getElementById("video-suggest-btn").addEventListener("click", async () => {
+  try {
+    const res = await apiFetch("/video/inspire");
+    const data = await res.json();
+    if (data.prompt) videoPrompt.value = data.prompt;
+  } catch (e) {
+    showToast("Could not generate suggestion");
+  }
+});
+
+// ── Create video result card ──
+function createVideoResultCard(record) {
+  const el = document.createElement("div");
+  el.className = "video-result";
+  el.dataset.videoId = record.id;
+
+  // Decode base64 video to blob
+  const rawB64 = record.video;
+  const byteStr = atob(rawB64);
+  const bytes = new Uint8Array(byteStr.length);
+  for (let i = 0; i < byteStr.length; i++) bytes[i] = byteStr.charCodeAt(i);
+  const blob = new Blob([bytes], { type: "video/mp4" });
+  const blobUrl = URL.createObjectURL(blob);
+
+  const pills = [];
+  if (record.model) pills.push(record.model);
+  if (record.duration) pills.push(record.duration + "s");
+  if (record.width && record.height) pills.push(record.width + "x" + record.height);
+  if (record.body?.num_frames) pills.push(record.body.num_frames + " frames");
+  if (record.body?.num_inference_steps) pills.push(record.body.num_inference_steps + " steps");
+  if (record.elapsed_s) pills.push(record.elapsed_s + "s gen");
+  if (record.has_audio) pills.push("audio");
+  if (record.seed != null) pills.push("seed: " + record.seed);
+
+  const title = record.title || record.rawPrompt?.slice(0, 50) || "Untitled";
+  const promptText = record.rawPrompt || "";
+
+  el.innerHTML = `
+    <div class="video-result-cover">
+      ${record.coverArt ? `<img src="data:image/png;base64,${record.coverArt}" alt="cover">` : ""}
+      <video src="${blobUrl}" controls preload="metadata"></video>
+    </div>
+    <div class="video-result-body">
+      <div class="video-result-title">${esc(title)}</div>
+      <div class="video-result-prompt" title="${esc(promptText)}">${esc(promptText)}</div>
+      <div class="video-result-pills">${pills.map(p => `<span>${esc(p)}</span>`).join("")}</div>
+      <div class="video-result-actions">
+        <button class="img-action-btn video-fav-btn" title="Favorite">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </button>
+        <button class="img-action-btn video-reuse-btn" title="Reuse settings">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+        </button>
+        <button class="img-action-btn video-download-btn" title="Download">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </button>
+        <button class="img-action-btn video-delete-btn" title="Delete">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
+      </div>
+    </div>
+  `;
+
+  // Favorite button
+  const favBtn = el.querySelector(".video-fav-btn");
+  isVideoFavorite(record.id).then(fav => {
+    if (fav) { favBtn.classList.add("active"); favBtn.querySelector("svg").setAttribute("fill", "#f472b6"); }
+  });
+  favBtn.addEventListener("click", async () => {
+    const isFav = favBtn.classList.contains("active");
+    if (isFav) {
+      await deleteVideoFavorite(record.id);
+      favBtn.classList.remove("active");
+      favBtn.querySelector("svg").setAttribute("fill", "none");
+    } else {
+      await saveVideoFavorite(record);
+      favBtn.classList.add("active");
+      favBtn.querySelector("svg").setAttribute("fill", "#f472b6");
+    }
+    refreshVideoFavoritesPanel();
+    _updateVideoFavBadge();
+  });
+
+  // Reuse button
+  el.querySelector(".video-reuse-btn").addEventListener("click", () => {
+    if (record.rawPrompt) videoPrompt.value = record.rawPrompt;
+    if (record.body) {
+      const b = record.body;
+      if (b.width && b.height) document.getElementById("video-resolution").value = b.width + "x" + b.height;
+      if (b.num_frames) { document.getElementById("video-frames").value = b.num_frames; document.getElementById("video-frames").dispatchEvent(new Event("input")); }
+      if (b.num_inference_steps) { document.getElementById("video-steps").value = b.num_inference_steps; document.getElementById("video-steps").dispatchEvent(new Event("input")); }
+      if (b.guidance_scale) { document.getElementById("video-guidance").value = b.guidance_scale; document.getElementById("video-guidance").dispatchEvent(new Event("input")); }
+      if (b.fps) document.getElementById("video-fps").value = b.fps;
+      if (b.seed) document.getElementById("video-seed").value = b.seed;
+    }
+    videoPrompt.focus();
+  });
+
+  // Download button
+  el.querySelector(".video-download-btn").addEventListener("click", () => {
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = (record.title || "video").replace(/[^a-zA-Z0-9_-]/g, "_") + ".mp4";
+    a.click();
+  });
+
+  // Delete button
+  el.querySelector(".video-delete-btn").addEventListener("click", async () => {
+    await saveVideoToTrash(record);
+    await deleteVideoClip(record.id);
+    el.remove();
+    if (!videoCanvas.querySelector(".video-result")) videoCanvasEmpty.style.display = "";
+    renderVideoSessionsList();
+    _refreshVideoTrashBadge();
+  });
+
+  return el;
+}
+
+// ── Restore video clips for active session ──
+async function restoreVideoClips() {
+  videoCanvas.querySelectorAll(".video-result").forEach(el => el.remove());
+  const clips = await loadAllVideoClips();
+  const sessionClips = clips
+    .filter(c => c.session_id === activeVideoSessionId)
+    .sort((a, b) => a.timestamp - b.timestamp);
+  if (sessionClips.length) {
+    videoCanvasEmpty.style.display = "none";
+    for (const c of sessionClips) {
+      videoCanvas.appendChild(createVideoResultCard(c));
+    }
+  } else {
+    videoCanvasEmpty.style.display = "";
+  }
+}
+
+// ── Video generation ──
+async function videoGenerate() {
+  if (_videoGenerating) return;
+  const rawPrompt = videoPrompt.value.trim();
+  if (!rawPrompt) return;
+  if (!_modelReady.video) {
+    showToast("Video model is loading, please wait...");
+    return;
+  }
+
+  _ensureVideoSession();
+  _videoGenerating = true;
+  videoGenerateBtn.disabled = true;
+
+  // Read settings
+  const resParts = document.getElementById("video-resolution").value.split("x");
+  const width = parseInt(resParts[0]);
+  const height = parseInt(resParts[1]);
+  const numFrames = parseInt(document.getElementById("video-frames").value);
+  const steps = parseInt(document.getElementById("video-steps").value);
+  const guidance = parseFloat(document.getElementById("video-guidance").value);
+  const fps = parseInt(document.getElementById("video-fps").value);
+  const seedInput = document.getElementById("video-seed").value.trim();
+  const seed = seedInput ? parseInt(seedInput) : null;
+
+  const body = {
+    prompt: rawPrompt,
+    num_frames: numFrames,
+    height,
+    width,
+    fps,
+    num_inference_steps: steps,
+    guidance_scale: guidance,
+    seed,
+  };
+  if (_videoStartingImage) body.image = _videoStartingImage;
+
+  // Create placeholder
+  const placeholder = document.createElement("div");
+  placeholder.className = "video-gen-placeholder";
+  placeholder.innerHTML = `
+    <div class="progress-ring">
+      <svg width="48" height="48" viewBox="0 0 48 48">
+        <circle cx="24" cy="24" r="20" fill="none" stroke="var(--surface2)" stroke-width="3"/>
+        <circle cx="24" cy="24" r="20" fill="none" stroke="var(--accent)" stroke-width="3"
+          stroke-dasharray="125.66" stroke-dashoffset="125.66" stroke-linecap="round"
+          style="transition: stroke-dashoffset 0.3s;" class="ring-progress"/>
+      </svg>
+    </div>
+    <div class="status-text">Preparing...</div>
+    <div class="progress-bar"><div class="progress-bar-fill" style="width:0%"></div></div>
+    <button class="stop-btn">Stop</button>
+  `;
+  videoCanvasEmpty.style.display = "none";
+  videoCanvas.appendChild(placeholder);
+  videoCanvas.scrollTop = videoCanvas.scrollHeight;
+
+  const ring = placeholder.querySelector(".ring-progress");
+  const statusText = placeholder.querySelector(".status-text");
+  const barFill = placeholder.querySelector(".progress-bar-fill");
+  const stopBtn = placeholder.querySelector(".stop-btn");
+
+  let aborted = false;
+  const abortCtrl = new AbortController();
+  stopBtn.addEventListener("click", () => { aborted = true; abortCtrl.abort(); });
+
+  // Progress polling
+  const progressInterval = setInterval(async () => {
+    try {
+      const res = await apiFetch("/video/progress");
+      const p = await res.json();
+      if (p.running && p.total_steps > 0) {
+        const pct = Math.round((p.step / p.total_steps) * 100);
+        ring.style.strokeDashoffset = 125.66 - (125.66 * pct / 100);
+        barFill.style.width = pct + "%";
+        statusText.textContent = `Step ${p.step}/${p.total_steps} · ${p.elapsed_s || 0}s`;
+      }
+    } catch {}
+  }, 500);
+
+  try {
+    const res = await apiFetch("/video/generate", {
+      method: "POST",
+      body: JSON.stringify(body),
+      signal: abortCtrl.signal,
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+
+    const record = {
+      id: "video_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
+      session_id: activeVideoSessionId,
+      collection_id: activeVideoCollectionId || null,
+      rawPrompt,
+      title: null,
+      body,
+      video: data.video,
+      width: data.width,
+      height: data.height,
+      num_frames: data.num_frames,
+      fps: data.fps,
+      duration: data.duration,
+      has_audio: data.has_audio,
+      elapsed_s: data.elapsed_s,
+      model: data.model,
+      seed: data.seed,
+      timestamp: Date.now(),
+      coverArt: null,
+      _pendingCoverArt: true,
+    };
+
+    await saveVideoClip(record);
+    const card = createVideoResultCard(record);
+    placeholder.replaceWith(card);
+    videoCanvas.scrollTop = videoCanvas.scrollHeight;
+    renderVideoSessionsList();
+
+    // Name session in background
+    (async () => {
+      try {
+        const nameRes = await apiFetch("/video/name-session", {
+          method: "POST",
+          body: JSON.stringify({ prompt: rawPrompt }),
+        });
+        const nameData = await nameRes.json();
+        if (nameData.name) {
+          record.title = nameData.name;
+          await saveVideoClip(record);
+          const titleEl = card.querySelector(".video-result-title");
+          if (titleEl) titleEl.textContent = nameData.name;
+          renderVideoSessionsList();
+        }
+      } catch {}
+    })();
+
+    // Generate cover art in background
+    (async () => {
+      try {
+        const artRes = await apiFetch("/video/cover-art", {
+          method: "POST",
+          body: JSON.stringify({ prompt: rawPrompt, title: record.title }),
+        });
+        const artData = await artRes.json();
+        if (artData.image) {
+          record.coverArt = artData.image;
+          record._pendingCoverArt = false;
+          await saveVideoClip(record);
+          const coverEl = card.querySelector(".video-result-cover img");
+          if (coverEl) {
+            coverEl.src = "data:image/png;base64," + artData.image;
+          } else {
+            const img = document.createElement("img");
+            img.src = "data:image/png;base64," + artData.image;
+            img.alt = "cover";
+            card.querySelector(".video-result-cover").prepend(img);
+          }
+        }
+      } catch {}
+    })();
+
+  } catch (e) {
+    if (e.name === "AbortError" || aborted) {
+      placeholder.innerHTML = `<div class="status-text">Generation cancelled.</div>`;
+      setTimeout(() => placeholder.remove(), 2000);
+    } else {
+      placeholder.innerHTML = `<div class="status-text" style="color:var(--danger);">Error: ${esc(e.message)}</div><button class="stop-btn" onclick="this.parentElement.remove()">Dismiss</button>`;
+    }
+  } finally {
+    clearInterval(progressInterval);
+    _videoGenerating = false;
+    videoGenerateBtn.disabled = false;
+  }
+}
+
+videoGenerateBtn.addEventListener("click", videoGenerate);
+videoPrompt.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    videoGenerate();
+  }
+});
+
+// ── Video Favorites ──
+videoFavToggle.addEventListener("click", () => {
+  const isOpen = videoFavPanel.classList.toggle("open");
+  videoFavToggle.classList.toggle("active", isOpen);
+  localStorage.setItem("diab_video_fav_open", isOpen ? "1" : "0");
+  if (isOpen) refreshVideoFavoritesPanel();
+});
+document.getElementById("video-fav-close").addEventListener("click", () => {
+  videoFavPanel.classList.remove("open");
+  videoFavToggle.classList.remove("active");
+  localStorage.setItem("diab_video_fav_open", "0");
+});
+
+async function refreshVideoFavoritesPanel() {
+  const favs = await loadAllVideoFavorites();
+  videoFavContent.innerHTML = "";
+  if (!favs.length) {
+    videoFavContent.innerHTML = document.getElementById("video-fav-empty").outerHTML;
+    return;
+  }
+  favs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+  for (const fav of favs) {
+    const mini = document.createElement("div");
+    mini.className = "video-result";
+    mini.style.marginBottom = "8px";
+    const title = fav.title || fav.rawPrompt?.slice(0, 30) || "Untitled";
+    mini.innerHTML = `
+      <div class="video-result-body" style="padding:8px;">
+        <div class="video-result-title" style="font-size:0.78rem;">${esc(title)}</div>
+        <div class="video-result-prompt" style="font-size:0.68rem;">${esc(fav.rawPrompt || "")}</div>
+      </div>
+    `;
+    videoFavContent.appendChild(mini);
+  }
+}
+
+async function _updateVideoFavBadge() {
+  const favs = await loadAllVideoFavorites();
+  const count = favs.length;
+  videoFavBadge.textContent = count || "";
+  videoFavBadge.style.display = count ? "" : "none";
+  videoFavCountLabel.textContent = count;
+}
+
+// ── Video Trash ──
+const videoTrashModal = document.getElementById("video-trash-modal");
+document.getElementById("video-trash-btn").addEventListener("click", () => openVideoTrashModal());
+document.getElementById("video-trash-close-btn").addEventListener("click", () => videoTrashModal.classList.remove("open"));
+videoTrashModal.addEventListener("click", e => { if (e.target === videoTrashModal) videoTrashModal.classList.remove("open"); });
+
+async function openVideoTrashModal() {
+  const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const all = await loadAllVideoTrash();
+  for (const item of all) { if (item.deletedAt < cutoff) await deleteFromVideoTrash(item.id); }
+  videoTrashModal.classList.add("open");
+  await renderVideoTrashList();
+}
+
+async function renderVideoTrashList() {
+  const list = document.getElementById("video-trash-list");
+  const countLabel = document.getElementById("video-trash-count-label");
+  const items = (await loadAllVideoTrash()).sort((a, b) => b.deletedAt - a.deletedAt);
+  list.innerHTML = "";
+  countLabel.textContent = items.length ? `${items.length} clip${items.length !== 1 ? "s" : ""}` : "";
+  updateVideoTrashBadge(items.length);
+  items.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "video-trash-card";
+    const age = _trashAge(item.deletedAt);
+    const durStr = item.duration ? item.duration + "s" : "";
+    card.innerHTML = `
+      <div class="video-trash-card-info">
+        <div class="video-trash-card-prompt">${esc(item.title || item.rawPrompt || "Untitled")}</div>
+        <div class="video-trash-card-meta">${durStr}${durStr ? " · " : ""}Deleted ${age}</div>
+      </div>
+      <div class="video-trash-card-actions">
+        <button class="video-trash-restore" title="Restore"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
+        <button class="video-trash-del" title="Delete permanently"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
+      </div>
+    `;
+    card.querySelector(".video-trash-restore").addEventListener("click", async () => {
+      const record = { ...item };
+      delete record.deletedAt;
+      record.timestamp = Date.now();
+      await saveVideoClip(record);
+      await deleteFromVideoTrash(item.id);
+      if ((record.collection_id || null) === (activeVideoCollectionId || null)) {
+        videoCanvas.appendChild(createVideoResultCard(record));
+        videoCanvasEmpty.style.display = "none";
+        renderVideoSessionsList();
+      }
+      await renderVideoTrashList();
+    });
+    card.querySelector(".video-trash-del").addEventListener("click", async () => {
+      await deleteFromVideoTrash(item.id);
+      await renderVideoTrashList();
+    });
+    list.appendChild(card);
+  });
+}
+
+function updateVideoTrashBadge(count) {
+  const badge = document.getElementById("video-trash-badge");
+  if (badge) badge.textContent = count || "";
+}
+
+async function _refreshVideoTrashBadge() {
+  const items = await loadAllVideoTrash();
+  updateVideoTrashBadge(items.length);
+}
+
+document.getElementById("video-trash-empty-btn").addEventListener("click", async () => {
+  const count = document.querySelectorAll(".video-trash-card").length;
+  if (!count) return;
+  if (!confirm(`Permanently delete ${count} clip${count !== 1 ? "s" : ""} from trash?`)) return;
+  await emptyVideoTrash();
+  updateVideoTrashBadge(0);
+  videoTrashModal.classList.remove("open");
 });
 
 // ── Image Studio Trash ──

@@ -50,8 +50,10 @@ KOKORO_URL        = os.environ.get("KOKORO_URL", "http://kokoro:8880")
 DEFAULT_VOICE     = os.environ.get("TTS_VOICE", "af_heart")
 IMAGE_GEN_URL     = os.environ.get("IMAGE_GEN_URL", "http://image-api:8100")
 MUSIC_GEN_URL     = os.environ.get("MUSIC_GEN_URL", "http://music-api:8200")
+VIDEO_GEN_URL     = os.environ.get("VIDEO_GEN_URL", "http://video-api:8300")
 _image_gen_active = False  # Guard flag -blocks Ollama calls while image gen is using the GPU
 _music_gen_active = False  # Guard flag -blocks Ollama calls while music gen is using the GPU
+_video_gen_active = False  # Guard flag -blocks Ollama calls while video gen is using the GPU
 DEFAULT_TOP_K     = 30
 NOT_FOUND_MSG     = "I couldn't find that in your vault."
 SUPPORTED_UPLOAD_EXTENSIONS = {".md", ".txt", ".pdf"}
@@ -442,6 +444,19 @@ async def _evict_music_model():
                 await client.post(f"{MUSIC_GEN_URL}/models/unload")
     except Exception as e:
         logger.debug(f"Music model eviction skipped: {e}")
+
+
+async def _evict_video_model():
+    """Unload the video-api model from VRAM before LLM inference."""
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(f"{VIDEO_GEN_URL}/health")
+            data = resp.json()
+            if data.get("model_loaded"):
+                logger.info("Evicting video model from VRAM before LLM call")
+                await client.post(f"{VIDEO_GEN_URL}/models/unload")
+    except Exception as e:
+        logger.debug(f"Video model eviction skipped: {e}")
 
 
 # --- Streaming chat generator ---
@@ -1020,6 +1035,15 @@ async def models_ps(user: dict = Depends(get_current_user)):
                 loaded.append({"name": data["current_model"], "type": "music", "vram_mb": data.get("vram_mb", 0)})
     except Exception:
         pass
+    # Video model
+    try:
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            resp = await client.get(f"{VIDEO_GEN_URL}/health")
+            data = resp.json()
+            if data.get("model_loaded") and data.get("current_model"):
+                loaded.append({"name": data["current_model"], "type": "video", "vram_mb": data.get("vram_mb", 0)})
+    except Exception:
+        pass
     return {"loaded": loaded}
 
 
@@ -1045,8 +1069,13 @@ async def models_warmup(request: Request, user: dict = Depends(get_current_user)
                 await client.post(f"{MUSIC_GEN_URL}/models/unload")
             except Exception:
                 pass
+            try:
+                await client.post(f"{VIDEO_GEN_URL}/models/unload")
+            except Exception:
+                pass
             _image_gen_active = False
             _music_gen_active = False
+            _video_gen_active = False
 
             # Evict any currently loaded Ollama models that aren't the target or utility model
             try:
@@ -1140,6 +1169,11 @@ async def prepare_studio(request: Request, user: dict = Depends(get_current_user
             await client.post(f"{MUSIC_GEN_URL}/models/unload")
     except Exception:
         pass
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            await client.post(f"{VIDEO_GEN_URL}/models/unload")
+    except Exception:
+        pass
 
     # Load the image model
     loaded_model = None
@@ -1180,6 +1214,11 @@ async def prepare_music_studio(request: Request, user: dict = Depends(get_curren
             await client.post(f"{IMAGE_GEN_URL}/models/unload")
     except Exception:
         pass
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            await client.post(f"{VIDEO_GEN_URL}/models/unload")
+    except Exception:
+        pass
 
     # Load music model
     music_ready = False
@@ -1192,6 +1231,46 @@ async def prepare_music_studio(request: Request, user: dict = Depends(get_curren
         logger.warning(f"prepare-music-studio load failed: {e}")
 
     return {"ok": True, "evicted": evicted, "music_ready": music_ready}
+
+
+@app.post("/models/prepare-video-studio")
+async def prepare_video_studio(request: Request, user: dict = Depends(get_current_user)):
+    """Preload the video model, evicting other models only if needed."""
+    # Check if video model is already loaded
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            health = await client.get(f"{VIDEO_GEN_URL}/health")
+            hdata = health.json()
+            if hdata.get("model_loaded"):
+                return {"ok": True, "evicted": [], "video_ready": True, "skipped": True}
+    except Exception:
+        pass
+
+    # Video model not loaded - evict to free VRAM
+    evicted = await _evict_ollama_models()
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            await client.post(f"{IMAGE_GEN_URL}/models/unload")
+    except Exception:
+        pass
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            await client.post(f"{MUSIC_GEN_URL}/models/unload")
+    except Exception:
+        pass
+
+    # Load video model
+    video_ready = False
+    try:
+        async with httpx.AsyncClient(timeout=300.0) as client:
+            resp = await client.post(f"{VIDEO_GEN_URL}/models/load")
+            data = resp.json()
+            video_ready = data.get("ok", False)
+    except Exception as e:
+        logger.warning(f"prepare-video-studio load failed: {e}")
+
+    return {"ok": True, "evicted": evicted, "video_ready": video_ready}
 
 
 @app.get("/models/info")
@@ -1254,12 +1333,13 @@ async def context_info(model: str = None, conversation_id: str = None, user: dic
 
 @app.post("/chat")
 async def chat(request: ChatRequest, user: dict = Depends(get_current_user)):
-    if _image_gen_active or _music_gen_active:
+    if _image_gen_active or _music_gen_active or _video_gen_active:
         raise HTTPException(status_code=503, detail="GPU is busy, please wait")
     if not request.message.strip():
         raise HTTPException(status_code=400, detail="Message cannot be empty")
     await _evict_image_model()
     await _evict_music_model()
+    await _evict_video_model()
     return StreamingResponse(
         chat_stream(request, user["id"]),
         media_type="text/event-stream",
@@ -1355,7 +1435,7 @@ async def stream_reindex(user: dict = Depends(get_current_user)):
 
 @app.get("/suggestions")
 async def get_suggestions(model: str = None, user: dict = Depends(get_current_user)):
-    if _image_gen_active or _music_gen_active:
+    if _image_gen_active or _music_gen_active or _video_gen_active:
         return {"suggestions": []}
     use_model = model or LLM_MODEL
     user_id = user["id"]
@@ -2106,6 +2186,173 @@ async def music_generate_proxy(req: MusicGenerateRequest, user: dict = Depends(g
         raise HTTPException(status_code=500, detail=f"Music generation failed: {e}")
     finally:
         _music_gen_active = False
+
+
+# --- Video generation proxy ---
+
+@app.get("/video/health")
+async def video_health(user: dict = Depends(get_current_user)):
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(f"{VIDEO_GEN_URL}/health")
+            return resp.json()
+    except Exception:
+        return {"ok": False, "model_loaded": False}
+
+
+@app.get("/video/progress")
+async def video_progress(user: dict = Depends(get_current_user)):
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(f"{VIDEO_GEN_URL}/progress")
+            return resp.json()
+    except Exception:
+        return {"running": False, "step": 0, "total_steps": 0, "elapsed_s": 0.0}
+
+
+class VideoGenerateRequest(BaseModel):
+    prompt: str
+    image: Optional[str] = None
+    negative_prompt: Optional[str] = None
+    num_frames: Optional[int] = 97
+    height: Optional[int] = 480
+    width: Optional[int] = 704
+    fps: Optional[int] = 24
+    num_inference_steps: Optional[int] = 30
+    guidance_scale: Optional[float] = 7.5
+    seed: Optional[int] = None
+
+
+@app.post("/video/generate")
+async def video_generate_proxy(req: VideoGenerateRequest, user: dict = Depends(get_current_user)):
+    """Proxy to video-api for text-to-video / image-to-video generation."""
+    global _video_gen_active
+    if not req.prompt.strip():
+        raise HTTPException(status_code=400, detail="prompt is required")
+
+    _video_gen_active = True
+    try:
+        async with httpx.AsyncClient(timeout=600.0) as client:
+            resp = await client.post(
+                f"{VIDEO_GEN_URL}/generate",
+                json=req.model_dump(exclude_none=True),
+            )
+            resp.raise_for_status()
+            return resp.json()
+    except httpx.ConnectError:
+        raise HTTPException(status_code=503, detail="Video generation service is not available")
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="Video generation timed out")
+    except httpx.HTTPStatusError as e:
+        detail = e.response.json().get("detail", str(e)) if e.response.content else str(e)
+        raise HTTPException(status_code=e.response.status_code, detail=detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Video generation failed: {e}")
+    finally:
+        _video_gen_active = False
+
+
+@app.get("/video/inspire")
+async def video_inspire(user: dict = Depends(get_current_user)):
+    """Ask the utility LLM to generate a creative video prompt idea."""
+    system = (
+        "You are a creative video director who generates vivid text-to-video prompts for an AI video generator. "
+        "Generate exactly ONE unique, cinematic video prompt describing the scene, action, camera movement, lighting, and mood. "
+        "Vary widely between styles: nature documentary, cinematic narrative, abstract art, sci-fi, urban life, underwater, aerial, timelapse, etc. "
+        "Output ONLY the prompt text, nothing else -no quotes, no explanation, no numbering. Keep it to 1-2 sentences."
+    )
+    try:
+        text = await _utility_llm(system, "Give me a fresh, creative video generation prompt.", temperature=1.2, num_predict=100, user=user)
+        return {"prompt": text.strip('"').strip("'")}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Could not generate idea: {e}")
+
+
+class VideoNameRequest(BaseModel):
+    prompt: str
+
+
+@app.post("/video/name-session")
+async def video_name_session(req: VideoNameRequest, user: dict = Depends(get_current_user)):
+    """Ask the utility LLM to generate a title for a video session."""
+    try:
+        name = await _utility_llm(
+            "Generate a short, descriptive title (3-6 words) for a video generation session based on the prompt. "
+            "Capture the main scene and mood. "
+            "Output ONLY the title text, no quotes, no explanation.",
+            req.prompt[:200], temperature=0.5, num_predict=15, user=user,
+        )
+        name = name.strip('"').strip("'").split("\n")[0].strip().title()[:60]
+        return {"name": name}
+    except Exception as e:
+        logger.warning(f"Video session naming failed: {e}")
+        return {"name": ""}
+
+
+class VideoCoverArtRequest(BaseModel):
+    prompt: str
+    title: Optional[str] = None
+
+
+@app.post("/video/cover-art")
+async def video_cover_art(req: VideoCoverArtRequest, user: dict = Depends(get_current_user)):
+    """Generate a thumbnail for a video using SDXL Turbo via image-api."""
+    if not req.prompt.strip():
+        raise HTTPException(status_code=400, detail="prompt is required")
+
+    # Step 1: Generate an image prompt using the utility LLM
+    image_prompt = None
+    try:
+        context = f"Video scene: {req.prompt}"
+        if req.title:
+            context = f"Video title: {req.title}\n{context}"
+
+        raw = await _utility_llm(
+            system=(
+                "You are a video thumbnail designer. Given a video description, generate a short visual prompt "
+                "for a cinematic still frame that captures the essence of the video. "
+                "Describe the key moment, composition, lighting, and cinematic feel. "
+                "Do NOT include text or words in the image. "
+                "Output ONLY the image prompt, 1-2 sentences, no quotes or explanation."
+            ),
+            prompt=context,
+            temperature=0.9,
+            num_predict=80,
+            user=user,
+        )
+        image_prompt = raw.strip('"').strip("'").strip().split("\n")[0].strip()
+    except Exception as e:
+        logger.warning(f"Video cover art prompt generation failed: {e}")
+
+    if not image_prompt:
+        image_prompt = f"Cinematic still frame, {req.prompt[:100]}, dramatic lighting, film quality, no text"
+
+    # Step 2: Generate the image via image-api with SDXL Turbo (landscape for video)
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            resp = await client.post(
+                f"{IMAGE_GEN_URL}/generate",
+                json={
+                    "prompt": image_prompt,
+                    "model": "sdxl-turbo",
+                    "aspect": "landscape",
+                    "steps": 4,
+                    "guidance_scale": 0.0,
+                },
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            return {
+                "image": data.get("image"),
+                "prompt": image_prompt,
+                "width": data.get("width", 672),
+                "height": data.get("height", 384),
+            }
+    except httpx.ConnectError:
+        raise HTTPException(status_code=503, detail="Image generation service is not available")
+    except Exception as e:
+        logger.warning(f"Video cover art image generation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Cover art generation failed: {e}")
 
 
 # --- Topic endpoints ---
