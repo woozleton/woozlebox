@@ -32,6 +32,11 @@ HF_CACHE = os.environ.get("HF_HOME", "/root/.cache/huggingface")
 
 # Ollama connection -used to evict loaded models from VRAM before inference
 OLLAMA_URL = os.environ.get("OLLAMA_BASE_URL", "http://ollama:11434")
+UTILITY_MODEL = os.environ.get("UTILITY_MODEL", "qwen3:0.6b")
+
+
+def _is_utility_model(name: str) -> bool:
+    return name.split(":")[0].lower() == UTILITY_MODEL.split(":")[0].lower()
 
 MODELS = {
     "playground-v2.5": {
@@ -361,17 +366,22 @@ async def generate(req: GenerateRequest):
         async with httpx.AsyncClient(timeout=10) as client:
             ps = await client.get(f"{OLLAMA_URL}/api/ps")
             loaded_models = [m.get("name", "") for m in ps.json().get("models", []) if m.get("name")]
+            evicted = []
             for model_name in loaded_models:
+                if _is_utility_model(model_name):
+                    continue
                 logger.info(f"Evicting {model_name} from VRAM")
                 await client.post(f"{OLLAMA_URL}/api/generate", json={"model": model_name, "keep_alive": 0})
-        if loaded_models:
+                evicted.append(model_name)
+        if evicted:
             for _ in range(30):
                 await asyncio.sleep(1)
                 async with httpx.AsyncClient(timeout=5) as client:
                     ps = await client.get(f"{OLLAMA_URL}/api/ps")
-                    if not ps.json().get("models", []):
+                    remaining = [m.get("name", "") for m in ps.json().get("models", []) if m.get("name") and not _is_utility_model(m.get("name", ""))]
+                    if not remaining:
                         break
-            await asyncio.sleep(3)
+            await asyncio.sleep(1)
             logger.info("Ollama VRAM cleared")
     except Exception as e:
         logger.warning(f"Could not evict Ollama models: {e}")
@@ -451,17 +461,22 @@ async def upscale(req: UpscaleRequest):
         async with httpx.AsyncClient(timeout=10) as client:
             ps = await client.get(f"{OLLAMA_URL}/api/ps")
             loaded_models = [m.get("name", "") for m in ps.json().get("models", []) if m.get("name")]
+            evicted = []
             for model_name in loaded_models:
+                if _is_utility_model(model_name):
+                    continue
                 logger.info(f"Evicting {model_name} from VRAM for upscale")
                 await client.post(f"{OLLAMA_URL}/api/generate", json={"model": model_name, "keep_alive": 0})
-            if loaded_models:
+                evicted.append(model_name)
+            if evicted:
                 for _ in range(15):
                     await asyncio.sleep(1)
                     async with httpx.AsyncClient(timeout=5) as c2:
                         ps2 = await c2.get(f"{OLLAMA_URL}/api/ps")
-                        if not ps2.json().get("models", []):
+                        remaining = [m.get("name", "") for m in ps2.json().get("models", []) if m.get("name") and not _is_utility_model(m.get("name", ""))]
+                        if not remaining:
                             break
-                await asyncio.sleep(2)
+                await asyncio.sleep(1)
     except Exception as e:
         logger.warning(f"Could not evict Ollama models for upscale: {e}")
 
@@ -529,17 +544,22 @@ async def inpaint(req: InpaintRequest):
         async with httpx.AsyncClient(timeout=10) as client:
             ps = await client.get(f"{OLLAMA_URL}/api/ps")
             loaded_models = [m.get("name", "") for m in ps.json().get("models", []) if m.get("name")]
+            evicted = []
             for model_name in loaded_models:
+                if _is_utility_model(model_name):
+                    continue
                 logger.info(f"Evicting {model_name} from VRAM for inpaint")
                 await client.post(f"{OLLAMA_URL}/api/generate", json={"model": model_name, "keep_alive": 0})
-            if loaded_models:
+                evicted.append(model_name)
+            if evicted:
                 for _ in range(30):
                     await asyncio.sleep(1)
                     async with httpx.AsyncClient(timeout=5) as c2:
                         ps2 = await c2.get(f"{OLLAMA_URL}/api/ps")
-                        if not ps2.json().get("models", []):
+                        remaining = [m.get("name", "") for m in ps2.json().get("models", []) if m.get("name") and not _is_utility_model(m.get("name", ""))]
+                        if not remaining:
                             break
-                await asyncio.sleep(3)
+                await asyncio.sleep(1)
     except Exception as e:
         logger.warning(f"Could not evict Ollama models for inpaint: {e}")
 

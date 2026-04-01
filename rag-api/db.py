@@ -341,6 +341,14 @@ def delete_conversation(cid: str, user_id: str):
         )
 
 
+def delete_all_user_data(user_id: str):
+    """Delete all conversations, topics, and memory for a user (keeps the account)."""
+    with _conn() as conn:
+        conn.execute("DELETE FROM conversations WHERE user_id=?", (user_id,))
+        conn.execute("DELETE FROM topics WHERE user_id=?", (user_id,))
+        conn.execute("DELETE FROM memory WHERE user_id=?", (user_id,))
+
+
 def rename_conversation(cid: str, user_id: str, title: str):
     with _conn() as conn:
         conn.execute(

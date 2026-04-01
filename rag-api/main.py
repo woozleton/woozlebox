@@ -42,6 +42,7 @@ VAULT_PATH        = os.environ.get("VAULT_PATH", "/vault")
 OLLAMA_BASE_URL   = os.environ.get("OLLAMA_BASE_URL", "http://host.docker.internal:11434")
 EMBED_MODEL       = os.environ.get("EMBED_MODEL", "nomic-embed-text")
 LLM_MODEL         = os.environ.get("LLM_MODEL", "qwen3:30b-a3b")
+UTILITY_MODEL     = os.environ.get("UTILITY_MODEL", "qwen3:0.6b")
 SIMILARITY_THRESHOLD = float(os.environ.get("SIMILARITY_THRESHOLD", "0.45"))
 TAVILY_API_KEY    = os.environ.get("TAVILY_API_KEY", "")
 DB_DIR            = os.environ.get("DB_DIR", "/app/data")
@@ -378,6 +379,43 @@ async def web_search(query: str, num_results: int = 3) -> list[dict]:
     except Exception as e:
         logger.warning(f"Web search failed: {e}")
         return []
+
+
+def _get_utility_model(user: dict = None) -> str:
+    """Return the user's preferred utility model, or the server default."""
+    if user:
+        try:
+            settings = json.loads(user.get("settings") or "{}")
+            um = settings.get("diab_utility_model", "")
+            if um:
+                return um
+        except Exception:
+            pass
+    return UTILITY_MODEL
+
+
+async def _utility_llm(system: str, prompt: str, temperature: float = 0.8, num_predict: int = 80, user: dict = None) -> str:
+    """Quick LLM call using the small utility model. Does NOT evict other models."""
+    model = _get_utility_model(user)
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        resp = await client.post(
+            f"{OLLAMA_BASE_URL}/api/generate",
+            json={
+                "model": model,
+                "system": system,
+                "prompt": prompt,
+                "stream": False,
+                "think": False,
+                "options": {"temperature": temperature, "num_predict": num_predict},
+            },
+        )
+        resp.raise_for_status()
+        text = resp.json().get("response", "").strip()
+        # Strip thinking tags if present (qwen3 models)
+        if "<think>" in text:
+            import re
+            text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
+        return text
 
 
 async def _evict_image_model():
@@ -1010,12 +1048,12 @@ async def models_warmup(request: Request, user: dict = Depends(get_current_user)
             _image_gen_active = False
             _music_gen_active = False
 
-            # Evict any currently loaded Ollama models that aren't the target
+            # Evict any currently loaded Ollama models that aren't the target or utility model
             try:
                 ps = await client.get(f"{OLLAMA_BASE_URL}/api/ps")
                 for m in ps.json().get("models", []):
                     mname = m.get("name", "")
-                    if mname and mname != model:
+                    if mname and mname != model and not _is_utility_model(mname):
                         try:
                             await client.post(
                                 f"{OLLAMA_BASE_URL}/api/generate",
@@ -1044,24 +1082,23 @@ async def models_warmup(request: Request, user: dict = Depends(get_current_user)
         return {"ok": False, "error": str(e)}
 
 
-@app.post("/models/prepare-studio")
-async def prepare_studio(request: Request, user: dict = Depends(get_current_user)):
-    """Evict Ollama models from VRAM, then preload the image model."""
-    evicted = []
-    # Optionally accept a target image model
-    target_model = None
-    try:
-        body = await request.json()
-        target_model = body.get("model")
-    except Exception:
-        pass
+def _is_utility_model(model_name: str) -> bool:
+    """Check if a model name matches the utility model (should never be evicted)."""
+    util = UTILITY_MODEL.split(":")[0].lower()
+    name = model_name.split(":")[0].lower()
+    return name == util
 
+
+async def _evict_ollama_models(keep_utility: bool = True) -> list[str]:
+    """Evict Ollama LLMs from VRAM, optionally keeping the utility model."""
+    evicted = []
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            # Evict all Ollama models
             ps = await client.get(f"{OLLAMA_BASE_URL}/api/ps")
             loaded = [m["name"] for m in ps.json().get("models", [])]
             for model_name in loaded:
+                if keep_utility and _is_utility_model(model_name):
+                    continue
                 try:
                     await client.post(
                         f"{OLLAMA_BASE_URL}/api/generate",
@@ -1071,37 +1108,51 @@ async def prepare_studio(request: Request, user: dict = Depends(get_current_user
                 except Exception:
                     pass
     except Exception as e:
-        logger.warning(f"prepare-studio evict failed: {e}")
+        logger.warning(f"Ollama evict failed: {e}")
+    return evicted
 
-    # Evict music model
+
+@app.post("/models/prepare-studio")
+async def prepare_studio(request: Request, user: dict = Depends(get_current_user)):
+    """Preload the image model, evicting other models only if needed."""
+    target_model = None
+    try:
+        body = await request.json()
+        target_model = body.get("model")
+    except Exception:
+        pass
+
+    # Check if image model is already loaded — skip everything if so
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            health = await client.get(f"{IMAGE_GEN_URL}/health")
+            hdata = health.json()
+            if hdata.get("model_loaded") and (not target_model or hdata.get("current_model") == target_model):
+                return {"ok": True, "evicted": [], "image_model": hdata.get("current_model"), "skipped": True}
+    except Exception:
+        pass
+
+    # Image model not loaded — evict to free VRAM
+    evicted = await _evict_ollama_models()
+
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             await client.post(f"{MUSIC_GEN_URL}/models/unload")
     except Exception:
         pass
 
-    # Preload the image model into VRAM
+    # Load the image model
     loaded_model = None
     try:
         async with httpx.AsyncClient(timeout=180.0) as client:
-            # Check what's already loaded
-            health = await client.get(f"{IMAGE_GEN_URL}/health")
-            hdata = health.json()
-            if hdata.get("model_loaded") and (not target_model or hdata.get("current_model") == target_model):
-                loaded_model = hdata.get("current_model")
-            else:
-                # Determine which model to load
-                if not target_model:
-                    models_resp = await client.get(f"{IMAGE_GEN_URL}/models")
-                    mdata = models_resp.json()
-                    target_model = mdata.get("current") or (mdata.get("models", [{}])[0].get("id") if mdata.get("models") else None)
-                if target_model:
-                    resp = await client.post(
-                        f"{IMAGE_GEN_URL}/models/load",
-                        json={"model": target_model},
-                    )
-                    if resp.status_code == 200:
-                        loaded_model = target_model
+            if not target_model:
+                models_resp = await client.get(f"{IMAGE_GEN_URL}/models")
+                mdata = models_resp.json()
+                target_model = mdata.get("current") or (mdata.get("models", [{}])[0].get("id") if mdata.get("models") else None)
+            if target_model:
+                resp = await client.post(f"{IMAGE_GEN_URL}/models/load", json={"model": target_model})
+                if resp.status_code == 200:
+                    loaded_model = target_model
     except Exception as e:
         logger.warning(f"prepare-studio image load failed: {e}")
 
@@ -1110,33 +1161,27 @@ async def prepare_studio(request: Request, user: dict = Depends(get_current_user
 
 @app.post("/models/prepare-music-studio")
 async def prepare_music_studio(request: Request, user: dict = Depends(get_current_user)):
-    """Evict Ollama + image models from VRAM, then confirm music model is ready."""
-    evicted = []
+    """Preload the music model, evicting other models only if needed."""
+    # Check if music model is already loaded — skip everything if so
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            # Evict all Ollama models
-            ps = await client.get(f"{OLLAMA_BASE_URL}/api/ps")
-            loaded = [m["name"] for m in ps.json().get("models", [])]
-            for model_name in loaded:
-                try:
-                    await client.post(
-                        f"{OLLAMA_BASE_URL}/api/generate",
-                        json={"model": model_name, "prompt": "", "keep_alive": 0, "stream": False},
-                    )
-                    evicted.append(model_name)
-                except Exception:
-                    pass
-    except Exception as e:
-        logger.warning(f"prepare-music-studio evict failed: {e}")
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            health = await client.get(f"{MUSIC_GEN_URL}/health")
+            hdata = health.json()
+            if hdata.get("model_loaded"):
+                return {"ok": True, "evicted": [], "music_ready": True, "skipped": True}
+    except Exception:
+        pass
 
-    # Evict image model
+    # Music model not loaded — evict to free VRAM
+    evicted = await _evict_ollama_models()
+
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             await client.post(f"{IMAGE_GEN_URL}/models/unload")
     except Exception:
         pass
 
-    # Load music model into VRAM (if not already loaded)
+    # Load music model
     music_ready = False
     try:
         async with httpx.AsyncClient(timeout=180.0) as client:
@@ -1485,6 +1530,13 @@ def delete_own_account(user: dict = Depends(get_current_user)):
     return {"ok": True}
 
 
+@app.delete("/users/me/data")
+def delete_own_data(user: dict = Depends(get_current_user)):
+    """Delete all conversations, topics, and memory for the current user (keeps account)."""
+    db.delete_all_user_data(user["id"])
+    return {"ok": True}
+
+
 # --- Admin endpoints ---
 
 @app.get("/admin/users")
@@ -1620,7 +1672,7 @@ class ImageInpaintRequest(BaseModel):
 
 @app.get("/image/inspire")
 async def image_inspire(user: dict = Depends(get_current_user)):
-    """Ask the LLM to generate a creative image prompt idea."""
+    """Ask the utility LLM to generate a creative image prompt idea."""
     system = (
         "You are a creative director who generates vivid, detailed text-to-image prompts. "
         "Generate exactly ONE unique, imaginative prompt for an AI image generator. "
@@ -1629,20 +1681,8 @@ async def image_inspire(user: dict = Depends(get_current_user)):
         "Output ONLY the prompt text, nothing else -no quotes, no explanation, no numbering."
     )
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            resp = await client.post(
-                f"{OLLAMA_BASE_URL}/api/generate",
-                json={
-                    "model": LLM_MODEL,
-                    "system": system,
-                    "prompt": "Give me a fresh, creative image generation prompt.",
-                    "stream": False,
-                    "options": {"temperature": 1.2, "num_predict": 150},
-                },
-            )
-            resp.raise_for_status()
-            text = resp.json().get("response", "").strip().strip('"').strip("'")
-            return {"prompt": text}
+        text = await _utility_llm(system, "Give me a fresh, creative image generation prompt.", temperature=1.2, num_predict=150, user=user)
+        return {"prompt": text.strip('"').strip("'")}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Could not generate idea: {e}")
 
@@ -1792,42 +1832,18 @@ class SessionNameRequest(BaseModel):
 
 @app.post("/image/name-session")
 async def image_name_session(req: SessionNameRequest, user: dict = Depends(get_current_user)):
-    """Generate a concise session name from an image prompt using the smallest LLM."""
+    """Generate a concise session name from an image prompt using the utility LLM."""
     if not req.prompt.strip():
         return {"name": ""}
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            name_model = LLM_MODEL
-            try:
-                tags_resp = await client.get(f"{OLLAMA_BASE_URL}/api/tags")
-                all_models = tags_resp.json().get("models", [])
-                llm_models = [m for m in all_models
-                              if "nomic-bert" not in m.get("details", {}).get("families", [])
-                              and "bert" not in m.get("details", {}).get("family", "")]
-                if llm_models:
-                    llm_models.sort(key=lambda m: m.get("size", float("inf")))
-                    name_model = llm_models[0].get("model") or llm_models[0].get("name", LLM_MODEL)
-            except Exception:
-                pass
-
-            resp = await client.post(
-                f"{OLLAMA_BASE_URL}/api/generate",
-                json={
-                    "model": name_model,
-                    "system": (
-                        "Generate a short, descriptive title (3-6 words) for an image generation session based on the prompt. "
-                        "Capture the main subject and mood. "
-                        "Output ONLY the title text, no quotes, no explanation."
-                    ),
-                    "prompt": req.prompt[:200],
-                    "stream": False,
-                    "options": {"temperature": 0.5, "num_predict": 15},
-                },
-            )
-            resp.raise_for_status()
-            name = resp.json().get("response", "").strip().strip('"').strip("'").strip()
-            name = name.split("\n")[0].strip()[:60]
-            return {"name": name}
+        name = await _utility_llm(
+            "Generate a short, descriptive title (3-6 words) for an image generation session based on the prompt. "
+            "Capture the main subject and mood. "
+            "Output ONLY the title text, no quotes, no explanation.",
+            req.prompt[:200], temperature=0.5, num_predict=15, user=user,
+        )
+        name = name.strip('"').strip("'").split("\n")[0].strip().title()[:60]
+        return {"name": name}
     except Exception as e:
         logger.warning(f"Image session naming failed: {e}")
         return {"name": ""}
@@ -1837,7 +1853,7 @@ async def image_name_session(req: SessionNameRequest, user: dict = Depends(get_c
 
 @app.get("/music/inspire")
 async def music_inspire(user: dict = Depends(get_current_user)):
-    """Ask the smallest LLM to generate a creative music prompt idea."""
+    """Ask the utility LLM to generate a creative music prompt idea."""
     system = (
         "You are a music producer who generates creative text-to-music prompts for an AI music generator. "
         "Generate exactly ONE unique, vivid music prompt describing genre, mood, instruments, tempo feel, and vibe. "
@@ -1845,34 +1861,8 @@ async def music_inspire(user: dict = Depends(get_current_user)):
         "Output ONLY the prompt text, nothing else -no quotes, no explanation, no numbering. Keep it to 1-2 sentences."
     )
     try:
-        async with httpx.AsyncClient(timeout=120.0) as client:
-            # Pick smallest non-embedding LLM
-            song_model = LLM_MODEL
-            try:
-                tags_resp = await client.get(f"{OLLAMA_BASE_URL}/api/tags")
-                all_models = tags_resp.json().get("models", [])
-                llm_models = [m for m in all_models
-                              if "nomic-bert" not in m.get("details", {}).get("families", [])
-                              and "bert" not in m.get("details", {}).get("family", "")]
-                if llm_models:
-                    llm_models.sort(key=lambda m: m.get("size", float("inf")))
-                    song_model = llm_models[0].get("model") or llm_models[0].get("name", LLM_MODEL)
-            except Exception:
-                pass
-
-            resp = await client.post(
-                f"{OLLAMA_BASE_URL}/api/generate",
-                json={
-                    "model": song_model,
-                    "system": system,
-                    "prompt": "Give me a fresh, creative music generation prompt.",
-                    "stream": False,
-                    "options": {"temperature": 1.2, "num_predict": 100},
-                },
-            )
-            resp.raise_for_status()
-            text = resp.json().get("response", "").strip().strip('"').strip("'")
-            return {"prompt": text}
+        text = await _utility_llm(system, "Give me a fresh, creative music generation prompt.", temperature=1.2, num_predict=100, user=user)
+        return {"prompt": text.strip('"').strip("'")}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Could not generate idea: {e}")
 
@@ -1884,46 +1874,19 @@ class SongNameRequest(BaseModel):
 
 @app.post("/music/name-song")
 async def name_song(req: SongNameRequest, user: dict = Depends(get_current_user)):
-    """Ask the smallest LLM to generate a creative song title."""
+    """Ask the utility LLM to generate a creative song title."""
     try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            # Pick smallest non-embedding LLM
-            song_model = LLM_MODEL
-            try:
-                tags_resp = await client.get(f"{OLLAMA_BASE_URL}/api/tags")
-                all_models = tags_resp.json().get("models", [])
-                llm_models = [m for m in all_models
-                              if "nomic-bert" not in m.get("details", {}).get("families", [])
-                              and "bert" not in m.get("details", {}).get("family", "")]
-                if llm_models:
-                    llm_models.sort(key=lambda m: m.get("size", float("inf")))
-                    song_model = llm_models[0].get("model") or llm_models[0].get("name", LLM_MODEL)
-            except Exception:
-                pass
-
-            context = f"Style: {req.prompt}"
-            if req.lyrics:
-                context += f"\n\nLyrics:\n{req.lyrics[:500]}"
-
-            resp = await client.post(
-                f"{OLLAMA_BASE_URL}/api/generate",
-                json={
-                    "model": song_model,
-                    "system": (
-                        "You are a creative music producer. Given a song's style description and optional lyrics, "
-                        "generate exactly ONE short, catchy song title (1-5 words). "
-                        "Be creative and evocative. Output ONLY the title -no quotes, no explanation, no punctuation except what's part of the title."
-                    ),
-                    "prompt": context,
-                    "stream": False,
-                    "options": {"temperature": 1.0, "num_predict": 20},
-                },
-            )
-            resp.raise_for_status()
-            title = resp.json().get("response", "").strip().strip('"').strip("'").strip()
-            # Take only first line if multi-line
-            title = title.split("\n")[0].strip()
-            return {"title": title}
+        context = f"Style: {req.prompt}"
+        if req.lyrics:
+            context += f"\n\nLyrics:\n{req.lyrics[:500]}"
+        title = await _utility_llm(
+            "You are a creative music producer. Given a song's style description and optional lyrics, "
+            "generate exactly ONE short, catchy song title (1-5 words). "
+            "Be creative and evocative. Output ONLY the title -no quotes, no explanation, no punctuation except what's part of the title.",
+            context, temperature=1.0, num_predict=20, user=user,
+        )
+        title = title.strip('"').strip("'").split("\n")[0].strip().title()
+        return {"title": title}
     except Exception as e:
         return {"title": ""}
 
@@ -1944,47 +1907,28 @@ async def music_cover_art(req: CoverArtRequest, user: dict = Depends(get_current
     if not req.prompt.strip():
         raise HTTPException(status_code=400, detail="prompt is required")
 
-    # Step 1: Generate an image prompt using the smallest LLM
+    # Step 1: Generate an image prompt using the utility LLM
     image_prompt = None
     try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            art_model = LLM_MODEL
-            try:
-                tags_resp = await client.get(f"{OLLAMA_BASE_URL}/api/tags")
-                all_models = tags_resp.json().get("models", [])
-                llm_models = [m for m in all_models
-                              if "nomic-bert" not in m.get("details", {}).get("families", [])
-                              and "bert" not in m.get("details", {}).get("family", "")]
-                if llm_models:
-                    llm_models.sort(key=lambda m: m.get("size", float("inf")))
-                    art_model = llm_models[0].get("model") or llm_models[0].get("name", LLM_MODEL)
-            except Exception:
-                pass
+        context = f"Song style: {req.prompt}"
+        if req.title:
+            context = f"Song title: {req.title}\n{context}"
+        if req.lyrics:
+            context += f"\nLyrics excerpt: {req.lyrics[:300]}"
 
-            context = f"Song style: {req.prompt}"
-            if req.title:
-                context = f"Song title: {req.title}\n{context}"
-            if req.lyrics:
-                context += f"\nLyrics excerpt: {req.lyrics[:300]}"
-
-            resp = await client.post(
-                f"{OLLAMA_BASE_URL}/api/generate",
-                json={
-                    "model": art_model,
-                    "system": (
-                        "You are an album cover art director. Given a song description, generate a short visual prompt "
-                        "for an album cover image. Describe the mood, colors, composition, and artistic style. "
-                        "Think abstract, artistic, and evocative. Do NOT include text or words in the image. "
-                        "Output ONLY the image prompt, 1-2 sentences, no quotes or explanation."
-                    ),
-                    "prompt": context,
-                    "stream": False,
-                    "options": {"temperature": 0.9, "num_predict": 80},
-                },
-            )
-            resp.raise_for_status()
-            image_prompt = resp.json().get("response", "").strip().strip('"').strip("'").strip()
-            image_prompt = image_prompt.split("\n")[0].strip()
+        raw = await _utility_llm(
+            system=(
+                "You are an album cover art director. Given a song description, generate a short visual prompt "
+                "for an album cover image. Describe the mood, colors, composition, and artistic style. "
+                "Think abstract, artistic, and evocative. Do NOT include text or words in the image. "
+                "Output ONLY the image prompt, 1-2 sentences, no quotes or explanation."
+            ),
+            prompt=context,
+            temperature=0.9,
+            num_predict=80,
+            user=user,
+        )
+        image_prompt = raw.strip('"').strip("'").strip().split("\n")[0].strip()
     except Exception as e:
         logger.warning(f"Cover art prompt generation failed: {e}")
 
@@ -2023,6 +1967,7 @@ async def music_cover_art(req: CoverArtRequest, user: dict = Depends(get_current
 class SongWriteRequest(BaseModel):
     description: str
     language: Optional[str] = "en"
+    model: Optional[str] = None
 
 
 @app.post("/music/write-song")
@@ -2053,46 +1998,19 @@ LYRICS:
     if req.language and req.language != "en":
         user_msg += f"\n\nWrite the lyrics in language code: {req.language}"
 
+    # Unload image model to free VRAM for the songwriting LLM (keep ace-step for music gen)
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            await client.post(f"{IMAGE_GEN_URL}/models/unload")
+    except Exception:
+        pass
+
     try:
         async with httpx.AsyncClient(timeout=180.0) as client:
-            # Pick the smallest non-embedding LLM model available
-            song_model = LLM_MODEL
-            try:
-                tags_resp = await client.get(f"{OLLAMA_BASE_URL}/api/tags")
-                all_models = tags_resp.json().get("models", [])
-                # Filter out embedding models (nomic-bert family, etc.)
-                llm_models = []
-                for m in all_models:
-                    families = m.get("details", {}).get("families", [])
-                    family = m.get("details", {}).get("family", "")
-                    if "nomic-bert" in families or "bert" in family:
-                        continue
-                    llm_models.append(m)
-                if llm_models:
-                    llm_models.sort(key=lambda m: m.get("size", float("inf")))
-                    song_model = llm_models[0].get("model") or llm_models[0].get("name", LLM_MODEL)
-                    logger.info(f"Songwrite using smallest LLM: {song_model}")
-            except Exception:
-                pass
-
-            # Ensure the model is loaded
-            try:
-                await client.post(
-                    f"{OLLAMA_BASE_URL}/api/chat",
-                    json={
-                        "model": song_model,
-                        "messages": [{"role": "user", "content": "hi"}],
-                        "options": {"num_predict": 1},
-                        "stream": False,
-                    },
-                )
-            except Exception:
-                pass
-
             resp = await client.post(
                 f"{OLLAMA_BASE_URL}/api/chat",
                 json={
-                    "model": song_model,
+                    "model": req.model or LLM_MODEL,
                     "messages": [
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": user_msg},
@@ -2103,6 +2021,9 @@ LYRICS:
             )
             resp.raise_for_status()
             content = resp.json().get("message", {}).get("content", "")
+            if "<think>" in content:
+                import re
+                content = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL).strip()
 
         # Parse STYLE: and LYRICS: sections
         style = ""
@@ -2291,41 +2212,33 @@ async def smart_title_conv(cid: str, user: dict = Depends(get_current_user)):
         return {"title": conv.get("title", "New Chat")}
 
     try:
+        settings = {}
+        try:
+            settings = json.loads(user.get("settings") or "{}")
+        except Exception:
+            pass
+        model = settings.get("diab_model") or LLM_MODEL
         async with httpx.AsyncClient(timeout=30.0) as client:
-            title_model = LLM_MODEL
-            try:
-                tags_resp = await client.get(f"{OLLAMA_BASE_URL}/api/tags")
-                all_models = tags_resp.json().get("models", [])
-                llm_models = [m for m in all_models
-                              if "nomic-bert" not in m.get("details", {}).get("families", [])
-                              and "bert" not in m.get("details", {}).get("family", "")]
-                if llm_models:
-                    llm_models.sort(key=lambda m: m.get("size", float("inf")))
-                    title_model = llm_models[0].get("model") or llm_models[0].get("name", LLM_MODEL)
-            except Exception:
-                pass
-
             resp = await client.post(
                 f"{OLLAMA_BASE_URL}/api/generate",
                 json={
-                    "model": title_model,
-                    "system": (
-                        "Generate a short, descriptive title (3-7 words) for this conversation. "
-                        "The title should capture the main topic or question. "
-                        "Output ONLY the title text, no quotes, no explanation."
-                    ),
+                    "model": model,
+                    "system": "Generate a short, descriptive title (3-7 words) for this conversation. "
+                              "The title should capture the main topic or question. "
+                              "Output ONLY the title text, no quotes, no explanation.",
                     "prompt": context,
                     "stream": False,
+                    "think": False,
                     "options": {"temperature": 0.5, "num_predict": 20},
                 },
             )
             resp.raise_for_status()
-            title = resp.json().get("response", "").strip().strip('"').strip("'").strip()
-            title = title.split("\n")[0].strip()[:80]
+            raw = resp.json().get("response", "").strip()
+        title = raw.strip('"').strip("'").strip().split("\n")[0].strip()[:80]
 
-            if title:
-                db.rename_conversation(cid, user["id"], title)
-                return {"title": title}
+        if title:
+            db.rename_conversation(cid, user["id"], title)
+            return {"title": title}
     except Exception as e:
         logger.warning(f"Smart title generation failed: {e}")
 

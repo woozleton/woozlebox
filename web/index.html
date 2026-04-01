@@ -66,7 +66,30 @@
     body.sidebar-collapsed #sidebar-logo { justify-content: center; }
     body.sidebar-collapsed #sidebar-title { display: none; }
 
-    #model-select {
+    .ai-section-heading {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      margin: 18px 0 6px 0;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+    .ai-section-heading:first-child { margin-top: 0; }
+    .ai-advanced-toggle {
+      background: none; border: none; cursor: pointer;
+      color: var(--text-dim); font-size: 0.72rem; font-weight: 500;
+      padding: 0; margin: 0; white-space: nowrap;
+      display: inline-flex; align-items: center;
+    }
+    .ai-advanced-toggle span { display: inline-flex; align-items: center; gap: 4px; }
+    .ai-advanced-toggle:hover { color: var(--accent); }
+    .ai-advanced-toggle.open svg { transform: rotate(180deg); }
+    .ai-advanced-toggle svg { transition: transform 0.2s; }
+    .ai-advanced-panel { display: none; margin-top: 10px; }
+    .ai-advanced-panel.open { display: block; }
+    #model-select, #utility-model-select, #songwrite-model-select {
       background: var(--surface2);
       border: 1px solid var(--border);
       color: var(--text);
@@ -83,8 +106,8 @@
       background-position: right 8px center;
       transition: border-color 0.15s;
     }
-    #model-select:hover, #model-select:focus { border-color: var(--accent); }
-    #model-select option {
+    #model-select:hover, #model-select:focus, #utility-model-select:hover, #utility-model-select:focus, #songwrite-model-select:hover, #songwrite-model-select:focus { border-color: var(--accent); }
+    #model-select option, #utility-model-select option, #songwrite-model-select option {
       background: #1a1a28;
       color: var(--text);
       padding: 6px 10px;
@@ -143,11 +166,6 @@
     }
     /* #new-chat-btn styles moved to #sidebar-actions section */
 
-    #conv-list {
-      flex: 1;
-      overflow-y: auto;
-      padding: 4px 6px 10px;
-    }
     .conv-group-label {
       font-size: 0.65rem;
       color: var(--text-faint);
@@ -156,157 +174,75 @@
       letter-spacing: 0.08em;
       padding: 10px 8px 4px;
     }
-    .conv-item {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 10px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 0.8rem;
-      font-weight: 400;
-      color: var(--text-dim);
-      transition: background 0.1s, color 0.1s;
-      position: relative;
-    }
-    .conv-item:hover { background: var(--surface2); color: var(--text); }
-    .conv-item.active { background: var(--accent-glow); color: var(--text); border: 1px solid var(--accent-dim); }
-    .conv-title {
-      flex: 1;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .conv-menu-btn {
-      opacity: 0;
-      background: none;
-      border: none;
-      color: var(--text-dim);
-      cursor: pointer;
-      font-size: 0.9rem;
-      padding: 0 2px;
-      border-radius: 4px;
-      transition: opacity 0.1s, background 0.1s;
-      flex-shrink: 0;
-    }
-    .conv-item:hover .conv-menu-btn { opacity: 1; }
-    .conv-menu-btn:hover { background: var(--surface3); color: var(--text); }
+    /* conv-item, conv-title, conv-menu-btn — use shared sb-item classes */
 
-    /* Topics sidebar section */
-    #topics-section { flex-shrink: 0; padding: 0 6px; }
-    #topics-header {
+    /* ── Shared sidebar section styles ── */
+    .sb-section { flex-shrink: 0; padding: 0 6px; }
+    .sb-section-header {
       display: flex; align-items: center; justify-content: space-between;
       font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em;
-      color: var(--text-faint); padding: 10px 4px 4px; text-transform: uppercase;
+      color: var(--text-faint); padding: 10px 10px 4px; text-transform: uppercase;
     }
-    #topics-header button {
+    .sb-section-header button {
       background: none; border: none; color: var(--text-faint);
       cursor: pointer; font-size: 1.1rem; line-height: 1; padding: 0 3px;
       border-radius: 4px;
     }
-    #topics-header button:hover { color: var(--text); background: var(--surface2); }
-    .topic-row {
+    .sb-section-header button:hover { color: var(--text); background: var(--surface2); }
+    .sb-divider { height: 1px; background: var(--border); margin: 6px 10px 2px; flex-shrink: 0; }
+    .sb-folder-row {
       display: flex; align-items: flex-start; gap: 6px;
-      padding: 5px 8px; border-radius: 7px; cursor: pointer;
-      font-size: 0.82rem; color: var(--text-dim); position: relative;
-      margin-bottom: 2px; min-height: 42px;
-    }
-    .topic-row:hover { background: var(--surface2); color: var(--text); }
-    .topic-row.active { background: var(--surface3); color: var(--text); }
-    .topic-row-icon { flex-shrink: 0; width: 15px; height: 15px; color: var(--text-faint); margin-top: 2px; }
-    .topic-row.active .topic-row-icon path { fill: var(--accent); stroke: var(--accent); }
-    .topic-row.active .topic-row-icon { color: var(--accent); }
-    .topic-row.drag-over { background: var(--accent-glow); outline: 1px dashed var(--accent); }
-    .conv-item[draggable="true"] { cursor: grab; }
-    .conv-item.dragging { opacity: 0.4; }
-    .topic-row-info { flex: 1; overflow: hidden; }
-    .topic-row-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .topic-row-desc { font-size: 0.68rem; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .topic-menu-btn {
-      background: none; border: none; color: var(--text-faint); cursor: pointer;
-      opacity: 0; padding: 2px 4px; border-radius: 4px; font-size: 0.9rem; flex-shrink: 0;
-    }
-    .topic-row:hover .topic-menu-btn { opacity: 1; }
-    .topic-menu-btn:hover { background: var(--surface3); color: var(--text); }
-    #topics-divider { height: 1px; background: var(--border); margin: 6px 4px 2px; flex-shrink: 0; }
-    body.sidebar-collapsed #topics-section { display: none; }
-    body.sidebar-collapsed #topics-divider { display: none; }
-    /* Playgrounds -mirrors topics styling */
-    #playgrounds-section { flex-shrink: 0; padding: 0 6px; overflow-y: auto; }
-    #playgrounds-header {
-      display: flex; align-items: center; justify-content: space-between;
-      font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em;
-      color: var(--text-faint); padding: 10px 4px 4px; text-transform: uppercase;
-    }
-    #playgrounds-header button {
-      background: none; border: none; color: var(--text-faint);
-      cursor: pointer; font-size: 1.1rem; line-height: 1; padding: 0 3px;
-      border-radius: 4px;
-    }
-    #playgrounds-header button:hover { color: var(--text); background: var(--surface2); }
-    .playground-row {
-      display: flex; align-items: center; gap: 6px;
       padding: 5px 8px; border-radius: 7px; cursor: pointer;
       font-size: 0.82rem; color: var(--text-dim); position: relative;
       margin-bottom: 2px;
     }
-    .playground-row:hover { background: var(--surface2); color: var(--text); }
-    .playground-row.active { background: var(--surface3); color: var(--text); }
-    .playground-row-icon { flex-shrink: 0; width: 15px; height: 15px; color: var(--text-faint); margin-top: 2px; }
-    .playground-row.active .playground-row-icon { color: var(--accent); }
-    .playground-row-info { flex: 1; overflow: hidden; }
-    .playground-row-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .playground-row-desc { font-size: 0.68rem; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .playground-menu-btn {
+    .sb-folder-row:hover { background: var(--surface2); color: var(--text); }
+    .sb-folder-row.active { background: var(--surface3); color: var(--text); }
+    .sb-folder-row.drag-over { background: var(--accent-glow); outline: 1px dashed var(--accent); }
+    .sb-folder-icon { flex-shrink: 0; width: 15px; height: 15px; color: var(--text-faint); margin-top: 2px; }
+    .sb-folder-row.active .sb-folder-icon { color: var(--accent); }
+    .sb-folder-info { flex: 1; overflow: hidden; }
+    .sb-folder-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sb-folder-desc { font-size: 0.68rem; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sb-folder-menu {
       background: none; border: none; color: var(--text-faint); cursor: pointer;
       opacity: 0; padding: 2px 4px; border-radius: 4px; font-size: 0.9rem; flex-shrink: 0;
     }
-    .playground-row:hover .playground-menu-btn { opacity: 1; }
-    .playground-menu-btn:hover { background: var(--surface3); color: var(--text); }
-    #playgrounds-divider { height: 1px; background: var(--border); margin: 6px 4px 2px; flex-shrink: 0; }
-    body.sidebar-collapsed #playgrounds-section { display: none !important; }
-
-    /* Studio sessions header + list -mirrors conv-list pattern */
-    #studio-sessions-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 6px 12px 2px; flex-shrink: 0;
+    .sb-folder-row:hover .sb-folder-menu { opacity: 1; }
+    .sb-folder-menu:hover { background: var(--surface3); color: var(--text); }
+    .sb-list { flex: 1; overflow-y: auto; padding: 4px 6px 10px; min-height: 0; }
+    .sb-item {
+      display: flex; align-items: center; gap: 6px; padding: 6px 10px;
+      border-radius: 8px; cursor: pointer; font-size: 0.8rem; font-weight: 400;
+      color: var(--text-dim); transition: background 0.1s, color 0.1s; position: relative;
     }
-    #studio-sessions-header span {
-      font-size: 0.72rem; font-weight: 600; color: var(--text-faint);
-      text-transform: uppercase; letter-spacing: 0.04em;
+    .sb-item:hover { background: var(--surface2); color: var(--text); }
+    .sb-item.active { background: var(--accent-glow); color: var(--text); border: 1px solid var(--accent-dim); }
+    .sb-item[draggable="true"] { cursor: grab; }
+    .sb-item.dragging { opacity: 0.4; }
+    .sb-item-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sb-item-badge {
+      font-size: 0.65rem; color: var(--text-faint); background: var(--surface2);
+      padding: 1px 6px; border-radius: 8px; flex-shrink: 0; min-width: 18px; text-align: center;
     }
-    #studio-new-session-btn {
-      background: none; border: none; color: var(--text-dim); cursor: pointer;
-      font-size: 1rem; padding: 2px 6px; border-radius: 4px; transition: all 0.15s;
-    }
-    #studio-new-session-btn:hover { background: var(--surface2); color: var(--accent); }
-    body.sidebar-collapsed #studio-sessions-header { display: none !important; }
-    #studio-sessions-list { flex: 1; overflow-y: auto; padding: 4px 6px 10px; min-height: 0; }
-    .studio-session-item {
-      display: flex; align-items: center; gap: 6px;
-      padding: 6px 10px; border-radius: 8px; cursor: pointer;
-      font-size: 0.8rem; font-weight: 400; color: var(--text-dim);
-      transition: background 0.1s, color 0.1s; position: relative;
-    }
-    .studio-session-item:hover { background: var(--surface2); color: var(--text); }
-    .studio-session-item.active { background: var(--accent-glow); color: var(--text); border: 1px solid var(--accent-dim); }
-    .studio-session-prompt { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .studio-session-time { display: none; }
-    .studio-session-menu {
+    .sb-item-menu {
       background: none; border: none; color: var(--text-dim); cursor: pointer;
       opacity: 0; padding: 0 2px; border-radius: 4px; font-size: 0.9rem;
       transition: opacity 0.1s, background 0.1s; flex-shrink: 0;
     }
-    .studio-session-item:hover .studio-session-menu { opacity: 1; }
-    .studio-session-menu:hover { background: var(--surface3); color: var(--text); }
-    .studio-session-badge {
-      font-size: 0.65rem; color: var(--text-faint); background: var(--surface2);
-      padding: 1px 6px; border-radius: 8px; flex-shrink: 0; min-width: 18px; text-align: center;
-    }
-    .studio-session-item[draggable="true"] { cursor: grab; }
-    .studio-session-item.dragging { opacity: 0.4; }
-    .playground-row.drag-over { background: var(--accent-glow); outline: 1px dashed var(--accent); }
+    .sb-item:hover .sb-item-menu { opacity: 1; }
+    .sb-item-menu:hover { background: var(--surface3); color: var(--text); }
+
+    /* ── Per-section overrides ── */
+    .topic-row { min-height: 42px; }
+    .topic-row.active .sb-folder-icon path { fill: var(--accent); stroke: var(--accent); }
+    body.sidebar-collapsed #topics-section { display: none; }
+    body.sidebar-collapsed #topics-divider { display: none; }
+    body.sidebar-collapsed #playgrounds-section { display: none !important; }
+    body.sidebar-collapsed #conv-header { display: none !important; }
+    body.sidebar-collapsed #studio-sessions-header { display: none !important; }
     body.sidebar-collapsed #studio-sessions-list { display: none !important; }
+    .studio-session-time { display: none; }
 
     /* Confirm modal */
     #confirm-modal {
@@ -910,8 +846,10 @@
     /* Prevent chat flash on refresh when studio was active */
     html.studio-preload #chat-area { display: none; }
     html.studio-preload #image-studio { display: flex; }
+    html.studio-preload #conv-header { display: none !important; }
     html.music-preload #chat-area { display: none; }
     html.music-preload #music-studio { display: flex; }
+    html.music-preload #conv-header { display: none !important; }
     #image-studio-header {
       display: flex; align-items: center; gap: 12px;
       padding: 16px 24px 12px; border-bottom: 1px solid var(--border);
@@ -1010,6 +948,15 @@
       resize: none; padding: 12px 0; min-height: 44px; max-height: 140px; overflow: hidden;
       line-height: 1.4;
     }
+    textarea.model-loading::placeholder {
+      color: var(--accent) !important; opacity: 0.8;
+    }
+    .prompt-load-spinner {
+      margin: auto 0 auto 12px; flex-shrink: 0;
+    }
+    textarea.prompt-locked {
+      pointer-events: none; opacity: 0.45;
+    }
     .studio-prompt-model-row {
       position: relative;
     }
@@ -1031,6 +978,11 @@
       flex-shrink: 0; transition: color 0.15s, background 0.15s;
     }
     #studio-suggest-btn:hover { color: var(--accent); background: var(--accent-glow); }
+    #studio-suggest-btn.loading svg { display: none; }
+    #studio-suggest-btn.loading::after {
+      content: ""; width: 14px; height: 14px; border: 2px solid var(--border);
+      border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite;
+    }
     /* Studio option controls */
     .sc-row { display: flex; align-items: center; gap: 4px; }
     .sc-label {
@@ -1128,62 +1080,6 @@
     }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     #studio-model-loading svg { animation: spin 1s linear infinite; }
-    /* Model switch overlay -shown while swapping VRAM between chat/studio */
-    #model-switch-overlay {
-      display: none; position: fixed; inset: 0; z-index: 2000;
-      background: rgba(0,0,0,0.5); backdrop-filter: blur(10px);
-      align-items: center; justify-content: center;
-    }
-    #model-switch-overlay.active { display: flex; animation: fadeIn 0.25s ease; }
-    #model-switch-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 18px; padding: 36px 44px 28px;
-      display: flex; flex-direction: column; align-items: center; gap: 14px;
-      box-shadow: 0 16px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04) inset;
-      min-width: 280px; max-width: 360px;
-    }
-    #model-switch-card .switch-spinner {
-      width: 40px; height: 40px;
-      border: 3px solid var(--surface3); border-top-color: var(--accent);
-      border-radius: 50%; animation: spin 0.8s linear infinite;
-      margin-bottom: 4px;
-    }
-    #model-switch-card .switch-text {
-      font-size: 0.95rem; color: var(--text); font-weight: 600;
-      letter-spacing: -0.01em;
-    }
-    #model-switch-card .switch-sub {
-      font-size: 0.74rem; color: var(--text-dim); margin-top: -8px;
-      opacity: 0.8;
-    }
-    #model-switch-cancel {
-      margin-top: 4px; padding: 6px 28px; border-radius: 8px;
-      background: var(--surface2); border: 1px solid var(--border); color: var(--text-dim);
-      font-size: 0.76rem; cursor: pointer; transition: all 0.15s;
-    }
-    #model-switch-cancel:hover { background: var(--surface3); color: var(--text); border-color: var(--text-dim); }
-    #model-switch-vram {
-      width: 100%; margin-top: 2px; font-size: 0.72rem; color: var(--text-dim);
-      background: var(--surface2); border-radius: 10px; padding: 10px 14px;
-    }
-    #model-switch-vram:empty { display: none; }
-    #model-switch-vram .msv-label {
-      font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.05em;
-      opacity: 0.5; margin-bottom: 6px; font-weight: 500;
-    }
-    #model-switch-vram .msv-item {
-      display: flex; align-items: center; gap: 8px; padding: 3px 0;
-    }
-    #model-switch-vram .msv-dot {
-      width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
-    }
-    #model-switch-vram .msv-dot.llm { background: var(--accent); }
-    #model-switch-vram .msv-dot.image { background: #a78bfa; }
-    #model-switch-vram .msv-dot.loading { background: #facc15; animation: vram-pulse 1.2s ease infinite; }
-    #model-switch-vram .msv-dot.unloading { background: #f87171; animation: vram-pulse 1.2s ease infinite; }
-    #model-switch-vram .msv-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    #model-switch-vram .msv-size { opacity: 0.5; }
-    #model-switch-vram .msv-transitioning { opacity: 0.6; font-style: italic; }
     #studio-generate-btn {
       width: 36px; height: 36px; padding: 0; border: none; border-radius: 10px;
       background: var(--accent); color: #fff; font-size: 0;
@@ -1215,9 +1111,9 @@
     #studio-trash-header h3 { margin: 0; font-size: 0.95rem; font-weight: 600; color: var(--text); }
     #studio-trash-count-label { font-size: 0.72rem; color: var(--text-faint); margin-right: auto; }
     #studio-trash-empty-btn {
-      padding: 4px 12px; border-radius: 7px; border: 1px solid var(--border);
-      background: none; color: var(--danger); font-size: 0.75rem; cursor: pointer;
-      transition: background 0.15s;
+      padding: 5px 7px; border-radius: 7px; border: 1px solid var(--border);
+      background: none; color: var(--danger); cursor: pointer;
+      transition: background 0.15s; display: flex; align-items: center;
     }
     #studio-trash-empty-btn:hover { background: rgba(239,68,68,0.12); }
     #studio-trash-close-btn {
@@ -1245,17 +1141,14 @@
     }
     .trash-card-age { font-size: 0.62rem; color: var(--text-faint); margin-top: 3px; }
     .trash-card-actions { display: flex; gap: 4px; padding: 0 8px 8px; }
-    .trash-restore-btn {
-      flex: 1; padding: 4px 0; border-radius: 6px; border: 1px solid var(--border);
-      background: none; color: var(--accent); font-size: 0.68rem; cursor: pointer;
-      transition: background 0.15s;
+    .trash-restore-btn, .trash-del-btn {
+      flex: 1; padding: 5px 0; border-radius: 6px; border: 1px solid var(--border);
+      background: none; cursor: pointer; transition: background 0.15s;
+      display: flex; align-items: center; justify-content: center;
     }
+    .trash-restore-btn { color: var(--accent); }
     .trash-restore-btn:hover { background: var(--accent-glow); }
-    .trash-del-btn {
-      flex: 1; padding: 4px 0; border-radius: 6px; border: 1px solid var(--border);
-      background: none; color: var(--danger); font-size: 0.68rem; cursor: pointer;
-      transition: background 0.15s;
-    }
+    .trash-del-btn { color: var(--danger); }
     .trash-del-btn:hover { background: rgba(239,68,68,0.1); }
     /* Trash button in studio header -matches fav-toggle style */
     #studio-trash-btn {
@@ -1426,10 +1319,30 @@
     /* Music result cards */
     .music-result {
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: 14px; padding: 10px 14px 8px; display: flex; flex-direction: column; gap: 4px;
+      border-radius: 14px; padding: 0; display: flex; flex-direction: row; gap: 0;
       animation: fadeIn 0.25s ease; transition: border-color 0.15s;
     }
+    .music-result-cover { border-radius: 14px 0 0 14px; }
     .music-result:hover { border-color: var(--accent); }
+    .music-result-cover {
+      flex-shrink: 0; width: 120px; min-height: 120px;
+      background: var(--surface2); display: flex; align-items: center; justify-content: center;
+      position: relative; overflow: hidden;
+    }
+    .music-result-cover img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+      cursor: pointer; transition: filter 0.15s;
+    }
+    .music-result-cover img:hover { filter: brightness(1.15); }
+    .music-result-cover .cover-spinner {
+      width: 20px; height: 20px; border: 2px solid var(--border);
+      border-top-color: var(--accent); border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    .music-result-body {
+      flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px;
+      padding: 10px 14px 8px;
+    }
     .music-result-player {
       display: flex; align-items: center; gap: 12px;
       background: var(--surface2); border-radius: 10px; padding: 10px 14px;
@@ -1462,21 +1375,7 @@
     .music-meta-details {
       display: flex; align-items: flex-start; gap: 8px; padding: 0 4px;
     }
-    .music-cover-art {
-      width: 64px; height: 64px; border-radius: 8px; flex-shrink: 0;
-      object-fit: cover; background: var(--surface2);
-      cursor: pointer; transition: filter 0.15s;
-    }
-    .music-cover-art:hover { filter: brightness(1.15); }
-    .music-cover-art-placeholder {
-      width: 64px; height: 64px; border-radius: 8px; flex-shrink: 0;
-      background: var(--surface2); display: flex; align-items: center; justify-content: center;
-    }
-    .music-cover-art-placeholder .cover-spinner {
-      width: 16px; height: 16px; border: 2px solid var(--border);
-      border-top-color: var(--accent); border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
+    /* cover art is now in .music-result-cover */
     .music-meta-text {
       flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;
     }
@@ -1488,11 +1387,20 @@
       font-size: 0.75rem; color: var(--text-dim); line-height: 1.4;
       display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
     }
-    .music-meta-lyrics {
-      font-size: 0.72rem; color: var(--text-faint); line-height: 1.3;
-      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-      font-style: italic;
+    .music-lyrics-toggle {
+      display: inline-flex; align-items: center; gap: 3px; cursor: pointer;
+      background: none; border: 1px solid var(--border); color: var(--accent); font-size: 0.65rem;
+      padding: 2px 7px; border-radius: 4px; font-weight: 500;
     }
+    .music-lyrics-toggle:hover { background: var(--accent-glow); }
+    .music-lyrics-toggle svg { transition: transform 0.2s; flex-shrink: 0; }
+    .music-lyrics-toggle.open svg { transform: rotate(180deg); }
+    .music-meta-lyrics {
+      font-size: 0.72rem; color: var(--text-faint); line-height: 1.4;
+      font-style: italic; white-space: pre-line;
+      display: none; margin-top: 4px;
+    }
+    .music-meta-lyrics.open { display: block; }
     .music-meta-pills {
       display: flex; flex-wrap: wrap; gap: 5px; align-items: center;
     }
@@ -1632,7 +1540,7 @@
       border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.35);
       display: flex; flex-direction: row; align-items: center;
       gap: 6px; padding: 0 8px 0 14px; transition: box-shadow 0.2s;
-      position: relative;
+      position: relative; flex-shrink: 0;
     }
     #music-prompt-box:focus-within {
       box-shadow: 0 4px 24px rgba(0,0,0,0.45), 0 0 0 1px var(--accent);
@@ -1707,9 +1615,9 @@
     #music-trash-header h3 { margin: 0; font-size: 0.95rem; font-weight: 600; color: var(--text); }
     #music-trash-count-label { font-size: 0.72rem; color: var(--text-faint); margin-right: auto; }
     #music-trash-empty-btn {
-      padding: 4px 12px; border-radius: 7px; border: 1px solid var(--border);
-      background: none; color: var(--danger); font-size: 0.75rem; cursor: pointer;
-      transition: background 0.15s;
+      padding: 5px 7px; border-radius: 7px; border: 1px solid var(--border);
+      background: none; color: var(--danger); cursor: pointer;
+      transition: background 0.15s; display: flex; align-items: center;
     }
     #music-trash-empty-btn:hover { background: rgba(239,68,68,0.12); }
     #music-trash-close-btn {
@@ -1747,8 +1655,9 @@
     .music-trash-card-meta { font-size: 0.68rem; color: var(--text-faint); margin-top: 2px; }
     .music-trash-card-actions { display: flex; gap: 6px; flex-shrink: 0; }
     .music-trash-card-actions button {
-      padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border);
-      background: none; font-size: 0.72rem; cursor: pointer; transition: background 0.15s;
+      padding: 5px 8px; border-radius: 6px; border: 1px solid var(--border);
+      background: none; cursor: pointer; transition: background 0.15s;
+      display: flex; align-items: center; justify-content: center;
     }
     .music-trash-restore { color: var(--accent); }
     .music-trash-restore:hover { background: var(--accent-glow); }
@@ -1796,94 +1705,35 @@
     }
     .music-fav-card {
       background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 10px; padding: 8px 12px; display: flex; flex-direction: column; gap: 4px;
-      transition: border-color 0.15s; animation: fadeIn 0.3s ease;
+      border-radius: 10px; display: flex; align-items: center; gap: 10px;
+      padding: 6px 8px; transition: border-color 0.15s; animation: fadeIn 0.3s ease;
     }
     .music-fav-card:hover { border-color: var(--accent); }
-    .music-fav-card-player { display: flex; align-items: center; gap: 10px; }
-    .music-fav-card-meta {
-      font-size: 0.72rem; color: var(--text-dim);
-      display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
+    .music-fav-cover {
+      width: 42px; height: 42px; border-radius: 6px; overflow: hidden; flex-shrink: 0;
+      background: var(--surface3); display: flex; align-items: center; justify-content: center;
+      position: relative;
     }
+    .music-fav-cover img { width: 100%; height: 100%; object-fit: cover; }
+    .music-fav-cover .music-fav-play {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.35); opacity: 0; transition: opacity 0.15s; cursor: pointer;
+      border: none; color: #fff;
+    }
+    .music-fav-card:hover .music-fav-play, .music-fav-play.playing { opacity: 1; }
+    .music-fav-info { flex: 1; min-width: 0; }
+    .music-fav-title {
+      font-size: 0.78rem; color: var(--text); font-weight: 500;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .music-fav-duration { font-size: 0.65rem; color: var(--text-faint); }
     .music-fav-card-actions {
-      display: flex; gap: 4px; opacity: 0; transition: opacity 0.2s;
+      display: flex; gap: 3px; opacity: 0; transition: opacity 0.2s; flex-shrink: 0;
     }
     .music-fav-card:hover .music-fav-card-actions { opacity: 1; }
-    /* Music sessions sidebar -mirrors image studio sessions */
-    #music-sessions-header {
-      padding: 6px 12px 2px; font-size: 0.68rem;
-      font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
-      color: var(--text-faint); align-items: center; justify-content: space-between;
-    }
+    /* Music-specific overrides */
     body.sidebar-collapsed #music-sessions-header { display: none !important; }
     body.sidebar-collapsed #music-sessions-list { display: none !important; }
-    #music-new-session-btn {
-      background: none; border: none; color: var(--text-dim);
-      cursor: pointer; font-size: 1rem; padding: 0 4px; border-radius: 4px;
-      transition: background 0.15s, color 0.15s;
-    }
-    #music-new-session-btn:hover { background: var(--surface2); color: var(--accent); }
-    #music-sessions-list {
-      flex: 1; overflow-y: auto; padding: 4px 6px 10px; min-height: 0;
-    }
-    .music-session-item {
-      display: flex; align-items: center; gap: 6px; padding: 6px 10px;
-      border-radius: 8px; cursor: pointer; font-size: 0.78rem;
-      color: var(--text-dim); transition: all 0.15s; border: 1px solid transparent;
-    }
-    .music-session-item:hover { background: var(--surface2); color: var(--text); }
-    .music-session-item.active {
-      background: var(--accent-glow); border: 1px solid var(--accent-dim); color: var(--text);
-    }
-    .music-session-prompt {
-      flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-    .music-session-badge {
-      font-size: 0.65rem; background: var(--surface2); padding: 1px 6px; border-radius: 8px;
-    }
-    .music-session-menu {
-      opacity: 0; background: none; border: none; color: var(--text-dim);
-      cursor: pointer; padding: 0 2px; font-size: 0.8rem; border-radius: 4px;
-      transition: opacity 0.15s, background 0.15s;
-    }
-    .music-session-item:hover .music-session-menu { opacity: 1; }
-    .music-session-menu:hover { background: var(--surface2); color: var(--text); }
-    .music-session-item[draggable="true"] { cursor: grab; }
-    .music-session-item.dragging { opacity: 0.4; }
-    /* Music collections -mirrors playgrounds styling */
-    #music-collections-section { flex-shrink: 0; padding: 0 6px; overflow-y: auto; }
-    #music-collections-header {
-      display: flex; align-items: center; justify-content: space-between;
-      font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em;
-      color: var(--text-faint); padding: 10px 4px 4px; text-transform: uppercase;
-    }
-    #music-collections-header button {
-      background: none; border: none; color: var(--text-faint);
-      cursor: pointer; font-size: 1.1rem; line-height: 1; padding: 0 3px;
-      border-radius: 4px;
-    }
-    #music-collections-header button:hover { color: var(--text); background: var(--surface2); }
-    .mcol-row {
-      display: flex; align-items: center; gap: 6px;
-      padding: 5px 8px; border-radius: 7px; cursor: pointer;
-      font-size: 0.82rem; color: var(--text-dim); position: relative;
-      margin-bottom: 2px;
-    }
-    .mcol-row:hover { background: var(--surface2); color: var(--text); }
-    .mcol-row.active { background: var(--surface3); color: var(--text); }
-    .mcol-row-icon { flex-shrink: 0; width: 15px; height: 15px; color: var(--text-faint); margin-top: 2px; }
-    .mcol-row.active .mcol-row-icon { color: var(--accent); }
-    .mcol-row-info { flex: 1; overflow: hidden; }
-    .mcol-row-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .mcol-row-desc { font-size: 0.68rem; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .mcol-menu-btn {
-      background: none; border: none; color: var(--text-faint); cursor: pointer;
-      opacity: 0; padding: 2px 4px; border-radius: 4px; font-size: 0.9rem; flex-shrink: 0;
-    }
-    .mcol-row:hover .mcol-menu-btn { opacity: 1; }
-    .mcol-menu-btn:hover { background: var(--surface3); color: var(--text); }
-    .mcol-row.drag-over { background: var(--accent-glow); outline: 1px dashed var(--accent); }
-    #music-collections-divider { height: 1px; background: var(--border); margin: 6px 4px 2px; flex-shrink: 0; }
     body.sidebar-collapsed #music-collections-section { display: none !important; }
     /* Music collection modal -mirrors playground modal */
     #mcol-modal {
@@ -3443,15 +3293,15 @@
       }
 
       /* Touch-friendly targets */
-      .conv-item { padding: 8px 10px; min-height: 40px; }
-      .conv-menu-btn { opacity: 1; padding: 4px 8px; } /* Always visible on touch */
+      .sb-item { padding: 8px 10px; min-height: 40px; }
+      .sb-item-menu { opacity: 1; padding: 4px 8px; } /* Always visible on touch */
       .topic-menu-btn { opacity: 1; }
       .vault-folder-actions { opacity: 1; }
       .bubble-actions { opacity: 1; pointer-events: auto; }
       .strip-btn { width: 40px; height: 40px; }
 
       /* Prevent text selection on interactive elements (mobile UX) */
-      button, .conv-item, .topic-row, .sidebar-row, .settings-nav-item {
+      button, .sb-item, .sb-folder-row, .sidebar-row, .settings-nav-item {
         -webkit-tap-highlight-color: transparent;
       }
 
@@ -3494,16 +3344,6 @@
 </button>
 <!-- Mobile sidebar backdrop -->
 <div id="mobile-sidebar-backdrop"></div>
-<div id="model-switch-overlay">
-  <div id="model-switch-card">
-    <div class="switch-spinner"></div>
-    <div class="switch-text" id="model-switch-text">Preparing...</div>
-    <div class="switch-sub" id="model-switch-sub"></div>
-    <div id="model-switch-vram"></div>
-    <button id="model-switch-cancel">Cancel</button>
-  </div>
-</div>
-
 <!-- Inpaint Editor -->
 <div id="inpaint-editor">
   <div id="inpaint-card">
@@ -3638,53 +3478,51 @@
     </div>
 
     <!-- Topics section -->
-    <div id="topics-section">
-      <div id="topics-header">
+    <!-- Chat: Topics + Sessions -->
+    <div id="topics-section" class="sb-section">
+      <div id="topics-header" class="sb-section-header">
         <span>Topics</span>
         <button id="topic-new-btn" title="New topic">+</button>
       </div>
       <div id="topics-list"></div>
     </div>
-    <div id="topics-divider"></div>
+    <div id="topics-divider" class="sb-divider"></div>
+    <div id="conv-header" class="sb-section-header">
+      <span>Sessions</span>
+      <button id="conv-new-btn" title="New conversation">+</button>
+    </div>
+    <div id="conv-search-wrap" style="display:none"></div>
+    <div id="conv-list" class="sb-list"></div>
 
-    <!-- Playgrounds section (visible when Image Studio is active) -->
-    <div id="playgrounds-section" style="display:none;">
-      <div id="playgrounds-header">
+    <!-- Image Studio: Playgrounds + Sessions -->
+    <div id="playgrounds-section" class="sb-section" style="display:none;">
+      <div id="playgrounds-header" class="sb-section-header">
         <span>Playgrounds</span>
         <button id="playground-new-btn" title="New playground">+</button>
       </div>
       <div id="playgrounds-list"></div>
-      <div id="playgrounds-divider"></div>
     </div>
-
-    <!-- Studio sessions list (shown when Image Studio is active) -->
-    <div id="studio-sessions-divider" style="display:none;"></div>
-    <div id="studio-sessions-header" style="display:none;">
+    <div id="playgrounds-divider" class="sb-divider" style="display:none;"></div>
+    <div id="studio-sessions-header" class="sb-section-header" style="display:none;">
       <span>Sessions</span>
       <button id="studio-new-session-btn" title="New session">+</button>
     </div>
-    <div id="studio-sessions-list" style="display:none;"></div>
+    <div id="studio-sessions-list" class="sb-list" style="display:none;"></div>
 
-    <!-- Music Studio collections (mirrors Playgrounds for Image Studio) -->
-    <div id="music-collections-section" style="display:none;">
-      <div id="music-collections-header">
+    <!-- Music Studio: Collections + Sessions -->
+    <div id="music-collections-section" class="sb-section" style="display:none;">
+      <div id="music-collections-header" class="sb-section-header">
         <span>Collections</span>
         <button id="mcol-new-btn" title="New collection">+</button>
       </div>
       <div id="music-collections-list"></div>
-      <div id="music-collections-divider"></div>
     </div>
-
-    <!-- Music Studio sessions list -->
-    <div id="music-sessions-divider" style="display:none;"></div>
-    <div id="music-sessions-header" style="display:none;">
+    <div id="music-collections-divider" class="sb-divider" style="display:none;"></div>
+    <div id="music-sessions-header" class="sb-section-header" style="display:none;">
       <span>Sessions</span>
       <button id="music-new-session-btn" title="New session">+</button>
     </div>
-    <div id="music-sessions-list" style="display:none;"></div>
-
-    <div id="conv-search-wrap" style="display:none"></div>
-    <div id="conv-list"></div>
+    <div id="music-sessions-list" class="sb-list" style="display:none;"></div>
 
     <!-- Sidebar bottom -->
     <div id="sidebar-bottom">
@@ -4023,8 +3861,8 @@
                   <div class="ss-group" title="Number of diffusion inference steps -more steps = higher quality but slower generation">
                     <div class="ss-group-label">Steps</div>
                     <div class="sc-slider">
-                      <input type="range" id="music-steps" min="8" max="50" value="20" step="1">
-                      <span class="field-val" id="music-steps-val">20</span>
+                      <input type="range" id="music-steps" min="8" max="50" value="40" step="1">
+                      <span class="field-val" id="music-steps-val">40</span>
                     </div>
                   </div>
                   <div class="ss-group" title="How closely the output follows the prompt -higher values = stronger adherence, lower = more creative freedom">
@@ -4122,7 +3960,7 @@
       <div id="studio-trash-header">
         <h3>Trash</h3>
         <span id="studio-trash-count-label"></span>
-        <button id="studio-trash-empty-btn" title="Permanently delete all">Empty Trash</button>
+        <button id="studio-trash-empty-btn" title="Empty trash"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
         <button id="studio-trash-close-btn">&times;</button>
       </div>
       <div id="studio-trash-grid"></div>
@@ -4257,6 +4095,12 @@
             </div>
           </div>
 
+          <!-- Clear All Data -->
+          <div class="setting-group">
+            <button id="clear-all-data-btn" class="accent-btn danger" style="align-self:flex-start;">Clear All My Data</button>
+            <div class="setting-desc">Delete all conversations, topics, memory, image sessions, and music tracks. Your account and settings are kept.</div>
+          </div>
+
           <!-- Delete Account -->
           <div class="setting-group">
             <button id="delete-account-btn" class="accent-btn danger" style="align-self:flex-start;">Delete My Account</button>
@@ -4267,40 +4111,60 @@
 
         <!-- AI -->
         <div class="settings-pane" id="pane-ai">
+          <div class="ai-section-heading">Chat / RAG</div>
           <div class="setting-group">
-            <div class="setting-label"><span>Default LLM</span></div>
-            <select id="model-select"><option value="">Loading…</option></select>
-            <div class="setting-desc">The default Large Language Model used to generate responses.</div>
+            <div class="setting-label"><span>Model</span></div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <select id="model-select"><option value="">Loading…</option></select>
+              <button class="ai-advanced-toggle" id="chat-advanced-toggle"><span>Advanced <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span></button>
+            </div>
+            <div class="setting-desc">The LLM used for conversations and vault-powered answers.</div>
           </div>
-          <div class="setting-group">
-            <div class="setting-label"><span>Default System Prompt</span></div>
-            <textarea id="default-prompt-input" class="setting-input" rows="4" placeholder="You are a personal AI assistant. When relevant context from the user's vault is provided, prioritize it in your answer. Otherwise, answer using your general knowledge."></textarea>
-            <div class="setting-desc">Sets the AI's base behavior for all conversations. Each topic can override this with its own system prompt. Leave blank to use the built-in default shown above.</div>
+          <div class="ai-advanced-panel" id="chat-advanced-panel">
+            <div class="setting-group">
+              <div class="setting-label"><span>System Prompt</span></div>
+              <textarea id="default-prompt-input" class="setting-input" rows="4" placeholder="You are a personal AI assistant. When relevant context from the user's vault is provided, prioritize it in your answer. Otherwise, answer using your general knowledge."></textarea>
+              <div class="setting-desc">Sets the AI's base behavior. Each topic can override this with its own prompt.</div>
+            </div>
+            <div class="setting-group">
+              <div class="setting-label"><span>Temperature</span><span id="temp-val" class="setting-val">0.20</span></div>
+              <input type="range" id="temp-slider" min="0" max="1" step="0.05" value="0.2" />
+              <div class="setting-desc">Lower = more focused and factual. Higher = more varied and creative.</div>
+            </div>
+            <div class="setting-group">
+              <div class="setting-label"><span>Similarity Threshold</span><span id="thresh-val" class="setting-val">0.60</span></div>
+              <input type="range" id="thresh-slider" min="0.1" max="1.0" step="0.05" value="0.6" />
+              <div class="setting-desc">How closely a vault passage must match your question to be included as context.</div>
+            </div>
+            <div class="setting-group">
+              <div class="setting-label"><span>Context Passages</span><span id="topk-val" class="setting-val">30</span></div>
+              <input type="range" id="topk-slider" min="5" max="50" step="5" value="30" />
+              <div class="setting-desc">How many vault passages are pulled in per question. More = broader; fewer = faster.</div>
+            </div>
+            <div class="setting-group">
+              <div class="setting-label"><span>History Limit</span><span id="history-val" class="setting-val">10</span></div>
+              <input type="range" id="history-slider" min="0" max="40" step="2" value="10" />
+              <div class="setting-desc">How many previous messages the AI can see. 0 = no history.</div>
+            </div>
+            <div class="setting-group">
+              <div class="setting-label"><span>Auto-Compact</span><span id="compact-val" class="setting-val">75%</span></div>
+              <input type="range" id="compact-slider" min="0" max="95" step="5" value="75" />
+              <div class="setting-desc">Automatically summarize older messages when the context window reaches this %. 0 = off.</div>
+            </div>
           </div>
+
+          <div class="ai-section-heading">Songwriting</div>
           <div class="setting-group">
-            <div class="setting-label"><span>Temperature</span><span id="temp-val" class="setting-val">0.20</span></div>
-            <input type="range" id="temp-slider" min="0" max="1" step="0.05" value="0.2" />
-            <div class="setting-desc">Controls how creative or unpredictable the AI is. Lower = more focused and factual. Higher = more varied and creative.</div>
+            <div class="setting-label"><span>Model</span></div>
+            <select id="songwrite-model-select"><option value="">Loading…</option></select>
+            <div class="setting-desc">The LLM used to write lyrics and style prompts in Music Studio.</div>
           </div>
+
+          <div class="ai-section-heading">Utility</div>
           <div class="setting-group">
-            <div class="setting-label"><span>Similarity Threshold</span><span id="thresh-val" class="setting-val">0.60</span></div>
-            <input type="range" id="thresh-slider" min="0.1" max="1.0" step="0.05" value="0.6" />
-            <div class="setting-desc">How closely a passage from your vault must match your question to be used as context. Higher = only very relevant matches; lower = casts a wider net.</div>
-          </div>
-          <div class="setting-group">
-            <div class="setting-label"><span>Context Passages</span><span id="topk-val" class="setting-val">30</span></div>
-            <input type="range" id="topk-slider" min="5" max="50" step="5" value="30" />
-            <div class="setting-desc">How many passages from your vault are pulled in to answer each question. More = broader context; fewer = tighter, faster responses.</div>
-          </div>
-          <div class="setting-group">
-            <div class="setting-label"><span>History Limit</span><span id="history-val" class="setting-val">10</span></div>
-            <input type="range" id="history-slider" min="0" max="40" step="2" value="10" />
-            <div class="setting-desc">How many previous messages the AI can see when you send a new one. More = better context; less = faster and cheaper. 0 = no history.</div>
-          </div>
-          <div class="setting-group">
-            <div class="setting-label"><span>Auto-Compact Threshold</span><span id="compact-val" class="setting-val">75%</span></div>
-            <input type="range" id="compact-slider" min="0" max="95" step="5" value="75" />
-            <div class="setting-desc">When the conversation reaches this % of the AI's context limit, older messages are automatically summarized to free up space. 0 = disabled.</div>
+            <div class="setting-label"><span>Model</span></div>
+            <select id="utility-model-select"><option value="">Loading…</option></select>
+            <div class="setting-desc">A small, fast model for background tasks like titling, naming, and inspire prompts. Stays loaded alongside image/music models.</div>
           </div>
         </div>
 
@@ -4934,7 +4798,7 @@
     <div id="music-trash-header">
       <h3>Trash</h3>
       <span id="music-trash-count-label"></span>
-      <button id="music-trash-empty-btn" title="Permanently delete all">Empty Trash</button>
+      <button id="music-trash-empty-btn" title="Empty trash"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
       <button id="music-trash-close-btn">&times;</button>
     </div>
     <div id="music-trash-list"></div>
@@ -5142,12 +5006,12 @@ async function loadApp() {
   if (typeof restoreStudioSettings === "function") restoreStudioSettings();
   // Restore active view BEFORE loading conversations to prevent chat flash
   const _savedView = localStorage.getItem("diab_view");
-  if (_savedView === "studio" && typeof showStudio === "function") {
-    await showStudio();
-  } else if (_savedView === "music" && typeof showMusicStudio === "function") {
-    await showMusicStudio();
+  if (_savedView === "studio") {
+    showStudio();
+  } else if (_savedView === "music") {
+    showMusicStudio();
   } else {
-    localStorage.setItem("diab_view", "chat");
+    setView("chat");
   }
   loadModels();
   loadVoices();
@@ -5175,7 +5039,6 @@ const settingsClose   = document.getElementById("settings-close");
 const overlay         = document.getElementById("overlay");
 const convList        = document.getElementById("conv-list");
 const newChatBtn      = document.getElementById("new-chat-btn");
-newChatBtn.classList.add("active");
 const ctxMenu         = document.getElementById("ctx-menu");
 const ctxRename       = document.getElementById("ctx-rename");
 const ctxDelete       = document.getElementById("ctx-delete");
@@ -5252,6 +5115,10 @@ function updateSettingLabels() {
 voiceSelect.addEventListener("change", () => { saveSettings(); scheduleSettingsSync(); });
 document.getElementById("default-prompt-input").addEventListener("input", () => { saveSettings(); scheduleSettingsSync(); });
 document.getElementById("auto-memory-toggle").addEventListener("change", () => { saveSettings(); scheduleSettingsSync(); });
+document.getElementById("chat-advanced-toggle").addEventListener("click", function() {
+  this.classList.toggle("open");
+  document.getElementById("chat-advanced-panel").classList.toggle("open");
+});
 
 // ── Profile (localStorage) ──
 const PROFILE_KEY = "diab_profile";
@@ -5646,6 +5513,34 @@ document.getElementById("change-pw-btn").addEventListener("click", async () => {
   }
 });
 
+document.getElementById("clear-all-data-btn").addEventListener("click", async () => {
+  const confirmed = await showConfirm({
+    title: "Clear All Data",
+    message: "This will permanently delete all your conversations, topics, memory, image sessions, and music tracks. Your account and settings will be kept. Continue?",
+    okLabel: "Clear Everything",
+    okClass: "danger",
+  });
+  if (!confirmed) return;
+  try {
+    // Clear server-side data (conversations, topics, memory)
+    await apiFetch("/users/me/data", { method: "DELETE" });
+    // Clear client-side IndexedDB (image studio + music studio)
+    await new Promise((resolve) => { const r = indexedDB.deleteDatabase("diab_studio"); r.onsuccess = resolve; r.onerror = resolve; });
+    await new Promise((resolve) => { const r = indexedDB.deleteDatabase("diab_music"); r.onsuccess = resolve; r.onerror = resolve; });
+    // Clear related localStorage keys
+    localStorage.removeItem("diab_studio_session");
+    localStorage.removeItem("diab_music_session");
+    localStorage.removeItem("diab_music_collection");
+    showToast("All data cleared.");
+    closeSettings();
+    loadConversations();
+    if (typeof restoreStudioImages === "function") restoreStudioImages(true);
+    if (typeof restoreMusicTracks === "function") restoreMusicTracks();
+  } catch (e) {
+    showToast("Error clearing data: " + (e.message || e));
+  }
+});
+
 document.getElementById("delete-account-btn").addEventListener("click", async () => {
   const confirmed = await showConfirm({ title: "Delete Account", message: "Permanently delete your account and all your data? This cannot be undone.", okLabel: "Delete", okClass: "danger" });
   if (!confirmed) return;
@@ -5661,12 +5556,22 @@ let topicCtxTargetId = null;
 
 async function ensureDefaultTopic() {
   if (topics.length === 0) {
-    await openTopicModal(null, { required: true });
-    return;
+    // Auto-create a General topic instead of blocking with a modal
+    try {
+      const res = await apiFetch("/topics", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "General" }),
+      });
+      if (res.ok) {
+        const created = await res.json();
+        topics.push(created);
+      }
+    } catch (_) {}
   }
   // Always keep activeTopicId valid
   const valid = topics.find(p => p.id === activeTopicId);
-  if (!valid) {
+  if (!valid && topics.length > 0) {
     activeTopicId = topics[0].id;
     localStorage.setItem("diab_topic", activeTopicId);
   }
@@ -5720,17 +5625,17 @@ function renderTopicsSidebar() {
   list.innerHTML = "";
   topics.forEach(p => {
     const row = document.createElement("div");
-    row.className = "topic-row" + (p.id === activeTopicId ? " active" : "");
+    row.className = "sb-folder-row topic-row" + (p.id === activeTopicId ? " active" : "");
     row.dataset.id = p.id;
     row.innerHTML = `
-      <svg class="topic-row-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg class="sb-folder-icon topic-row-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M1.5 3.5C1.5 2.948 1.948 2.5 2.5 2.5H6.086a1 1 0 0 1 .707.293L7.914 3.914A1 1 0 0 0 8.621 4.2H13.5c.552 0 1 .448 1 1v7.3c0 .552-.448 1-1 1h-11c-.552 0-1-.448-1-1V3.5z" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"/>
       </svg>
-      <div class="topic-row-info">
-        <div class="topic-row-name">${esc(p.name)}</div>
-        ${p.description ? `<div class="topic-row-desc">${esc(p.description)}</div>` : ""}
+      <div class="sb-folder-info topic-row-info">
+        <div class="sb-folder-name topic-row-name">${esc(p.name)}</div>
+        ${p.description ? `<div class="sb-folder-desc topic-row-desc">${esc(p.description)}</div>` : ""}
       </div>
-      <button class="topic-menu-btn" title="Topic options">⋯</button>`;
+      <button class="sb-folder-menu topic-menu-btn" title="Topic options">⋯</button>`;
     // Click to select (no deselect - a topic is always active)
     row.addEventListener("click", e => {
       if (e.target.classList.contains("topic-menu-btn")) return;
@@ -6668,6 +6573,32 @@ async function loadModels() {
     localStorage.setItem("diab_model", pick);
     document.getElementById("chat-model-label").textContent = pick || "";
     if (typeof checkVisionSupport === "function") checkVisionSupport(pick);
+
+    // Populate songwrite model dropdown from same list
+    const swSel = document.getElementById("songwrite-model-select");
+    swSel.innerHTML = "";
+    data.models.forEach(m => {
+      const opt = document.createElement("option");
+      opt.value = m; opt.textContent = m;
+      swSel.appendChild(opt);
+    });
+    const savedSw = localStorage.getItem("diab_songwrite_model");
+    const swPick = savedSw && data.models.includes(savedSw) ? savedSw : data.default;
+    swSel.value = swPick;
+    localStorage.setItem("diab_songwrite_model", swPick);
+
+    // Populate utility model dropdown from same list
+    const utilSel = document.getElementById("utility-model-select");
+    utilSel.innerHTML = "";
+    data.models.forEach(m => {
+      const opt = document.createElement("option");
+      opt.value = m; opt.textContent = m;
+      utilSel.appendChild(opt);
+    });
+    const savedUtil = localStorage.getItem("diab_utility_model");
+    const utilPick = savedUtil && data.models.includes(savedUtil) ? savedUtil : (data.models.find(m => m.includes("0.6b") || m.includes("0.5b")) || data.models[data.models.length - 1] || "");
+    utilSel.value = utilPick;
+    localStorage.setItem("diab_utility_model", utilPick);
   } catch { modelSelect.innerHTML = `<option value="">Unavailable</option>`; }
   loadSuggestions();
   const wa = document.getElementById("welcome-avatar");
@@ -6680,12 +6611,18 @@ modelSelect.addEventListener("change", async () => {
   if (selectedModel) { localStorage.setItem("diab_model", selectedModel); scheduleSettingsSync(); }
   document.getElementById("chat-model-label").textContent = selectedModel || "";
   if (activeConvId) updateContextBar(activeConvId);
-  // Preload the new model into VRAM with overlay
+  // Preload the new model into VRAM (non-blocking)
   if (selectedModel) {
-    await showModelSwitchOverlay("Switching Chat Model", `Loading ${selectedModel}…`, async () => {
-      await apiFetch("/models/warmup", { method: "POST", body: JSON.stringify({ model: selectedModel }) });
-    });
+    apiFetch("/models/warmup", { method: "POST", body: JSON.stringify({ model: selectedModel }) }).catch(() => {});
   }
+});
+document.getElementById("songwrite-model-select").addEventListener("change", () => {
+  const v = document.getElementById("songwrite-model-select").value;
+  if (v) { localStorage.setItem("diab_songwrite_model", v); scheduleSettingsSync(); }
+});
+document.getElementById("utility-model-select").addEventListener("change", () => {
+  const v = document.getElementById("utility-model-select").value;
+  if (v) { localStorage.setItem("diab_utility_model", v); scheduleSettingsSync(); }
 });
 // loadModels() is called from loadApp()
 
@@ -7985,17 +7922,40 @@ const STUDIO_SUGGESTIONS = [
 ];
 
 let _lastSuggestionIdx = -1;
-function pickStudioSuggestion() {
-  // Pick a random prompt that isn't the same as the last one
+function _pickLocalStudioSuggestion() {
   let idx;
   do { idx = Math.floor(Math.random() * STUDIO_SUGGESTIONS.length); }
   while (idx === _lastSuggestionIdx && STUDIO_SUGGESTIONS.length > 1);
   _lastSuggestionIdx = idx;
-  const prompt = STUDIO_SUGGESTIONS[idx];
-  studioPrompt.value = prompt;
-  studioPrompt.focus();
+  studioPrompt.value = STUDIO_SUGGESTIONS[idx];
   studioPrompt.style.height = "auto";
   studioPrompt.style.height = Math.min(studioPrompt.scrollHeight, 140) + "px";
+}
+async function pickStudioSuggestion() {
+  const btn = document.getElementById("studio-suggest-btn");
+  btn.disabled = true;
+  btn.classList.add("loading");
+  studioPrompt.value = "Thinking of something...";
+  studioPrompt.classList.add("prompt-locked");
+  try {
+    const res = await apiFetch("/image/inspire");
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    if (data.prompt) {
+      studioPrompt.value = data.prompt;
+      studioPrompt.style.height = "auto";
+      studioPrompt.style.height = Math.min(studioPrompt.scrollHeight, 140) + "px";
+    } else {
+      _pickLocalStudioSuggestion();
+    }
+  } catch {
+    _pickLocalStudioSuggestion();
+  } finally {
+    studioPrompt.classList.remove("prompt-locked");
+    btn.disabled = false;
+    btn.classList.remove("loading");
+  }
+  studioPrompt.focus();
 }
 document.getElementById("studio-suggest-btn").addEventListener("click", pickStudioSuggestion);
 
@@ -8072,7 +8032,7 @@ async function pickMusicSuggestion() {
   const btn = document.getElementById("music-suggest-btn");
   btn.disabled = true;
   btn.classList.add("loading");
-  musicPrompt.classList.add("songwriting");
+  musicPrompt.classList.add("songwriting", "prompt-locked");
   musicPrompt.value = "Thinking of something...";
   try {
     const res = await apiFetch("/music/inspire");
@@ -8088,7 +8048,7 @@ async function pickMusicSuggestion() {
   } catch {
     _pickLocalMusicSuggestion();
   } finally {
-    musicPrompt.classList.remove("songwriting");
+    musicPrompt.classList.remove("songwriting", "prompt-locked");
     btn.disabled = false;
     btn.classList.remove("loading");
   }
@@ -8109,7 +8069,7 @@ document.getElementById("music-write-song-btn").addEventListener("click", async 
   const origPrompt = desc;
   btn.disabled = true;
   btn.classList.add("loading");
-  musicPrompt.classList.add("songwriting");
+  musicPrompt.classList.add("songwriting", "prompt-locked");
 
   const _songwritePhrases = [
     "Tuning the creative strings...",
@@ -8141,7 +8101,7 @@ document.getElementById("music-write-song-btn").addEventListener("click", async 
   try {
     const res = await apiFetch("/music/write-song", {
       method: "POST",
-      body: JSON.stringify({ description: desc, language: lang }),
+      body: JSON.stringify({ description: desc, language: lang, model: localStorage.getItem("diab_songwrite_model") || selectedModel || null }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -8170,220 +8130,211 @@ document.getElementById("music-write-song-btn").addEventListener("click", async 
     musicPrompt.value = origPrompt;
   } finally {
     clearInterval(_phraseTimer);
-    musicPrompt.classList.remove("songwriting");
+    musicPrompt.classList.remove("songwriting", "prompt-locked");
     btn.disabled = false;
     btn.classList.remove("loading");
   }
 });
 
-// ── Model switch overlay with live VRAM status ──
-let _switchVramTimer = null;
-async function _pollSwitchVram() {
-  const el = document.getElementById("model-switch-vram");
-  if (!el) return;
-  try {
-    const res = await apiFetch("/models/ps");
-    const data = await res.json();
-    const loaded = data.loaded || [];
-    const items = [];
-    const totalMb = loaded.reduce((s, m) => s + (m.vram_mb || 0), 0);
-    const totalStr = totalMb > 0 ? ` · ${(totalMb / 1024).toFixed(1)} GB` : "";
-    items.push(`<div class="msv-label">VRAM${totalStr}</div>`);
-    for (const m of loaded) {
-      const sizeStr = m.vram_mb > 0 ? `<span class="msv-size">${(m.vram_mb / 1024).toFixed(1)}G</span>` : "";
-      items.push(`<div class="msv-item"><span class="msv-dot ${m.type}"></span><span class="msv-name">${m.name}</span>${sizeStr}</div>`);
-    }
-    if (!loaded.length) items.push(`<div class="msv-item" style="opacity:0.5">No models loaded</div>`);
-    el.innerHTML = items.join("");
-  } catch {}
-}
-function _startSwitchVramPolling() {
-  _pollSwitchVram();
-  _switchVramTimer = setInterval(_pollSwitchVram, 1000);
-}
-function _stopSwitchVramPolling() {
-  if (_switchVramTimer) { clearInterval(_switchVramTimer); _switchVramTimer = null; }
-  const el = document.getElementById("model-switch-vram");
-  if (el) el.innerHTML = "";
-}
+// ── Centralized view switching ──
+const _modelReady = { chat: false, studio: false, music: false };
+let _prepareAbort = null;
 
-let _switchCancelled = false;
-async function showModelSwitchOverlay(title, sub, asyncWork) {
-  _switchCancelled = false;
-  const switchOverlay = document.getElementById("model-switch-overlay");
-  const cancelBtn = document.getElementById("model-switch-cancel");
-  document.getElementById("model-switch-text").textContent = title;
-  document.getElementById("model-switch-sub").textContent = sub;
-  switchOverlay.classList.add("active");
-  _startSwitchVramPolling();
+function setView(view) {
+  localStorage.setItem("diab_view", view);
+  const $ = id => document.getElementById(id);
 
-  let cancelResolve;
-  const cancelPromise = new Promise(r => { cancelResolve = r; });
-  const onCancel = () => { _switchCancelled = true; cancelResolve(); };
-  cancelBtn.addEventListener("click", onCancel, { once: true });
+  // Content areas
+  chatArea.style.display = view === "chat" ? "" : "none";
+  imageStudio.classList.toggle("active", view === "studio");
+  musicStudio.classList.toggle("active", view === "music");
 
-  const _t0 = Date.now();
-  try {
-    await Promise.race([asyncWork(), cancelPromise]);
-  } catch {}
-  cancelBtn.removeEventListener("click", onCancel);
+  // Sidebar nav buttons
+  $("new-chat-btn").classList.toggle("active", view === "chat");
+  $("studio-sidebar-btn").classList.toggle("active", view === "studio");
+  $("music-sidebar-btn").classList.toggle("active", view === "music");
 
-  if (!_switchCancelled) {
-    const _elapsed = Date.now() - _t0;
-    if (_elapsed < 800) await new Promise(r => setTimeout(r, 800 - _elapsed));
-  }
-  _stopSwitchVramPolling();
-  switchOverlay.classList.remove("active");
-  return !_switchCancelled;
-}
+  // Chat sections
+  $("topics-section").style.display = view === "chat" ? "" : "none";
+  $("topics-divider").style.display = view === "chat" ? "" : "none";
+  $("conv-header").style.display = view === "chat" ? "" : "none";
+  $("conv-list").style.display = view === "chat" ? "" : "none";
+  const csw = $("conv-search-wrap");
+  if (csw) csw.style.display = view === "chat" ? "" : "none";
 
-function _revertToChat() {
-  localStorage.setItem("diab_view", "chat");
-  imageStudio.classList.remove("active");
-  document.getElementById("music-studio").classList.remove("active");
-  chatArea.style.display = "";
-  document.getElementById("studio-sidebar-btn").classList.remove("active");
-  document.getElementById("music-sidebar-btn").classList.remove("active");
-  document.getElementById("new-chat-btn").classList.add("active");
-  document.getElementById("playgrounds-section").style.display = "none";
-  document.getElementById("studio-sessions-divider").style.display = "none";
-  document.getElementById("studio-sessions-header").style.display = "none";
-  document.getElementById("studio-sessions-list").style.display = "none";
-  document.getElementById("music-collections-section").style.display = "none";
-  document.getElementById("music-sessions-divider").style.display = "none";
-  document.getElementById("music-sessions-header").style.display = "none";
-  document.getElementById("music-sessions-list").style.display = "none";
-  document.getElementById("topics-section").style.display = "";
-  document.getElementById("topics-divider").style.display = "";
-  document.getElementById("conv-list").style.display = "";
-}
-function _revertToStudio() {
-  localStorage.setItem("diab_view", "studio");
-  chatArea.style.display = "none";
-  document.getElementById("music-studio").classList.remove("active");
-  imageStudio.classList.add("active");
-  document.getElementById("studio-sidebar-btn").classList.add("active");
-  document.getElementById("music-sidebar-btn").classList.remove("active");
-  document.getElementById("new-chat-btn").classList.remove("active");
-  document.getElementById("music-collections-section").style.display = "none";
-  document.getElementById("music-sessions-divider").style.display = "none";
-  document.getElementById("music-sessions-header").style.display = "none";
-  document.getElementById("music-sessions-list").style.display = "none";
-}
-function _revertToMusicStudio() {
-  localStorage.setItem("diab_view", "music");
-  chatArea.style.display = "none";
-  imageStudio.classList.remove("active");
-  document.getElementById("music-studio").classList.add("active");
-  document.getElementById("studio-sidebar-btn").classList.remove("active");
-  document.getElementById("music-sidebar-btn").classList.add("active");
-  document.getElementById("new-chat-btn").classList.remove("active");
-  document.getElementById("playgrounds-section").style.display = "none";
-  document.getElementById("studio-sessions-divider").style.display = "none";
-  document.getElementById("studio-sessions-header").style.display = "none";
-  document.getElementById("studio-sessions-list").style.display = "none";
-  document.getElementById("music-collections-section").style.display = "";
-  document.getElementById("music-sessions-divider").style.display = "";
-  document.getElementById("music-sessions-header").style.display = "flex";
-  document.getElementById("music-sessions-list").style.display = "";
-}
+  // Image Studio sections
+  $("playgrounds-section").style.display = view === "studio" ? "" : "none";
+  $("playgrounds-divider").style.display = view === "studio" ? "" : "none";
+  $("studio-sessions-header").style.display = view === "studio" ? "" : "none";
+  $("studio-sessions-list").style.display = view === "studio" ? "" : "none";
 
-// View switching
-async function showStudio() {
-  chatArea.style.display = "none";
-  document.getElementById("music-studio").classList.remove("active");
-  document.getElementById("music-sidebar-btn").classList.remove("active");
-  imageStudio.classList.add("active");
-  document.getElementById("studio-sidebar-btn").classList.add("active");
-  document.getElementById("new-chat-btn").classList.remove("active");
-  // Show playgrounds + sessions, hide topics/convs + music sessions
-  document.getElementById("playgrounds-section").style.display = "";
-  document.getElementById("playgrounds-section").style.flex = "";
-  document.getElementById("studio-sessions-divider").style.display = "";
-  document.getElementById("studio-sessions-header").style.display = "";
-  document.getElementById("studio-sessions-list").style.display = "";
-  document.getElementById("music-collections-section").style.display = "none";
-  document.getElementById("music-sessions-divider").style.display = "none";
-  document.getElementById("music-sessions-header").style.display = "none";
-  document.getElementById("music-sessions-list").style.display = "none";
-  document.getElementById("topics-section").style.display = "none";
-  document.getElementById("topics-divider").style.display = "none";
-  document.getElementById("conv-list").style.display = "none";
-  if (document.getElementById("conv-search-wrap")) document.getElementById("conv-search-wrap").style.display = "none";
+  // Music Studio sections
+  $("music-collections-section").style.display = view === "music" ? "" : "none";
+  $("music-collections-divider").style.display = view === "music" ? "" : "none";
+  $("music-sessions-header").style.display = view === "music" ? "" : "none";
+  $("music-sessions-list").style.display = view === "music" ? "" : "none";
+
+  // Mobile sidebar
   if (isMobile() && typeof closeMobileSidebar === "function") closeMobileSidebar();
-  localStorage.setItem("diab_view", "studio");
-  studioPrompt.focus();
 
-  // Check if image model is already loaded (e.g. page refresh while in studio)
-  let _needSwitch = true;
-  const _savedImgModel = localStorage.getItem("diab_image_model") || null;
+  // Focus prompt
+  if (view === "studio") studioPrompt.focus();
+  else if (view === "music") musicPrompt.focus();
+  else input.focus();
+}
+
+const _defaultPlaceholders = {
+  studio: "Describe the image you want to create...",
+  music: "Describe a song idea, or use the pen to have AI write it for you...",
+};
+
+function _setModelLoading(view, loading, modelName) {
+  const prompt = view === "studio" ? studioPrompt : view === "music" ? musicPrompt : null;
+  const btn = view === "studio" ? studioGenerateBtn : view === "music" ? musicGenerateBtn : null;
+  const box = prompt?.closest("#studio-prompt-box, #music-prompt-box");
+  if (prompt) {
+    if (loading) {
+      prompt.placeholder = `Loading ${modelName || "model"}… please wait`;
+      prompt.classList.add("model-loading", "prompt-locked");
+      if (box && !box.querySelector(".prompt-load-spinner")) {
+        const sp = document.createElement("span");
+        sp.className = "step-spinner prompt-load-spinner";
+        box.prepend(sp);
+      }
+    } else {
+      prompt.placeholder = _defaultPlaceholders[view] || "";
+      prompt.classList.remove("model-loading", "prompt-locked");
+      if (box) { const sp = box.querySelector(".prompt-load-spinner"); if (sp) sp.remove(); }
+    }
+  }
+  if (btn) {
+    btn.disabled = !!loading;
+  }
+}
+
+async function prepareModelsForView(view) {
+  // Cancel any in-flight preparation
+  if (_prepareAbort) { _prepareAbort.abort(); _prepareAbort = null; }
+
+  // Chat doesn't need model prep on switch - it happens lazily on first message
+  if (view === "chat") {
+    _modelReady.chat = true;
+    const _chatModel = selectedModel || localStorage.getItem("diab_model") || null;
+    apiFetch("/models/warmup", {
+      method: "POST",
+      body: JSON.stringify(_chatModel ? { model: _chatModel } : {}),
+    }).catch(() => {});
+    return;
+  }
+
+  // Don't evict models if a generation is actively running
+  if (studioGenerating || _musicGenerating || isLoading) return;
+
+  // Check if target model already loaded
   try {
     const psRes = await apiFetch("/models/ps");
     const psData = await psRes.json();
-    const imgLoaded = (psData.loaded || []).some(m => m.type === "image");
-    if (imgLoaded) _needSwitch = false;
+    const loaded = psData.loaded || [];
+    if (view === "studio" && loaded.some(m => m.type === "image")) {
+      _modelReady.studio = true;
+      _setModelLoading("studio", false);
+      // Unload music model in background if loaded
+      if (loaded.some(m => m.type === "music")) {
+        apiFetch("/models/prepare-studio", { method: "POST", body: JSON.stringify({}) }).catch(() => {});
+      }
+      return;
+    }
+    if (view === "music" && loaded.some(m => m.type === "music")) {
+      _modelReady.music = true;
+      _setModelLoading("music", false);
+      // Unload image model in background if loaded
+      if (loaded.some(m => m.type === "image")) {
+        apiFetch("/models/prepare-music-studio", { method: "POST" }).catch(() => {});
+      }
+      return;
+    }
   } catch {}
 
-  if (_needSwitch) {
-    studioGenerateBtn.disabled = true;
-    const completed = await showModelSwitchOverlay("Switching to Image Studio", "Unloading chat models…", async () => {
+  // Model not loaded - show loading in prompt placeholder
+  _modelReady[view] = false;
+  const modelName = view === "studio"
+    ? (studioModelSelect.options[studioModelSelect.selectedIndex]?.textContent || "image model")
+    : "ACE-Step";
+  _setModelLoading(view, true, modelName);
+
+  const abort = new AbortController();
+  _prepareAbort = abort;
+
+  try {
+    if (view === "studio") {
+      const _savedImgModel = localStorage.getItem("diab_image_model") || null;
       await apiFetch("/models/prepare-studio", {
         method: "POST",
         body: JSON.stringify(_savedImgModel ? { model: _savedImgModel } : {}),
+        signal: abort.signal,
       });
-      await loadStudioModels();
-    });
-    studioGenerateBtn.disabled = false;
-    if (!completed) { _revertToChat(); return; }
-  } else {
-    loadStudioModels();
+      if (!abort.signal.aborted) {
+        _modelReady.studio = true;
+        _setModelLoading("studio", false);
+      }
+    } else if (view === "music") {
+      await apiFetch("/models/prepare-music-studio", {
+        method: "POST",
+        body: JSON.stringify({}),
+        signal: abort.signal,
+      });
+      if (!abort.signal.aborted) {
+        _modelReady.music = true;
+        _setModelLoading("music", false);
+      }
+    }
+  } catch (e) {
+    if (e.name !== "AbortError") {
+      console.warn("Model preparation failed:", e);
+      _setModelLoading(view, false);
+    }
   }
+}
+
+// View switching wrappers
+function showStudio() {
+  setView("studio");
+  loadStudioModels();
   loadPlaygrounds();
   _refreshTrashBadge();
   restoreStudioImages();
   initFavCount();
+  prepareModelsForView("studio");
 }
-async function hideStudio() {
-  localStorage.setItem("diab_view", "chat");
-  imageStudio.classList.remove("active");
-  document.getElementById("music-studio").classList.remove("active");
-  chatArea.style.display = "";
-  // Block while loading chat LLM into VRAM
-  const _chatModel = selectedModel || localStorage.getItem("diab_model") || null;
-  const completed = await showModelSwitchOverlay("Switching to Chat", "Loading language model into VRAM…", async () => {
-    await apiFetch("/models/warmup", {
-      method: "POST",
-      body: JSON.stringify(_chatModel ? { model: _chatModel } : {}),
-    });
-  });
-  if (!completed) { _revertToStudio(); return; }
-  document.getElementById("studio-sidebar-btn").classList.remove("active");
-  document.getElementById("new-chat-btn").classList.add("active");
-  // Show topics/convs, hide playgrounds + sessions
-  document.getElementById("playgrounds-section").style.display = "none";
-  document.getElementById("playgrounds-section").style.flex = "";
-  document.getElementById("studio-sessions-divider").style.display = "none";
-  document.getElementById("studio-sessions-header").style.display = "none";
-  document.getElementById("studio-sessions-list").style.display = "none";
-  document.getElementById("music-collections-section").style.display = "none";
-  document.getElementById("music-sessions-divider").style.display = "none";
-  document.getElementById("music-sessions-header").style.display = "none";
-  document.getElementById("music-sessions-list").style.display = "none";
-  document.getElementById("topics-section").style.display = "";
-  document.getElementById("topics-divider").style.display = "";
-  document.getElementById("conv-list").style.display = "";
+
+function hideStudio() {
+  setView("chat");
+  prepareModelsForView("chat");
 }
-async function toggleStudio() {
-  if (imageStudio.classList.contains("active")) await hideStudio();
-  else {
-    // Close music studio first if open (without warmup)
-    const _ms = document.getElementById("music-studio");
-    if (_ms && _ms.classList.contains("active")) {
-      _ms.classList.remove("active");
-      document.getElementById("music-sidebar-btn").classList.remove("active");
-    }
-    await showStudio();
+
+function showMusicStudio() {
+  setView("music");
+  loadMusicCollections();
+  renderMusicSessionsList();
+  _ensureMusicSession();
+  restoreMusicTracks();
+  _refreshMusicTrashBadge();
+  if (localStorage.getItem("diab_music_fav_open") === "1") {
+    musicFavPanel.classList.add("open");
+    musicFavToggle.classList.add("active");
+    refreshMusicFavoritesPanel();
   }
+  prepareModelsForView("music");
+}
+
+function hideMusicStudio() {
+  setView("chat");
+  prepareModelsForView("chat");
+}
+
+function toggleStudio() {
+  if (imageStudio.classList.contains("active")) return;
+  showStudio();
 }
 document.getElementById("studio-sidebar-btn").addEventListener("click", toggleStudio);
 document.getElementById("strip-studio-btn").addEventListener("click", toggleStudio);
@@ -8617,15 +8568,29 @@ async function renderMusicSessionsList() {
   list.innerHTML = "";
   const sessions = await _getMusicSessions();
   if (sessions.length === 0) return;
-  for (const sess of sessions) {
+
+  // Group by date like image studio and chat
+  const dateGroups = _groupSessionsByDate(sessions.map(s => ({ ...s, timestamp: s.latestTimestamp })));
+  Object.entries(dateGroups).forEach(([label, items]) => {
+    if (!items.length) return;
+    const gl = document.createElement("div");
+    gl.className = "conv-group-label";
+    gl.textContent = label;
+    list.appendChild(gl);
+    items.forEach(sess => list.appendChild(_makeMusicSessionItem(sess)));
+  });
+}
+
+function _makeMusicSessionItem(sess) {
     const item = document.createElement("div");
-    item.className = "music-session-item" + (sess.session_id === activeMusicSessionId ? " active" : "");
+    item.className = "sb-item music-session-item" + (sess.session_id === activeMusicSessionId ? " active" : "");
     item.dataset.sessionId = sess.session_id;
     item.draggable = true;
+    const badge = sess.trackCount > 1 ? `<span class="sb-item-badge music-session-badge">${sess.trackCount}</span>` : "";
     item.innerHTML = `
-      <span class="music-session-prompt">${esc(sess.firstPrompt || "Untitled")}</span>
-      <span class="music-session-badge">${sess.trackCount}</span>
-      <button class="music-session-menu" title="Options">&hellip;</button>
+      <span class="sb-item-title music-session-prompt">${esc(sess.firstPrompt || "Untitled")}</span>
+      ${badge}
+      <button class="sb-item-menu music-session-menu" title="Options">&hellip;</button>
     `;
     item.addEventListener("dragstart", e => {
       e.dataTransfer.setData("text/music-session", sess.session_id);
@@ -8643,8 +8608,7 @@ async function renderMusicSessionsList() {
       e.stopPropagation();
       _showMusicSessionMenu(sess, item, e);
     });
-    list.appendChild(item);
-  }
+    return item;
 }
 
 function _showMusicSessionMenu(sess, itemEl, e) {
@@ -8796,10 +8760,10 @@ function renderMusicCollectionsSidebar() {
   list.innerHTML = "";
   musicCollections.forEach(col => {
     const row = document.createElement("div");
-    row.className = "mcol-row" + (col.id === activeCollectionId ? " active" : "");
+    row.className = "sb-folder-row mcol-row" + (col.id === activeCollectionId ? " active" : "");
     row.dataset.id = col.id;
-    const iconSvg = `<svg class="mcol-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
-    row.innerHTML = `${iconSvg}<div class="mcol-row-info"><div class="mcol-row-name">${esc(col.name)}</div>${col.description ? `<div class="mcol-row-desc">${esc(col.description)}</div>` : ""}</div><button class="mcol-menu-btn" title="Options">⋯</button>`;
+    const iconSvg = `<svg class="sb-folder-icon mcol-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
+    row.innerHTML = `${iconSvg}<div class="sb-folder-info mcol-row-info"><div class="sb-folder-name mcol-row-name">${esc(col.name)}</div>${col.description ? `<div class="sb-folder-desc mcol-row-desc">${esc(col.description)}</div>` : ""}</div><button class="sb-folder-menu mcol-menu-btn" title="Options">⋯</button>`;
     row.addEventListener("click", e => {
       if (e.target.classList.contains("mcol-menu-btn")) return;
       if (col.id === activeCollectionId) return;
@@ -8998,56 +8962,54 @@ function _createMusicFavCard(fav) {
   const audioUrl = URL.createObjectURL(blob);
   const audio = new Audio(audioUrl);
 
+  const coverSrc = fav.coverArt ? `<img src="data:image/png;base64,${fav.coverArt}" alt="" />` : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M9 8l6 4-6 4V8z" fill="var(--text-faint)" stroke="none"/></svg>`;
+  const durStr = fav.duration ? _formatMusicTime(fav.duration) : "";
   card.innerHTML = `
-    <div class="music-fav-card-player">
-      <button class="music-play-btn" title="Play/Pause" style="width:32px;height:32px;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    <div class="music-fav-cover">
+      ${coverSrc}
+      <button class="music-fav-play" title="Play/Pause">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
       </button>
-      <div class="music-waveform-wrap" style="height:36px;">
-        <canvas></canvas>
-        <div class="music-waveform-progress"></div>
-      </div>
-      <span class="music-time" style="font-size:0.65rem;min-width:56px;">0:00</span>
     </div>
-    <div class="music-fav-card-meta">${esc(fav.title || fav.rawPrompt || "")}</div>
+    <div class="music-fav-info">
+      <div class="music-fav-title">${esc(fav.title || fav.rawPrompt || "Untitled")}</div>
+      <div class="music-fav-duration">${durStr}</div>
+    </div>
     <div class="music-fav-card-actions">
-      <button class="music-action-btn" title="Download"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
-      <button class="music-action-btn" title="Reuse settings"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
+      <button class="music-action-btn music-fav-dl" title="Download"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+      <button class="music-action-btn music-fav-reuse" title="Reuse settings"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
       <button class="music-action-btn music-fav-remove" title="Remove from favorites"><svg width="12" height="12" viewBox="0 0 24 24" fill="#f472b6" stroke="#f472b6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
     </div>
   `;
 
-  const playBtn = card.querySelector(".music-play-btn");
-  const waveCanvas = card.querySelector("canvas");
-  const waveProgress = card.querySelector(".music-waveform-progress");
-  const timeEl = card.querySelector(".music-time");
-
-  // Draw waveform
-  fetch(audioUrl).then(r => r.arrayBuffer()).then(buf => {
-    _musicAudioCtx.decodeAudioData(buf.slice(0), decoded => {
-      drawMusicWaveform(waveCanvas, decoded);
-    });
-  }).catch(() => {});
+  const playBtn = card.querySelector(".music-fav-play");
 
   let isPlaying = false;
   playBtn.addEventListener("click", () => {
-    if (isPlaying) { audio.pause(); playBtn.classList.remove("playing"); playBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>'; }
-    else { document.querySelectorAll(".music-play-btn.playing").forEach(b => b.click()); audio.play(); playBtn.classList.add("playing"); playBtn.innerHTML = ''; }
+    if (isPlaying) {
+      audio.pause(); playBtn.classList.remove("playing");
+      playBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+    } else {
+      document.querySelectorAll(".music-fav-play.playing").forEach(b => b.click());
+      audio.play(); playBtn.classList.add("playing");
+      playBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+    }
     isPlaying = !isPlaying;
   });
-  audio.addEventListener("ended", () => { isPlaying = false; playBtn.classList.remove("playing"); playBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>'; waveProgress.style.width = "0%"; });
-  audio.addEventListener("timeupdate", () => { if (audio.duration) { waveProgress.style.width = (audio.currentTime / audio.duration * 100) + "%"; timeEl.textContent = _formatMusicTime(audio.currentTime); } });
-  card.querySelector(".music-waveform-wrap").addEventListener("click", (e) => { const rect = e.currentTarget.getBoundingClientRect(); if (audio.duration) audio.currentTime = ((e.clientX - rect.left) / rect.width) * audio.duration; });
+  audio.addEventListener("ended", () => {
+    isPlaying = false; playBtn.classList.remove("playing");
+    playBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+  });
 
   // Download
-  card.querySelectorAll(".music-action-btn")[0].addEventListener("click", () => {
+  card.querySelector(".music-fav-dl").addEventListener("click", () => {
     const a = document.createElement("a"); a.href = audioUrl;
     a.download = (fav.title || fav.rawPrompt || "music").slice(0, 40).replace(/[^a-zA-Z0-9 ]/g, "").trim().replace(/\s+/g, "_") + ((fav.format === "wav") ? ".wav" : ".mp3");
     a.click();
   });
 
   // Reuse settings
-  card.querySelectorAll(".music-action-btn")[1].addEventListener("click", () => {
+  card.querySelector(".music-fav-reuse").addEventListener("click", () => {
     if (fav.rawPrompt) musicPrompt.value = fav.rawPrompt;
     if (fav.body) {
       if (fav.body.duration) document.getElementById("music-duration").value = fav.body.duration;
@@ -9105,108 +9067,14 @@ document.getElementById("music-fav-close").addEventListener("click", () => {
 });
 
 // ── Music view switching ──
-async function showMusicStudio() {
-  chatArea.style.display = "none";
-  imageStudio.classList.remove("active");
-  document.getElementById("studio-sidebar-btn").classList.remove("active");
-  musicStudio.classList.add("active");
-  document.getElementById("music-sidebar-btn").classList.add("active");
-  document.getElementById("new-chat-btn").classList.remove("active");
-  // Hide image studio sidebar items
-  document.getElementById("playgrounds-section").style.display = "none";
-  document.getElementById("studio-sessions-divider").style.display = "none";
-  document.getElementById("studio-sessions-header").style.display = "none";
-  document.getElementById("studio-sessions-list").style.display = "none";
-  // Hide chat sidebar items
-  document.getElementById("topics-section").style.display = "none";
-  document.getElementById("topics-divider").style.display = "none";
-  document.getElementById("conv-list").style.display = "none";
-  if (document.getElementById("conv-search-wrap")) document.getElementById("conv-search-wrap").style.display = "none";
-  // Show music collections + sessions
-  document.getElementById("music-collections-section").style.display = "";
-  document.getElementById("music-sessions-divider").style.display = "";
-  document.getElementById("music-sessions-header").style.display = "flex";
-  document.getElementById("music-sessions-list").style.display = "";
-  await loadMusicCollections();
-  renderMusicSessionsList();
-  if (isMobile() && typeof closeMobileSidebar === "function") closeMobileSidebar();
-  localStorage.setItem("diab_view", "music");
-  musicPrompt.focus();
+// showMusicStudio, hideMusicStudio, toggleMusicStudio defined above in centralized view switching
 
-  // Restore fav panel state
-  if (localStorage.getItem("diab_music_fav_open") === "1") {
-    musicFavPanel.classList.add("open");
-    musicFavToggle.classList.add("active");
-    refreshMusicFavoritesPanel();
-  }
-
-  // Check if music model is already loaded
-  let _needSwitch = true;
-  try {
-    const psRes = await apiFetch("/models/ps");
-    const psData = await psRes.json();
-    const musicLoaded = (psData.loaded || []).some(m => m.type === "music");
-    if (musicLoaded) _needSwitch = false;
-  } catch {}
-
-  if (_needSwitch) {
-    musicGenerateBtn.disabled = true;
-    const completed = await showModelSwitchOverlay("Switching to Music Studio", "Loading ACE-Step model…", async () => {
-      await apiFetch("/models/prepare-music-studio", { method: "POST", body: JSON.stringify({}) });
-    });
-    musicGenerateBtn.disabled = false;
-    if (!completed) { _revertToChat(); return; }
-  }
-  _ensureMusicSession();
-  restoreMusicTracks();
-  _refreshMusicTrashBadge();
-}
-
-async function hideMusicStudio() {
-  localStorage.setItem("diab_view", "chat");
-  musicStudio.classList.remove("active");
-  chatArea.style.display = "";
-  // Hide music collections + sessions
-  document.getElementById("music-collections-section").style.display = "none";
-  document.getElementById("music-sessions-divider").style.display = "none";
-  document.getElementById("music-sessions-header").style.display = "none";
-  document.getElementById("music-sessions-list").style.display = "none";
-  const _chatModel = selectedModel || localStorage.getItem("diab_model") || null;
-  const completed = await showModelSwitchOverlay("Switching to Chat", "Loading language model into VRAM…", async () => {
-    await apiFetch("/models/warmup", {
-      method: "POST",
-      body: JSON.stringify(_chatModel ? { model: _chatModel } : {}),
-    });
-  });
-  if (!completed) { _revertToMusicStudio(); return; }
-  document.getElementById("music-sidebar-btn").classList.remove("active");
-  document.getElementById("new-chat-btn").classList.add("active");
-  document.getElementById("topics-section").style.display = "";
-  document.getElementById("topics-divider").style.display = "";
-  document.getElementById("conv-list").style.display = "";
-}
-
-async function toggleMusicStudio() {
-  if (musicStudio.classList.contains("active")) await hideMusicStudio();
-  else {
-    // If image studio is open, close it first (without warmup)
-    if (imageStudio.classList.contains("active")) {
-      imageStudio.classList.remove("active");
-      document.getElementById("studio-sidebar-btn").classList.remove("active");
-      document.getElementById("playgrounds-section").style.display = "none";
-      document.getElementById("studio-sessions-divider").style.display = "none";
-      document.getElementById("studio-sessions-header").style.display = "none";
-      document.getElementById("studio-sessions-list").style.display = "none";
-    }
-    await showMusicStudio();
-  }
+function toggleMusicStudio() {
+  if (musicStudio.classList.contains("active")) return;
+  showMusicStudio();
 }
 document.getElementById("music-sidebar-btn").addEventListener("click", toggleMusicStudio);
 document.getElementById("strip-music-btn").addEventListener("click", toggleMusicStudio);
-
-// Also update toggleStudio to close music studio first
-const _origToggleStudio = toggleStudio;
-// Replace toggleStudio click handlers -handled below
 
 // ── Music settings panel ──
 document.getElementById("music-settings-trigger").addEventListener("click", function() {
@@ -9405,8 +9273,10 @@ function createMusicResultCard(record) {
   const audioUrl = URL.createObjectURL(blob);
   const audio = new Audio(audioUrl);
 
-  const lyricsHtml = record.lyrics && record.lyrics !== "[Instrumental]"
-    ? `<div class="music-meta-lyrics">${esc(record.lyrics)}</div>` : "";
+  const hasLyrics = record.lyrics && record.lyrics !== "[Instrumental]";
+  const lyricsToggleHtml = hasLyrics
+    ? `<button class="music-lyrics-toggle"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg> Lyrics</button>` : "";
+  const lyricsBodyHtml = hasLyrics ? `<div class="music-meta-lyrics">${esc(record.lyrics)}</div>` : "";
   const pills = [];
   pills.push(record.model || "ACE-Step 1.5");
   if (record.duration) pills.push(record.duration + "s");
@@ -9415,39 +9285,46 @@ function createMusicResultCard(record) {
   if (record.body?.bpm) pills.push(record.body.bpm + " bpm");
   if (record.elapsed_s) pills.push(record.elapsed_s + "s");
 
+  const coverHtml = record.coverArt
+    ? `<img src="data:image/png;base64,${record.coverArt}" alt="Cover art" />`
+    : record._pendingCoverArt
+      ? `<div class="cover-spinner"></div>`
+      : "";
+
   el.innerHTML = `
-    <div class="music-result-player">
-      <button class="music-play-btn" title="Play/Pause">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-      </button>
-      <div class="music-waveform-wrap">
-        <canvas></canvas>
-        <div class="music-waveform-progress"></div>
+    ${coverHtml ? `<div class="music-result-cover">${coverHtml}</div>` : ""}
+    <div class="music-result-body">
+      <div class="music-result-player">
+        <button class="music-play-btn" title="Play/Pause">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        </button>
+        <div class="music-waveform-wrap">
+          <canvas></canvas>
+          <div class="music-waveform-progress"></div>
+        </div>
+        <span class="music-time">0:00 / ${_formatMusicTime(record.duration || 0)}</span>
       </div>
-      <span class="music-time">0:00 / ${_formatMusicTime(record.duration || 0)}</span>
-    </div>
-    <div class="music-meta-details">
-      ${record.coverArt
-        ? `<img class="music-cover-art" src="data:image/png;base64,${record.coverArt}" alt="Cover art" />`
-        : record._pendingCoverArt
-          ? `<div class="music-cover-art-placeholder"><div class="cover-spinner"></div></div>`
-          : ""}
-      <div class="music-meta-text">
-        ${record.title ? `<div class="music-meta-title">${esc(record.title)}</div>` : ""}
-        <div class="music-meta-prompt">${esc(record.rawPrompt)}</div>
-        ${lyricsHtml}
-        <div class="music-meta-pills">${pills.map(p => `<span class="meta-pill">${esc(p)}</span>`).join("")}</div>
-      </div>
-      <div class="music-result-actions">
-        <button class="music-action-btn music-fav-btn" title="Favorite">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-        </button>
-        <button class="music-action-btn music-dl" title="Download">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        </button>
-        <button class="music-action-btn music-del" title="Delete">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-        </button>
+      <div class="music-meta-details">
+        <div class="music-meta-text">
+          ${record.title ? `<div class="music-meta-title">${esc(record.title)}</div>` : ""}
+          <div class="music-meta-prompt">${esc(record.rawPrompt)}</div>
+          <div class="music-meta-pills">${pills.map(p => `<span class="meta-pill">${esc(p)}</span>`).join("")}${lyricsToggleHtml}</div>
+          ${lyricsBodyHtml}
+        </div>
+        <div class="music-result-actions">
+          <button class="music-action-btn music-fav-btn" title="Favorite">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </button>
+          <button class="music-action-btn music-reuse" title="Reuse settings">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+          </button>
+          <button class="music-action-btn music-dl" title="Download">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </button>
+          <button class="music-action-btn music-del" title="Delete">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
+        </div>
       </div>
     </div>
   `;
@@ -9458,6 +9335,15 @@ function createMusicResultCard(record) {
   const waveProgress = el.querySelector(".music-waveform-progress");
   const timeEl = el.querySelector(".music-time");
   const favBtn = el.querySelector(".music-fav-btn");
+
+  // Lyrics toggle
+  const lyricsToggle = el.querySelector(".music-lyrics-toggle");
+  if (lyricsToggle) {
+    lyricsToggle.addEventListener("click", () => {
+      lyricsToggle.classList.toggle("open");
+      el.querySelector(".music-meta-lyrics").classList.toggle("open");
+    });
+  }
 
   // Check if already favorited
   isMusicFavorite(record.id).then(isFav => {
@@ -9544,6 +9430,30 @@ function createMusicResultCard(record) {
     if (musicFavPanel.classList.contains("open")) refreshMusicFavoritesPanel();
   });
 
+  // Reuse settings
+  el.querySelector(".music-reuse").addEventListener("click", () => {
+    if (record.rawPrompt) musicPrompt.value = record.rawPrompt;
+    if (record.body) {
+      if (record.body.duration) document.getElementById("music-duration").value = record.body.duration;
+      if (record.body.infer_steps) document.getElementById("music-steps").value = record.body.infer_steps;
+      if (record.body.guidance_scale) document.getElementById("music-guidance").value = record.body.guidance_scale;
+      _updateMusicSettingsSummary();
+      document.getElementById("music-duration").dispatchEvent(new Event("input"));
+      document.getElementById("music-steps").dispatchEvent(new Event("input"));
+      document.getElementById("music-guidance").dispatchEvent(new Event("input"));
+    }
+    if (record.body?.vocal_language) document.getElementById("music-vocal-language").value = record.body.vocal_language;
+    if (record.lyrics && record.lyrics !== "[Instrumental]") {
+      musicLyrics.value = record.lyrics;
+      document.getElementById("music-settings-crumb").classList.add("open");
+      document.getElementById("music-settings-panel").classList.add("open");
+    } else {
+      musicLyrics.value = "";
+    }
+    _updateMusicSettingsSummary();
+    musicPrompt.focus();
+  });
+
   // Download
   el.querySelector(".music-dl").addEventListener("click", () => {
     const a = document.createElement("a");
@@ -9627,6 +9537,10 @@ async function musicGenerate() {
   if (_musicGenerating) return;
   const rawPrompt = musicPrompt.value.trim();
   if (!rawPrompt) return;
+  if (!_modelReady.music) {
+    showToast("Music model is loading, please wait...");
+    return;
+  }
 
   // Append style preset suffix if active
   let prompt = rawPrompt;
@@ -9641,7 +9555,7 @@ async function musicGenerate() {
   musicCanvasEmpty.style.display = "none";
 
   const duration = parseFloat(document.getElementById("music-duration").value) || 30;
-  const infer_steps = parseInt(document.getElementById("music-steps").value) || 20;
+  const infer_steps = parseInt(document.getElementById("music-steps").value) || 40;
   const guidance_scale = parseFloat(document.getElementById("music-guidance").value) || 7.0;
   const seedVal = document.getElementById("music-seed").value.trim();
   const seed = seedVal ? parseInt(seedVal) : null;
@@ -9737,7 +9651,7 @@ async function musicGenerate() {
           const nameData = await nameResp.json();
           songTitle = (nameData.title || "").trim();
         }
-      } catch (_) {}
+      } catch (e) { console.warn("Song naming failed:", e); }
 
       const record = {
         id: "music_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6) + "_" + i,
@@ -9798,21 +9712,22 @@ async function musicGenerate() {
             const existing = await new Promise(r => { const g = store.get(rec.id); g.onsuccess = () => r(g.result); });
             if (existing) { existing.coverArt = coverB64; store.put(existing); }
           } catch (_) {}
-          // Update DOM - replace placeholder with actual image
-          const placeholder = card.querySelector(".music-cover-art-placeholder");
-          if (placeholder) {
-            const img = document.createElement("img");
-            img.className = "music-cover-art";
-            img.src = "data:image/png;base64," + coverB64;
-            img.alt = "Cover art";
-            placeholder.replaceWith(img);
+          // Update DOM - insert or replace cover
+          let coverWrap = card.querySelector(".music-result-cover");
+          if (coverWrap) {
+            coverWrap.innerHTML = `<img src="data:image/png;base64,${coverB64}" alt="Cover art" />`;
+          } else {
+            coverWrap = document.createElement("div");
+            coverWrap.className = "music-result-cover";
+            coverWrap.innerHTML = `<img src="data:image/png;base64,${coverB64}" alt="Cover art" />`;
+            card.prepend(coverWrap);
           }
         }
       } catch (_) {
-        // Cover art is non-critical - just remove spinners
+        // Cover art is non-critical - just remove spinner covers
         for (const card of cards) {
-          const ph = card.querySelector(".music-cover-art-placeholder");
-          if (ph) ph.remove();
+          const cw = card.querySelector(".music-result-cover");
+          if (cw && !cw.querySelector("img")) cw.remove();
         }
       }
     })();
@@ -9884,8 +9799,8 @@ async function renderMusicTrashList() {
         <div class="music-trash-card-meta">${durStr}${durStr ? " · " : ""}Deleted ${age}</div>
       </div>
       <div class="music-trash-card-actions">
-        <button class="music-trash-restore">Restore</button>
-        <button class="music-trash-del">Delete</button>
+        <button class="music-trash-restore" title="Restore"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
+        <button class="music-trash-del" title="Delete permanently"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
       </div>
     `;
     // Play/pause
@@ -10021,8 +9936,8 @@ async function renderTrashGrid() {
         <div class="trash-card-age">Deleted ${age}</div>
       </div>
       <div class="trash-card-actions">
-        <button class="trash-restore-btn">Restore</button>
-        <button class="trash-del-btn">Delete</button>
+        <button class="trash-restore-btn" title="Restore"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
+        <button class="trash-del-btn" title="Delete permanently"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
       </div>
     `;
     card.querySelector(".trash-restore-btn").addEventListener("click", async () => {
@@ -10117,10 +10032,10 @@ function renderPlaygroundsSidebar() {
   list.innerHTML = "";
   studioPlaygrounds.forEach(pg => {
     const row = document.createElement("div");
-    row.className = "playground-row" + (pg.id === activePlaygroundId ? " active" : "");
+    row.className = "sb-folder-row playground-row" + (pg.id === activePlaygroundId ? " active" : "");
     row.dataset.id = pg.id;
-    const iconSvg = `<svg class="playground-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><rect x="6" y="11" width="12" height="7" rx="1"/><circle cx="8.5" cy="13.5" r="1" fill="currentColor" stroke="none"/><path d="M18 18l-3.5-3.5-5.5 4.5"/></svg>`;
-    row.innerHTML = `${iconSvg}<div class="playground-row-info"><div class="playground-row-name">${esc(pg.name)}</div>${pg.description ? `<div class="playground-row-desc">${esc(pg.description)}</div>` : ""}</div><button class="playground-menu-btn" title="Options">⋯</button>`;
+    const iconSvg = `<svg class="sb-folder-icon playground-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><rect x="6" y="11" width="12" height="7" rx="1"/><circle cx="8.5" cy="13.5" r="1" fill="currentColor" stroke="none"/><path d="M18 18l-3.5-3.5-5.5 4.5"/></svg>`;
+    row.innerHTML = `${iconSvg}<div class="sb-folder-info playground-row-info"><div class="sb-folder-name playground-row-name">${esc(pg.name)}</div>${pg.description ? `<div class="sb-folder-desc playground-row-desc">${esc(pg.description)}</div>` : ""}</div><button class="sb-folder-menu playground-menu-btn" title="Options">⋯</button>`;
     row.addEventListener("click", e => {
       if (e.target.classList.contains("playground-menu-btn")) return;
       if (pg.id === activePlaygroundId) return;
@@ -10250,11 +10165,11 @@ async function renderStudioSessionsList() {
 
 function _makeGroupedSessionItem(sess) {
   const item = document.createElement("div");
-  item.className = "studio-session-item" + (sess.session_id === activeStudioSessionId ? " active" : "");
+  item.className = "sb-item studio-session-item" + (sess.session_id === activeStudioSessionId ? " active" : "");
   item.dataset.sessionId = sess.session_id;
   item.draggable = true;
-  const badge = sess.imageCount > 1 ? `<span class="studio-session-badge">${sess.imageCount}</span>` : "";
-  item.innerHTML = `<span class="studio-session-prompt">${esc(sess.firstPrompt)}</span>${badge}<button class="studio-session-menu" title="Options">&#x22EF;</button>`;
+  const badge = sess.imageCount > 1 ? `<span class="sb-item-badge studio-session-badge">${sess.imageCount}</span>` : "";
+  item.innerHTML = `<span class="sb-item-title studio-session-prompt">${esc(sess.firstPrompt)}</span>${badge}<button class="sb-item-menu studio-session-menu" title="Options">&#x22EF;</button>`;
   item.addEventListener("dragstart", e => {
     e.dataTransfer.setData("text/studio-session", sess.session_id);
     item.classList.add("dragging");
@@ -10664,9 +10579,11 @@ studioModelSelect.addEventListener("change", async () => {
   const newModel = studioModelSelect.value;
   if (!newModel) return;
   const modelName = studioModelSelect.options[studioModelSelect.selectedIndex]?.textContent || newModel;
+  // Load new image model in background with generate-gate
+  _modelReady.studio = false;
+  _setModelLoading("studio", true, modelName);
   studioModelSelect.disabled = true;
-  studioGenerateBtn.disabled = true;
-  await showModelSwitchOverlay("Switching Image Model", `Loading ${modelName}…`, async () => {
+  try {
     const res = await apiFetch("/image/models/load", {
       method: "POST",
       body: JSON.stringify({ model: newModel }),
@@ -10677,9 +10594,10 @@ studioModelSelect.addEventListener("change", async () => {
       saveStudioControls();
       scheduleSettingsSync();
     }
-  });
+  } catch {}
+  _modelReady.studio = true;
+  _setModelLoading("studio", false);
   studioModelSelect.disabled = false;
-  studioGenerateBtn.disabled = false;
 });
 
 // Generate (queuing handled inside studioGenerate)
@@ -10767,6 +10685,10 @@ function renderStudioQueueTray() {
 async function studioGenerate() {
   const rawPrompt = studioPrompt.value.trim();
   if (!rawPrompt) return;
+  if (!_modelReady.studio) {
+    showToast("Image model is loading, please wait...");
+    return;
+  }
 
   // If already generating, queue the request
   if (studioGenerating) {
@@ -10845,7 +10767,7 @@ async function studioGenerate() {
         const pct = Math.round((p.step / p.total_steps) * 100);
         placeholder.update(p.step, p.total_steps, p.elapsed_s);
       } else if (!p.running && p.step === 0) {
-        placeholder.setStatus("Freeing VRAM...");
+        placeholder.setStatus("Preparing model…");
       }
     } catch {}
   }, 1000);
@@ -10940,11 +10862,14 @@ async function studioGenerate() {
 
     // Auto-name session in background if this was the first generation
     if (results.length > 0 && rawPrompt) {
+      const _nameSessionId = activeStudioSessionId;
       (async () => {
         try {
-          // Check if there's only one generation in this session (i.e., it's new)
+          // Wait for IndexedDB save to flush
+          await new Promise(r => setTimeout(r, 500));
           const allRecs = await loadAllStudioImages();
-          const sessionRecs = allRecs.filter(r => r.session_id === activeStudioSessionId);
+          const sessionRecs = allRecs.filter(r => r.session_id === _nameSessionId);
+
           if (sessionRecs.length <= 1) {
             const nameResp = await apiFetch("/image/name-session", {
               method: "POST",
@@ -10953,24 +10878,20 @@ async function studioGenerate() {
             });
             if (nameResp.ok) {
               const { name } = await nameResp.json();
-              if (name) {
-                // Update the first record's rawPrompt to the concise name
-                const firstRec = sessionRecs[0];
-                if (firstRec) {
-                  const mdb = await openStudioDB();
-                  const tx = mdb.transaction("images", "readwrite");
-                  const store = tx.objectStore("images");
-                  const existing = await new Promise(r => { const g = store.get(firstRec.id); g.onsuccess = () => r(g.result); });
-                  if (existing) {
-                    existing.sessionName = name;
-                    store.put(existing);
-                  }
+              if (name && sessionRecs[0]) {
+                const mdb = await openStudioDB();
+                const tx = mdb.transaction("images", "readwrite");
+                const store = tx.objectStore("images");
+                const existing = await new Promise(r => { const g = store.get(sessionRecs[0].id); g.onsuccess = () => r(g.result); });
+                if (existing) {
+                  existing.sessionName = name;
+                  store.put(existing);
                 }
                 renderStudioSessionsList();
               }
             }
           }
-        } catch (_) {}
+        } catch (e) { console.warn("Image session naming failed:", e); }
       })();
     }
 
@@ -11354,11 +11275,11 @@ function groupByDate(convs) {
 
 function makeConvItem(c) {
   const el = document.createElement("div");
-  el.className = "conv-item" + (c.id === activeConvId ? " active" : "");
+  el.className = "sb-item conv-item" + (c.id === activeConvId ? " active" : "");
   el.dataset.id = c.id;
   el.dataset.initial = (c.title || "?")[0].toUpperCase();
   el.draggable = true;
-  el.innerHTML = `<span class="conv-title">${esc(c.title)}</span><button class="conv-menu-btn" data-id="${c.id}">⋯</button>`;
+  el.innerHTML = `<span class="sb-item-title conv-title">${esc(c.title)}</span><button class="sb-item-menu conv-menu-btn" data-id="${c.id}">⋯</button>`;
   el.addEventListener("click", (e) => {
     if (e.target.classList.contains("conv-menu-btn")) return;
     loadConversation(c.id);
@@ -11413,7 +11334,10 @@ function renderSidebar(convs, flat = false) {
 }
 
 async function loadConversation(id) {
-  if (imageStudio.classList.contains("active")) await hideStudio();
+  if (localStorage.getItem("diab_view") !== "chat") {
+    setView("chat");
+    prepareModelsForView("chat");
+  }
   try {
     const res = await apiFetch(`/conversations/${id}`);
     if (!res.ok) return;
@@ -11503,8 +11427,12 @@ ctxDelete.addEventListener("click", async () => {
 
 // ── New chat ──
 newChatBtn.addEventListener("click", async () => {
-  if (imageStudio.classList.contains("active")) await hideStudio();
-  if (topics.length === 0) { openTopicModal(null); return; }
+  if (localStorage.getItem("diab_view") !== "chat") {
+    setView("chat");
+    prepareModelsForView("chat");
+  }
+  await ensureDefaultTopic();
+  if (topics.length === 0) return;
   activeConvId = null;
   chatWindow.innerHTML = "";
   chatWindow.appendChild(makeWelcome());
@@ -11512,6 +11440,10 @@ newChatBtn.addEventListener("click", async () => {
   updateActiveSidebar();
   input.focus();
   loadSuggestions();
+});
+
+document.getElementById("conv-new-btn").addEventListener("click", () => {
+  newChatBtn.click();
 });
 
 function getGreeting() {
@@ -13307,6 +13239,7 @@ function renderQueueTray() {
 async function sendMessage() {
   const text = input.value.trim();
   if (!text) return;
+  await ensureDefaultTopic();
   if (!activeTopicId || topics.length === 0) return;
 
   // Capture any attached images before clearing
@@ -13602,7 +13535,7 @@ modelSelect.addEventListener("change", () => { checkVisionSupport(modelSelect.va
 
 // ── VRAM status indicator (admin only) ──
 const vramStatusEl = document.getElementById("vram-status");
-let _vramPollTimer = null;
+let _vramStatusTimer = null;
 let _lastVramModels = new Map(); // name → {type, vram_mb}
 let _vramTransitions = new Map(); // name → {action: "loading"|"unloading", type, ts}
 
@@ -13656,11 +13589,11 @@ async function pollVramStatus() {
 }
 
 function startVramPolling() {
-  if (_vramPollTimer) return;
+  if (_vramStatusTimer) return;
   if (!currentUser || currentUser.role !== "admin") return;
   vramStatusEl.style.display = "";
   pollVramStatus();
-  _vramPollTimer = setInterval(pollVramStatus, 5000);
+  _vramStatusTimer = setInterval(pollVramStatus, 5000);
 }
 
 // ── iOS / Mobile fixes ──
