@@ -2364,7 +2364,7 @@ def list_folders(user: dict = Depends(get_current_user)):
 @app.post("/folders")
 def create_folder(body: FolderCreate, user: dict = Depends(get_current_user)):
     pid = db.create_folder(user["id"], body.name, body.description, body.system_prompt)
-    return {"id": pid}
+    return db.get_folder(pid, user["id"]) or {"id": pid}
 
 @app.patch("/folders/{pid}")
 def update_folder(pid: str, body: FolderPatch, user: dict = Depends(get_current_user)):
