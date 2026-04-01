@@ -8,9 +8,11 @@ to prevent race conditions.
 POST /acquire  {service, model}  - evict others, load target
 POST /release  {service}        - unload a service's model
 GET  /status                    - what's loaded in VRAM
+GET  /events                    - SSE stream of state changes
 """
 
 import os
+import json
 import asyncio
 import logging
 import time
@@ -18,6 +20,7 @@ import time
 import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional
 
@@ -45,6 +48,48 @@ app.add_middleware(
 )
 
 _lock = asyncio.Lock()
+
+# -- SSE broadcast --
+_sse_clients: list[asyncio.Queue] = []
+
+
+async def _broadcast(event: str, data: dict):
+    """Push an event to all connected SSE clients."""
+    msg = f"event: {event}\ndata: {json.dumps(data)}\n\n"
+    for q in _sse_clients[:]:
+        try:
+            q.put_nowait(msg)
+        except asyncio.QueueFull:
+            pass
+
+
+async def _broadcast_status():
+    """Fetch current status and broadcast it."""
+    loaded = await _get_loaded_models()
+    await _broadcast("status", {"loaded": loaded})
+
+
+async def _get_loaded_models() -> list:
+    """Get all currently loaded models across all services."""
+    loaded = []
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(f"{OLLAMA_BASE_URL}/api/ps")
+            for m in resp.json().get("models", []):
+                name = m.get("name", "")
+                size = m.get("size_vram", m.get("size", 0))
+                loaded.append({"name": name, "type": "llm", "vram_mb": round(size / 1024 / 1024)})
+    except Exception:
+        pass
+    for svc, url in SERVICES.items():
+        health = await _get_service_health(url)
+        if health.get("model_loaded") and health.get("current_model"):
+            loaded.append({
+                "name": health["current_model"],
+                "type": svc,
+                "vram_mb": health.get("vram_mb", 0),
+            })
+    return loaded
 
 
 def _is_utility_model(name: str) -> bool:
@@ -213,28 +258,26 @@ async def acquire(req: AcquireRequest):
                     }
 
         # 2. Unload all other services
+        await _broadcast("acquiring", {"service": req.service, "phase": "unloading"})
         for svc in SERVICES:
             if svc == req.service:
                 continue
             await _unload_service(svc)
 
-        # 3. Evict Ollama LLMs (keep utility model, unless acquiring chat)
-        if req.service != "chat":
-            await _evict_ollama(keep_utility=True)
-        else:
-            # For chat, evict non-target LLMs but keep the one we want
-            await _evict_ollama(keep_utility=True)
+        # 3. Evict Ollama LLMs (keep utility model)
+        await _evict_ollama(keep_utility=True)
 
         # 4. Wait for VRAM to clear
+        await _broadcast_status()
         await _wait_vram_clear(exclude=req.service)
 
         # 5. Load the target
+        await _broadcast("acquiring", {"service": req.service, "phase": "loading"})
         result = {}
         if req.service == "chat":
             await _warmup_llm(req.model)
             result = {"model": req.model or "default", "vram_mb": 0}
         else:
-            # Check if target is already loaded (may have survived if it was the one we kept)
             target_health = await _get_service_health(SERVICES[req.service])
             if target_health.get("model_loaded"):
                 result = {
@@ -246,6 +289,7 @@ async def acquire(req: AcquireRequest):
 
         elapsed = round(time.time() - t0, 2)
         logger.info(f"VRAM acquired for {req.service} in {elapsed}s")
+        await _broadcast_status()
 
         return {
             "ok": True,
@@ -261,39 +305,45 @@ async def release(req: ReleaseRequest):
     """Release VRAM held by a service."""
     if req.service == "chat":
         await _evict_ollama(keep_utility=True)
+        await _broadcast_status()
         return {"ok": True, "service": "chat"}
 
     if req.service not in SERVICES:
         raise HTTPException(status_code=400, detail=f"Unknown service: {req.service}")
 
     was_loaded = await _unload_service(req.service)
+    await _broadcast_status()
     return {"ok": True, "service": req.service, "was_loaded": was_loaded}
 
 
 @app.get("/status")
 async def status():
     """Report all currently loaded models across all services."""
-    loaded = []
-
-    # Check Ollama
-    try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.get(f"{OLLAMA_BASE_URL}/api/ps")
-            for m in resp.json().get("models", []):
-                name = m.get("name", "")
-                size = m.get("size_vram", m.get("size", 0))
-                loaded.append({"name": name, "type": "llm", "vram_mb": round(size / 1024 / 1024)})
-    except Exception:
-        pass
-
-    # Check each service
-    for svc, url in SERVICES.items():
-        health = await _get_service_health(url)
-        if health.get("model_loaded") and health.get("current_model"):
-            loaded.append({
-                "name": health["current_model"],
-                "type": svc,
-                "vram_mb": health.get("vram_mb", 0),
-            })
-
+    loaded = await _get_loaded_models()
     return {"loaded": loaded}
+
+
+@app.get("/events")
+async def events():
+    """SSE stream of VRAM state changes. Clients receive instant updates."""
+    q: asyncio.Queue = asyncio.Queue(maxsize=50)
+    _sse_clients.append(q)
+
+    async def stream():
+        try:
+            # Send current state immediately on connect
+            loaded = await _get_loaded_models()
+            yield f"event: status\ndata: {json.dumps({'loaded': loaded})}\n\n"
+            while True:
+                msg = await q.get()
+                yield msg
+        except asyncio.CancelledError:
+            pass
+        finally:
+            _sse_clients.remove(q)
+
+    return StreamingResponse(
+        stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )

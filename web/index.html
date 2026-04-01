@@ -11382,17 +11382,69 @@ modelSelect.addEventListener("change", () => { checkVisionSupport(modelSelect.va
 // ── VRAM status indicator (admin only) ──
 const vramStatusEl = document.getElementById("vram-status");
 let _vramStatusTimer = null;
-let _lastVramModels = new Map(); // name → {type, vram_mb}
-let _vramTransitions = new Map(); // name → {action, type, ts}
-let _vramPendingAcquire = null; // service name currently being acquired
+let _vramEventSource = null;
+let _vramPendingAcquire = null;
+let _vramAcquirePhase = null; // "unloading" | "loading" | null
 
 function setVramAcquiring(service) {
   _vramPendingAcquire = service;
-  pollVramStatus();
+  _vramAcquirePhase = "unloading";
+  _renderVramDisplay([]);
 }
 function clearVramAcquiring() {
   _vramPendingAcquire = null;
-  pollVramStatus();
+  _vramAcquirePhase = null;
+}
+
+function _renderVramDisplay(loaded) {
+  if (!vramStatusEl) return;
+  const displayItems = [];
+  for (const m of loaded) {
+    const sizeStr = m.vram_mb > 0 ? `<span class="vram-size">${(m.vram_mb / 1024).toFixed(1)}G</span>` : "";
+    displayItems.push(`<div class="vram-item"><span class="vram-dot ${m.type}"></span><span class="vram-name">${m.name}</span>${sizeStr}</div>`);
+  }
+  // Show acquire phase
+  if (_vramPendingAcquire) {
+    const label = _vramPendingAcquire === "chat" ? "LLM" : _vramPendingAcquire;
+    const phase = _vramAcquirePhase || "loading";
+    const phaseLabel = phase === "unloading" ? "Clearing VRAM..." : "Loading...";
+    if (!loaded.some(m => m.type === _vramPendingAcquire)) {
+      displayItems.push(`<div class="vram-item"><span class="vram-dot ${phase}"></span><span class="vram-name transitioning">${label} - ${phaseLabel}</span></div>`);
+    }
+  }
+  if (!displayItems.length) {
+    vramStatusEl.innerHTML = `<div class="vram-label">VRAM</div><div class="vram-item" style="opacity:0.5">No models loaded</div>`;
+    return;
+  }
+  const totalMb = loaded.reduce((s, m) => s + (m.vram_mb || 0), 0);
+  const totalStr = totalMb > 0 ? ` · ${(totalMb / 1024).toFixed(1)} GB` : "";
+  vramStatusEl.innerHTML = `<div class="vram-label">VRAM${totalStr}</div>` + displayItems.join("");
+}
+
+function _connectVramSSE() {
+  if (_vramEventSource) return;
+  try {
+    _vramEventSource = new EventSource(GPU_API + "/events");
+    _vramEventSource.addEventListener("status", (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        _renderVramDisplay(data.loaded || []);
+      } catch {}
+    });
+    _vramEventSource.addEventListener("acquiring", (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        _vramPendingAcquire = data.service;
+        _vramAcquirePhase = data.phase || "loading";
+      } catch {}
+    });
+    _vramEventSource.onerror = () => {
+      _vramEventSource.close();
+      _vramEventSource = null;
+      // Reconnect after 2s
+      setTimeout(_connectVramSSE, 2000);
+    };
+  } catch {}
 }
 
 async function pollVramStatus() {
@@ -11400,55 +11452,19 @@ async function pollVramStatus() {
   try {
     const res = await fetch(GPU_API + "/status");
     const data = await res.json();
-    const loaded = data.loaded || [];
-    const currentModels = new Map(loaded.map(m => [m.name, m]));
-
-    // Detect transitions
-    const now = Date.now();
-    for (const [name, info] of _lastVramModels) {
-      if (!currentModels.has(name)) {
-        _vramTransitions.set(name, { action: "unloading", type: info.type, ts: now });
-      }
-    }
-    for (const [name] of currentModels) {
-      if (_vramTransitions.has(name)) _vramTransitions.delete(name);
-    }
-    for (const [name, t] of _vramTransitions) {
-      if (now - t.ts > 10000) _vramTransitions.delete(name);
-    }
-    _lastVramModels = currentModels;
-
-    // Build display
-    const displayItems = [];
-    for (const m of loaded) {
-      const sizeStr = m.vram_mb > 0 ? `<span class="vram-size">${(m.vram_mb / 1024).toFixed(1)}G</span>` : "";
-      displayItems.push(`<div class="vram-item"><span class="vram-dot ${m.type}"></span><span class="vram-name">${m.name}</span>${sizeStr}</div>`);
-    }
-    for (const [name, t] of _vramTransitions) {
-      displayItems.push(`<div class="vram-item"><span class="vram-dot unloading"></span><span class="vram-name transitioning">${name} - Unloading...</span></div>`);
-    }
-    // Show "Loading..." for pending acquire if target not yet in loaded list
-    if (_vramPendingAcquire && !loaded.some(m => m.type === _vramPendingAcquire)) {
-      const label = _vramPendingAcquire === "chat" ? "LLM" : _vramPendingAcquire;
-      displayItems.push(`<div class="vram-item"><span class="vram-dot loading"></span><span class="vram-name transitioning">${label} - Loading...</span></div>`);
-    }
-
-    if (!displayItems.length) {
-      vramStatusEl.innerHTML = `<div class="vram-label">VRAM</div><div class="vram-item" style="opacity:0.5">No models loaded</div>`;
-      return;
-    }
-    const totalMb = loaded.reduce((s, m) => s + (m.vram_mb || 0), 0);
-    const totalStr = totalMb > 0 ? ` · ${(totalMb / 1024).toFixed(1)} GB` : "";
-    vramStatusEl.innerHTML = `<div class="vram-label">VRAM${totalStr}</div>` + displayItems.join("");
-  } catch { /* silent */ }
+    _renderVramDisplay(data.loaded || []);
+  } catch {}
 }
 
 function startVramPolling() {
   if (_vramStatusTimer) return;
   if (!currentUser || currentUser.role !== "admin") return;
   vramStatusEl.style.display = "";
+  // Primary: SSE for instant updates
+  _connectVramSSE();
+  // Fallback: poll every 3s in case SSE disconnects
   pollVramStatus();
-  _vramStatusTimer = setInterval(pollVramStatus, 1500);
+  _vramStatusTimer = setInterval(pollVramStatus, 3000);
 }
 
 // ── iOS / Mobile fixes ──
