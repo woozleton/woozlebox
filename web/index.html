@@ -122,15 +122,15 @@
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="12" y1="8" x2="12" y2="14"/><line x1="9" y1="11" x2="15" y2="11"/></svg>
         Chat
       </button>
-      <button class="sidebar-row" id="studio-sidebar-btn">
+      <button class="sidebar-row sidebar-studio-btn" id="studio-sidebar-btn">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
         Image Studio
       </button>
-      <button class="sidebar-row" id="music-sidebar-btn">
+      <button class="sidebar-row sidebar-studio-btn" id="music-sidebar-btn">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
         Music Studio
       </button>
-      <button class="sidebar-row" id="video-sidebar-btn">
+      <button class="sidebar-row sidebar-studio-btn" id="video-sidebar-btn">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
         Video Studio
       </button>
@@ -336,7 +336,7 @@
 
   <!-- IMAGE STUDIO (lives in #main, toggles with chat-area) -->
   <div id="image-studio">
-    <div id="image-studio-header">
+    <div id="image-studio-header" class="studio-header">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
       <h2>Image Studio</h2>
       <span class="studio-subtitle" id="studio-model-label">Playground v2.5</span>
@@ -344,26 +344,26 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
         <span id="studio-trash-badge"></span>
       </button>
-      <button id="studio-fav-toggle" title="Favorites">
+      <button id="studio-fav-toggle" class="fav-toggle-btn" title="Favorites">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         Favorites <span id="studio-fav-badge" style="display:none">0</span>
       </button>
     </div>
-    <div id="studio-body">
-      <div id="studio-main">
+    <div id="studio-body" class="studio-body-layout">
+      <div id="studio-main" class="studio-main-area">
       <!-- Gallery / canvas area -->
-      <div id="studio-canvas">
-        <div id="studio-canvas-empty">
+      <div id="studio-canvas" class="studio-canvas">
+        <div id="studio-canvas-empty" class="studio-canvas-empty">
           <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
           <p>Describe your image below and press <strong>Generate</strong> to create.</p>
         </div>
       </div>
 
       <!-- Bottom prompt area -->
-      <div id="studio-controls">
+      <div id="studio-controls" class="studio-controls">
         <!-- Settings summary crumb -->
-        <div id="studio-settings-crumb">
-          <span id="studio-settings-trigger">
+        <div id="studio-settings-crumb" class="settings-crumb">
+          <span id="studio-settings-trigger" class="settings-trigger">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
             <span id="studio-settings-summary">Loading...</span>
             <svg class="chevron-icon" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.5;"><polyline points="6 9 12 15 18 9"/></svg>
@@ -371,7 +371,7 @@
         </div>
 
         <!-- Expandable settings panel -->
-        <div id="studio-settings-panel">
+        <div id="studio-settings-panel" class="settings-panel">
           <div class="studio-settings-grid">
             <div class="ss-group">
               <div class="ss-group-label">Model</div>
@@ -446,12 +446,12 @@
         </div>
 
         <div id="studio-queue-tray"></div>
-        <div id="studio-prompt-box">
+        <div id="studio-prompt-box" class="prompt-box">
           <textarea id="studio-prompt" placeholder="Describe the image you want to create..." rows="1"></textarea>
-          <button id="studio-suggest-btn" title="Suggest a prompt">
+          <button id="studio-suggest-btn" class="prompt-action-btn" title="Suggest a prompt">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 1 7 7c0 3-1.86 5.1-4 6.32V17a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-1.68C6.86 14.1 5 12 5 9a7 7 0 0 1 7-7z"/><line x1="9" y1="21" x2="15" y2="21"/><line x1="10" y1="17" x2="14" y2="17"/></svg>
           </button>
-          <button id="studio-generate-btn" title="Generate (Enter)">
+          <button id="studio-generate-btn" class="generate-btn" title="Generate (Enter)">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>
           </button>
         </div>
@@ -459,9 +459,9 @@
       </div><!-- /studio-main -->
 
       <!-- Favorites panel (full height) -->
-      <div id="studio-fav-panel">
+      <div id="studio-fav-panel" class="fav-panel">
         <div class="panel-resize-handle" id="fav-resize-handle"></div>
-        <div id="studio-fav-header">
+        <div id="studio-fav-header" class="fav-panel-header">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="#f472b6" stroke="#f472b6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
           <h3>Favorites</h3>
           <span class="fav-count" id="studio-fav-count-label">0</span>
@@ -478,7 +478,7 @@
           </button>
         </div>
         <div id="studio-fav-content">
-          <div id="studio-fav-empty">
+          <div id="studio-fav-empty" class="fav-panel-empty">
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.3"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
             <p>Click the heart on any image to add it to your favorites.</p>
           </div>
@@ -489,7 +489,7 @@
 
   <!-- ═══ Music Studio ═══ -->
   <div id="music-studio">
-    <div id="music-studio-header">
+    <div id="music-studio-header" class="studio-header">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
       <h2>Music Studio</h2>
       <span class="studio-subtitle" id="music-model-label">ACE-Step 1.5</span>
@@ -497,30 +497,30 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
         <span id="music-trash-badge"></span>
       </button>
-      <button id="music-fav-toggle" title="Favorites">
+      <button id="music-fav-toggle" class="fav-toggle-btn" title="Favorites">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         Favorites <span id="music-fav-badge" style="display:none">0</span>
       </button>
     </div>
-    <div id="music-body">
-      <div id="music-main">
-        <div id="music-canvas">
-          <div id="music-canvas-empty">
+    <div id="music-body" class="studio-body-layout">
+      <div id="music-main" class="studio-main-area">
+        <div id="music-canvas" class="studio-canvas">
+          <div id="music-canvas-empty" class="studio-canvas-empty">
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
             <p>Describe your music below and press <strong>Generate</strong> to create.</p>
           </div>
         </div>
 
-        <div id="music-controls">
+        <div id="music-controls" class="studio-controls">
           <!-- Single settings panel -->
-          <div id="music-settings-crumb">
-            <span id="music-settings-trigger">
+          <div id="music-settings-crumb" class="settings-crumb">
+            <span id="music-settings-trigger" class="settings-trigger">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
               <span id="music-settings-summary">30s · 120 bpm</span>
               <svg class="chevron-icon" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.5;"><polyline points="6 9 12 15 18 9"/></svg>
             </span>
           </div>
-          <div id="music-settings-panel">
+          <div id="music-settings-panel" class="settings-panel">
             <!-- Lyrics -->
             <div class="ss-group" title="Lyrics for the vocal track -use [verse], [chorus], [bridge] tags to structure sections. Leave empty for instrumental.">
               <div class="ss-group-label">Lyrics</div>
@@ -558,11 +558,11 @@
             </div>
             <!-- Advanced (collapsed) -->
             <div class="music-settings-section">
-              <div class="music-advanced-toggle" id="music-advanced-toggle">
+              <div class="advanced-toggle" id="music-advanced-toggle">
                 <svg class="chevron-icon" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.5;"><polyline points="9 6 15 12 9 18"/></svg>
                 Advanced
               </div>
-              <div class="music-advanced-body" id="music-advanced-body">
+              <div class="advanced-body" id="music-advanced-body">
                 <div class="music-settings-grid">
                   <div class="ss-group" title="Number of diffusion inference steps -more steps = higher quality but slower generation">
                     <div class="ss-group-label">Steps</div>
@@ -624,15 +624,15 @@
             </div>
           </div>
 
-          <div id="music-prompt-box">
+          <div id="music-prompt-box" class="prompt-box">
             <textarea id="music-prompt" placeholder="Describe a song idea, or use the pen to have AI write it for you..." rows="1"></textarea>
-            <button id="music-write-song-btn" title="AI Songwrite -describe your song idea and AI writes the lyrics &amp; style">
+            <button id="music-write-song-btn" class="prompt-action-btn" title="AI Songwrite -describe your song idea and AI writes the lyrics &amp; style">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
             </button>
-            <button id="music-suggest-btn" title="Suggest a prompt">
+            <button id="music-suggest-btn" class="prompt-action-btn" title="Suggest a prompt">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 1 7 7c0 3-1.86 5.1-4 6.32V17a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-1.68C6.86 14.1 5 12 5 9a7 7 0 0 1 7-7z"/><line x1="9" y1="21" x2="15" y2="21"/><line x1="10" y1="17" x2="14" y2="17"/></svg>
             </button>
-            <button id="music-generate-btn" title="Generate (Enter)">
+            <button id="music-generate-btn" class="generate-btn" title="Generate (Enter)">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>
             </button>
           </div>
@@ -640,9 +640,9 @@
       </div>
 
       <!-- Favorites panel -->
-      <div id="music-fav-panel">
+      <div id="music-fav-panel" class="fav-panel">
         <div class="panel-resize-handle" id="music-fav-resize-handle"></div>
-        <div id="music-fav-header">
+        <div id="music-fav-header" class="fav-panel-header">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="#f472b6" stroke="#f472b6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
           <h3>Favorites</h3>
           <span class="fav-count" id="music-fav-count-label">0</span>
@@ -651,7 +651,7 @@
           </button>
         </div>
         <div id="music-fav-content">
-          <div id="music-fav-empty">
+          <div id="music-fav-empty" class="fav-panel-empty">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.3"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
             <p>Click the heart on any track to add it to your favorites.</p>
           </div>
@@ -662,7 +662,7 @@
 
   <!-- ═══ Video Studio ═══ -->
   <div id="video-studio">
-    <div id="video-studio-header">
+    <div id="video-studio-header" class="studio-header">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
       <h2>Video Studio</h2>
       <span class="studio-subtitle" id="video-model-label">LTX Video 2.3</span>
@@ -670,29 +670,29 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
         <span id="video-trash-badge"></span>
       </button>
-      <button id="video-fav-toggle" title="Favorites">
+      <button id="video-fav-toggle" class="fav-toggle-btn" title="Favorites">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         Favorites <span id="video-fav-badge" style="display:none">0</span>
       </button>
     </div>
-    <div id="video-body">
-      <div id="video-main">
-        <div id="video-canvas">
-          <div id="video-canvas-empty">
+    <div id="video-body" class="studio-body-layout">
+      <div id="video-main" class="studio-main-area">
+        <div id="video-canvas" class="studio-canvas">
+          <div id="video-canvas-empty" class="studio-canvas-empty">
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
             <p>Describe your video below and press <strong>Generate</strong> to create.</p>
           </div>
         </div>
 
-        <div id="video-controls">
-          <div id="video-settings-crumb">
-            <span id="video-settings-trigger">
+        <div id="video-controls" class="studio-controls">
+          <div id="video-settings-crumb" class="settings-crumb">
+            <span id="video-settings-trigger" class="settings-trigger">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
               <span id="video-settings-summary">704x480 · 97 frames · ~4s</span>
               <svg class="chevron-icon" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.5;"><polyline points="6 9 12 15 18 9"/></svg>
             </span>
           </div>
-          <div id="video-settings-panel">
+          <div id="video-settings-panel" class="settings-panel">
             <!-- Image upload for I2V -->
             <div class="video-image-upload" id="video-i2v-dropzone">
               <input type="file" id="video-i2v-input" accept="image/*" style="display:none">
@@ -721,11 +721,11 @@
             </div>
             <!-- Advanced (collapsed) -->
             <div class="music-settings-section" style="margin-top:8px;">
-              <div class="music-advanced-toggle" id="video-advanced-toggle">
+              <div class="advanced-toggle" id="video-advanced-toggle">
                 <svg class="chevron-icon" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.5;"><polyline points="9 6 15 12 9 18"/></svg>
                 Advanced
               </div>
-              <div class="music-advanced-body" id="video-advanced-body">
+              <div class="advanced-body" id="video-advanced-body">
                 <div class="video-settings-grid">
                   <div class="ss-group" title="Number of diffusion inference steps">
                     <div class="ss-group-label">Steps</div>
@@ -761,12 +761,12 @@
             </div>
           </div>
 
-          <div id="video-prompt-box">
+          <div id="video-prompt-box" class="prompt-box">
             <textarea id="video-prompt" placeholder="Describe the video you want to create..." rows="1"></textarea>
-            <button id="video-suggest-btn" title="Suggest a prompt">
+            <button id="video-suggest-btn" class="prompt-action-btn" title="Suggest a prompt">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 1 7 7c0 3-1.86 5.1-4 6.32V17a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-1.68C6.86 14.1 5 12 5 9a7 7 0 0 1 7-7z"/><line x1="9" y1="21" x2="15" y2="21"/><line x1="10" y1="17" x2="14" y2="17"/></svg>
             </button>
-            <button id="video-generate-btn" title="Generate (Enter)">
+            <button id="video-generate-btn" class="generate-btn" title="Generate (Enter)">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>
             </button>
           </div>
@@ -774,8 +774,8 @@
       </div>
 
       <!-- Favorites panel -->
-      <div id="video-fav-panel">
-        <div id="video-fav-header">
+      <div id="video-fav-panel" class="fav-panel">
+        <div id="video-fav-header" class="fav-panel-header">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="#f472b6" stroke="#f472b6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
           <h3>Favorites</h3>
           <span class="fav-count" id="video-fav-count-label">0</span>
@@ -784,7 +784,7 @@
           </button>
         </div>
         <div id="video-fav-content">
-          <div id="video-fav-empty">
+          <div id="video-fav-empty" class="fav-panel-empty">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.3"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
             <p>Click the heart on any video to add it to your favorites.</p>
           </div>
@@ -794,9 +794,9 @@
   </div>
 
   <!-- Video Trash modal -->
-  <div id="video-trash-modal">
-    <div id="video-trash-inner">
-      <div id="video-trash-header">
+  <div id="video-trash-modal" class="trash-modal">
+    <div id="video-trash-inner" class="trash-modal-inner">
+      <div id="video-trash-header" class="trash-modal-header">
         <h3>Trash</h3>
         <span id="video-trash-count-label"></span>
         <button id="video-trash-empty-btn" style="margin-left:auto;background:none;border:1px solid var(--border);color:var(--text-dim);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:0.75rem;">Empty Trash</button>
@@ -809,9 +809,9 @@
   </div>
 
   <!-- Trash modal -->
-  <div id="studio-trash-modal">
-    <div id="studio-trash-inner">
-      <div id="studio-trash-header">
+  <div id="studio-trash-modal" class="trash-modal">
+    <div id="studio-trash-inner" class="trash-modal-inner">
+      <div id="studio-trash-header" class="trash-modal-header">
         <h3>Trash</h3>
         <span id="studio-trash-count-label"></span>
         <button id="studio-trash-empty-btn" title="Empty trash"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
@@ -1647,9 +1647,9 @@
 </div>
 
 <!-- MUSIC TRASH MODAL -->
-<div id="music-trash-modal">
-  <div id="music-trash-inner">
-    <div id="music-trash-header">
+<div id="music-trash-modal" class="trash-modal">
+  <div id="music-trash-inner" class="trash-modal-inner">
+    <div id="music-trash-header" class="trash-modal-header">
       <h3>Trash</h3>
       <span id="music-trash-count-label"></span>
       <button id="music-trash-empty-btn" title="Empty trash"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
@@ -7542,7 +7542,7 @@ async function refreshVideoFavoritesPanel() {
   const favs = await loadAllVideoFavorites();
   videoFavContent.innerHTML = "";
   if (!favs.length) {
-    videoFavContent.innerHTML = `<div id="video-fav-empty">
+    videoFavContent.innerHTML = `<div id="video-fav-empty" class="fav-panel-empty">
       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.3"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
       <p>Click the heart on any video to add it to your favorites.</p>
     </div>`;
