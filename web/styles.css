@@ -2199,35 +2199,13 @@
       display: block;
     }
     #message-input::placeholder { color: var(--text-dim); }
-    .input-btn {
-      width: 32px;
-      height: 32px;
-      border: none;
-      border-radius: 9px;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-      transition: background 0.15s, transform 0.1s, color 0.15s;
-    }
-    #web-btn {
-      background: none;
-      color: var(--text-faint);
-    }
-    #web-btn:hover { background: var(--surface3); color: #38bdf8; }
     #web-btn.active { color: #38bdf8; background: rgba(56,189,248,0.12); }
-    #send-btn {
-      background: var(--accent);
-      color: #fff;
-      width: 36px; height: 36px;
-    }
+    #send-btn { width: 36px; height: 36px; }
     #send-btn:hover:not(:disabled) { background: var(--accent-dim); }
     #send-btn:active:not(:disabled) { transform: scale(0.93); }
-    #send-btn:disabled { background: var(--surface3); color: var(--text-faint); cursor: not-allowed; }
+    #send-btn:disabled { opacity: 1; background: var(--surface3); color: var(--text-faint); cursor: not-allowed; }
     #send-btn.stopping { background: var(--surface3); color: var(--danger); }
     #send-btn.stopping:hover { background: rgba(249,115,22,0.15); }
-
-    #mic-btn { background: none; color: var(--text-faint); }
-    #mic-btn:hover { background: var(--surface3); color: var(--accent); }
     #mic-btn.recording { color: #ef4444; background: rgba(239,68,68,0.12); animation: mic-pulse 1s ease-in-out infinite; }
 
     /* Vision image attachment */
