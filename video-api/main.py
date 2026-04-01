@@ -61,45 +61,50 @@ app.add_middleware(
 
 
 def _load_model():
-    """Load LTX Video pipelines onto GPU with int8 quantization."""
+    """Load LTX Video pipelines onto GPU with FP8 weight casting for VRAM efficiency."""
     global _t2v_pipe, _i2v_pipe, _model_loaded
 
-    logger.info("Loading LTX Video 2.3 model...")
+    logger.info("Loading LTX Video model...")
     t0 = time.time()
 
-    from diffusers import LTXPipeline, LTXImageToVideoPipeline
+    from diffusers import LTXPipeline, LTXImageToVideoPipeline, AutoModel
 
+    # Load transformer separately with FP8 layerwise weight-casting
+    # This stores weights in FP8 but computes in bfloat16, cutting VRAM roughly in half
     try:
-        from diffusers import BitsAndBytesConfig
-        quant_config = BitsAndBytesConfig(load_in_8bit=True)
-        logger.info("Using int8 quantization via BitsAndBytesConfig")
-        _t2v_pipe = LTXPipeline.from_pretrained(
+        transformer = AutoModel.from_pretrained(
             LTX_MODEL_ID,
-            quantization_config=quant_config,
-            torch_dtype=torch.float16,
+            subfolder="transformer",
+            torch_dtype=torch.bfloat16,
         )
-    except (ImportError, TypeError, ValueError) as e:
-        logger.warning(f"int8 quantization not available ({e}), loading in fp16")
-        _t2v_pipe = LTXPipeline.from_pretrained(
+        transformer.enable_layerwise_casting(
+            storage_dtype=torch.float8_e4m3fn,
+            compute_dtype=torch.bfloat16,
+        )
+        logger.info("Loaded transformer with FP8 layerwise casting")
+    except Exception as e:
+        logger.warning(f"FP8 casting not available ({e}), loading transformer in bfloat16")
+        transformer = AutoModel.from_pretrained(
             LTX_MODEL_ID,
-            torch_dtype=torch.float16,
+            subfolder="transformer",
+            torch_dtype=torch.bfloat16,
         )
-        _t2v_pipe.to("cuda")
 
+    # Load full pipeline with the pre-loaded transformer
+    _t2v_pipe = LTXPipeline.from_pretrained(
+        LTX_MODEL_ID,
+        transformer=transformer,
+        torch_dtype=torch.bfloat16,
+    )
+    _t2v_pipe.to("cuda")
+
+    # Create I2V pipeline sharing components with T2V
     try:
         _i2v_pipe = LTXImageToVideoPipeline(**_t2v_pipe.components)
         logger.info("I2V pipeline shares T2V components")
     except Exception as e:
-        logger.warning(f"Component sharing failed ({e}), loading I2V separately")
-        try:
-            _i2v_pipe = LTXImageToVideoPipeline.from_pretrained(
-                LTX_MODEL_ID,
-                torch_dtype=torch.float16,
-            )
-            _i2v_pipe.to("cuda")
-        except Exception as e2:
-            logger.warning(f"I2V pipeline not available ({e2}), image-to-video disabled")
-            _i2v_pipe = None
+        logger.warning(f"I2V component sharing failed ({e}), image-to-video disabled")
+        _i2v_pipe = None
 
     _model_loaded = True
 
@@ -109,8 +114,9 @@ def _load_model():
 
 @app.on_event("startup")
 async def startup():
-    loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, _load_model)
+    # Don't load model on startup - load lazily on first request
+    # This prevents the container from OOM during startup when other models are loaded
+    logger.info("Video API started - model will load on first request or /models/load")
 
 
 class VideoGenerateRequest(BaseModel):
