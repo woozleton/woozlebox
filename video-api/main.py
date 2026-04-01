@@ -69,35 +69,33 @@ def _load_model():
     logger.info("Loading Wan 2.2 TI2V 5B...")
     t0 = time.time()
 
-    from diffusers import WanPipeline, AutoencoderKLWan
+    from diffusers import WanPipeline, AutoencoderKLWan, AutoModel
+
+    # Load transformer with FP8 layerwise casting to halve VRAM
+    transformer = AutoModel.from_pretrained(
+        MODEL_ID, subfolder="transformer", torch_dtype=torch.bfloat16,
+    )
+    try:
+        transformer.enable_layerwise_casting(
+            storage_dtype=torch.float8_e4m3fn,
+            compute_dtype=torch.bfloat16,
+        )
+        logger.info("Transformer loaded with FP8 layerwise casting")
+    except Exception as e:
+        logger.warning(f"FP8 layerwise casting failed ({e}), using bfloat16")
 
     # VAE must be float32 for quality
     vae = AutoencoderKLWan.from_pretrained(MODEL_ID, subfolder="vae", torch_dtype=torch.float32)
 
-    # FP8 quantization on the transformer to fit in 24GB with no offloading
-    try:
-        from diffusers import PipelineQuantizationConfig, TorchAoConfig
-        from torchao.quantization import Float8WeightOnlyConfig
-
-        quant_config = PipelineQuantizationConfig(
-            quant_mapping={"transformer": TorchAoConfig(Float8WeightOnlyConfig())}
-        )
-        _pipe = WanPipeline.from_pretrained(
-            MODEL_ID,
-            vae=vae,
-            quantization_config=quant_config,
-            torch_dtype=torch.bfloat16,
-        )
-        logger.info("Loaded with FP8 weight-only quantization via torchao")
-    except Exception as e:
-        logger.warning(f"FP8 quantization failed ({e}), loading in bfloat16")
-        _pipe = WanPipeline.from_pretrained(
-            MODEL_ID,
-            vae=vae,
-            torch_dtype=torch.bfloat16,
-        )
-
+    # Load pipeline with pre-loaded components
+    _pipe = WanPipeline.from_pretrained(
+        MODEL_ID,
+        transformer=transformer,
+        vae=vae,
+        torch_dtype=torch.bfloat16,
+    )
     _pipe.to("cuda")
+    gc.collect()
     logger.info("Pipeline moved to CUDA - no CPU offloading")
 
     _model_loaded = True
