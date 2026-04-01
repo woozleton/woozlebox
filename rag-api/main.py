@@ -2013,13 +2013,13 @@ async def music_cover_art(req: CoverArtRequest, user: dict = Depends(get_current
             num_predict=80,
             user=user,
         )
-        image_prompt = raw.strip('"').strip("'").strip().split("\n")[0].strip()
+        image_prompt = raw.strip('"').strip("'").strip().split("\n")[0].strip() + ", no text, no words, no letters"
     except Exception as e:
         logger.warning(f"Cover art prompt generation failed: {e}")
 
     if not image_prompt:
         # Fallback: derive a simple prompt from the song style
-        image_prompt = f"Abstract album cover art, {req.prompt[:100]}, artistic, vibrant colors, no text"
+        image_prompt = f"Abstract album cover art, {req.prompt[:100]}, artistic, vibrant colors, no text, no words, no letters"
 
     # Step 2: Generate the image via image-api with SDXL Turbo
     try:
@@ -2028,6 +2028,7 @@ async def music_cover_art(req: CoverArtRequest, user: dict = Depends(get_current
                 f"{IMAGE_GEN_URL}/generate",
                 json={
                     "prompt": image_prompt,
+                    "negative_prompt": "text, words, letters, typography, watermark, signature, logo, title, label, caption",
                     "model": "sdxl-turbo",
                     "aspect": "square",
                     "steps": 4,

@@ -1,5 +1,5 @@
 """
-video-api - Text-to-video and image-to-video service using LTX-2.
+video-api - Text-to-video and image-to-video service using Wan 2.2 TI2V 5B.
 
 POST /generate   {prompt, image, negative_prompt, num_frames, height, width, fps, num_inference_steps, guidance_scale, seed}
 GET  /health
@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 HF_CACHE = os.environ.get("HF_HOME", "/root/.cache/huggingface")
 OLLAMA_URL = os.environ.get("OLLAMA_BASE_URL", "http://ollama:11434")
 UTILITY_MODEL = os.environ.get("UTILITY_MODEL", "qwen3:0.6b")
-LTX_MODEL_ID = os.environ.get("LTX_MODEL_ID", "Lightricks/LTX-2")
+MODEL_ID = os.environ.get("VIDEO_MODEL_ID", "Wan-AI/Wan2.2-TI2V-5B-Diffusers")
 
 
 def _is_utility_model(name: str) -> bool:
@@ -41,9 +41,7 @@ def _is_utility_model(name: str) -> bool:
 
 
 # -- Global state --
-_t2v_pipe = None
-_i2v_pipe = None
-_upsampler = None
+_pipe = None
 _model_loaded = False
 
 _progress = {
@@ -65,52 +63,44 @@ app.add_middleware(
 
 
 def _load_model():
-    """Load LTX-2 pipelines with sequential CPU offloading for 24GB VRAM."""
-    global _t2v_pipe, _i2v_pipe, _upsampler, _model_loaded
+    """Load Wan 2.2 TI2V 5B with FP8 quantization, entirely on GPU."""
+    global _pipe, _model_loaded
 
-    logger.info("Loading LTX-2 model...")
+    logger.info("Loading Wan 2.2 TI2V 5B...")
     t0 = time.time()
 
-    from diffusers.pipelines.ltx2 import LTX2Pipeline, LTX2LatentUpsamplePipeline
+    from diffusers import WanPipeline, AutoencoderKLWan
 
-    # Load text-to-video pipeline
-    _t2v_pipe = LTX2Pipeline.from_pretrained(
-        LTX_MODEL_ID,
-        torch_dtype=torch.bfloat16,
-    )
-    _t2v_pipe.enable_sequential_cpu_offload(device="cuda:0")
-    _t2v_pipe.vae.enable_tiling()
-    logger.info("T2V pipeline loaded with sequential CPU offload + VAE tiling")
+    # VAE must be float32 for quality
+    vae = AutoencoderKLWan.from_pretrained(MODEL_ID, subfolder="vae", torch_dtype=torch.float32)
 
-    # Load upsampler for two-stage generation
+    # Try FP8 quantization to fit in 24GB with no offloading
     try:
-        _upsampler = LTX2LatentUpsamplePipeline.from_pretrained(
-            LTX_MODEL_ID,
-            vae=_t2v_pipe.vae,
+        from diffusers import BitsAndBytesConfig
+        quant_config = BitsAndBytesConfig(load_in_8bit=True)
+        _pipe = WanPipeline.from_pretrained(
+            MODEL_ID,
+            vae=vae,
+            quantization_config=quant_config,
             torch_dtype=torch.bfloat16,
         )
-        _upsampler.enable_sequential_cpu_offload(device="cuda:0")
-        logger.info("Upsampler pipeline loaded")
+        logger.info("Loaded with FP8 quantization via BitsAndBytesConfig")
     except Exception as e:
-        logger.warning(f"Upsampler not available ({e}), using single-stage only")
-        _upsampler = None
+        logger.warning(f"FP8 quantization failed ({e}), loading in bfloat16")
+        _pipe = WanPipeline.from_pretrained(
+            MODEL_ID,
+            vae=vae,
+            torch_dtype=torch.bfloat16,
+        )
 
-    # Create I2V pipeline sharing components
-    try:
-        from diffusers.pipelines.ltx2 import LTX2ImageToVideoPipeline
-        _i2v_pipe = LTX2ImageToVideoPipeline(**_t2v_pipe.components)
-        _i2v_pipe.enable_sequential_cpu_offload(device="cuda:0")
-        _i2v_pipe.vae.enable_tiling()
-        logger.info("I2V pipeline shares T2V components")
-    except Exception as e:
-        logger.warning(f"I2V pipeline not available ({e}), image-to-video disabled")
-        _i2v_pipe = None
+    _pipe.to("cuda")
+    logger.info("Pipeline moved to CUDA - no CPU offloading")
 
     _model_loaded = True
     gc.collect()
 
     vram = torch.cuda.memory_allocated() // 1024 // 1024
-    logger.info(f"LTX-2 ready in {time.time()-t0:.1f}s - VRAM: {vram}MB")
+    logger.info(f"Wan 2.2 ready in {time.time()-t0:.1f}s - VRAM: {vram}MB")
 
 
 @app.on_event("startup")
@@ -119,20 +109,20 @@ async def startup():
 
 
 def _snap_frames(n: int) -> int:
-    """Snap frame count to nearest 8N+1 value (required by LTX-2)."""
-    return max(9, round((n - 1) / 8) * 8 + 1)
+    """Snap frame count to nearest 4N+1 value (required by Wan)."""
+    return max(5, round((n - 1) / 4) * 4 + 1)
 
 
 class VideoGenerateRequest(BaseModel):
     prompt: str
     image: Optional[str] = None
     negative_prompt: Optional[str] = None
-    num_frames: Optional[int] = 121
-    height: Optional[int] = 512
-    width: Optional[int] = 768
+    num_frames: Optional[int] = 81
+    height: Optional[int] = 704
+    width: Optional[int] = 1280
     fps: Optional[int] = 24
-    num_inference_steps: Optional[int] = 40
-    guidance_scale: Optional[float] = 4.0
+    num_inference_steps: Optional[int] = 50
+    guidance_scale: Optional[float] = 5.0
     seed: Optional[int] = None
 
 
@@ -142,8 +132,8 @@ def health():
     return {
         "ok": True,
         "model_loaded": _model_loaded,
-        "current_model": "ltx-2" if _model_loaded else None,
-        "i2v_available": _i2v_pipe is not None,
+        "current_model": "wan-2.2-ti2v-5b" if _model_loaded else None,
+        "i2v_available": _model_loaded,
         "vram_mb": vram_mb,
     }
 
@@ -170,29 +160,27 @@ async def load_model():
     global _model_loaded
     if _model_loaded:
         vram = torch.cuda.memory_allocated() // 1024 // 1024
-        return {"ok": True, "already_loaded": True, "model": "ltx-2", "vram_mb": vram}
+        return {"ok": True, "already_loaded": True, "model": "wan-2.2-ti2v-5b", "vram_mb": vram}
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, _load_model)
     vram = torch.cuda.memory_allocated() // 1024 // 1024
-    return {"ok": True, "already_loaded": False, "model": "ltx-2", "vram_mb": vram}
+    return {"ok": True, "already_loaded": False, "model": "wan-2.2-ti2v-5b", "vram_mb": vram}
 
 
 @app.post("/models/unload")
 async def unload_model():
-    global _t2v_pipe, _i2v_pipe, _upsampler, _model_loaded
+    global _pipe, _model_loaded
     if not _model_loaded:
         return {"ok": True, "was_loaded": False}
 
-    logger.info("Unloading LTX-2 to free VRAM")
-    _t2v_pipe = None
-    _i2v_pipe = None
-    _upsampler = None
+    logger.info("Unloading Wan 2.2 to free VRAM")
+    _pipe = None
     _model_loaded = False
     gc.collect()
     torch.cuda.empty_cache()
     vram = torch.cuda.memory_allocated() // 1024 // 1024
-    logger.info(f"Unloaded LTX-2 - VRAM after: {vram}MB")
-    return {"ok": True, "was_loaded": True, "freed_model": "ltx-2", "vram_mb": vram}
+    logger.info(f"Unloaded Wan 2.2 - VRAM after: {vram}MB")
+    return {"ok": True, "was_loaded": True, "freed_model": "wan-2.2-ti2v-5b", "vram_mb": vram}
 
 
 async def _evict_ollama():
@@ -222,6 +210,14 @@ async def _evict_ollama():
         logger.warning(f"Could not evict Ollama models: {e}")
 
 
+WAN_NEGATIVE_PROMPT = (
+    "Bright tones, overexposed, static, blurred details, subtitles, style, works, paintings, images, "
+    "static, overall gray, worst quality, low quality, JPEG compression residue, ugly, incomplete, "
+    "extra fingers, poorly drawn hands, poorly drawn faces, deformed, disfigured, misshapen limbs, "
+    "fused fingers, still picture, messy background, three legs, many people in the background, walking backwards"
+)
+
+
 @app.post("/generate")
 async def generate(req: VideoGenerateRequest):
     global _model_loaded, _cancel_requested
@@ -237,20 +233,15 @@ async def generate(req: VideoGenerateRequest):
     # Evict Ollama models from VRAM
     await _evict_ollama()
 
-    # Determine mode
-    is_i2v = req.image is not None and req.image.strip()
-    if is_i2v and _i2v_pipe is None:
-        raise HTTPException(status_code=400, detail="Image-to-video is not available")
-
     # Clamp and snap parameters
-    num_frames = _snap_frames(max(9, min(257, req.num_frames or 121)))
-    height = max(256, min(1080, req.height or 512))
-    width = max(256, min(1920, req.width or 768))
-    height = (height // 32) * 32
-    width = (width // 32) * 32
+    num_frames = _snap_frames(max(5, min(257, req.num_frames or 81)))
+    height = max(256, min(1080, req.height or 704))
+    width = max(256, min(1920, req.width or 1280))
+    height = (height // 16) * 16
+    width = (width // 16) * 16
     fps = max(8, min(30, req.fps or 24))
-    steps = max(1, min(50, req.num_inference_steps or 40))
-    guidance = max(1.0, min(15.0, req.guidance_scale or 4.0))
+    steps = max(1, min(50, req.num_inference_steps or 50))
+    guidance = max(1.0, min(15.0, req.guidance_scale or 5.0))
     seed = req.seed if req.seed is not None and req.seed >= 0 else -1
 
     if seed == -1:
@@ -280,7 +271,7 @@ async def generate(req: VideoGenerateRequest):
                     raise RuntimeError("Generation cancelled by user")
                 return callback_kwargs
 
-            neg_prompt = req.negative_prompt or "shaky, glitchy, low quality, worst quality, deformed, distorted, motion smear"
+            neg_prompt = req.negative_prompt or WAN_NEGATIVE_PROMPT
 
             kwargs = dict(
                 prompt=req.prompt,
@@ -292,65 +283,31 @@ async def generate(req: VideoGenerateRequest):
                 guidance_scale=guidance,
                 generator=generator,
                 callback_on_step_end=_step_callback,
-                output_type="np",
             )
 
-            if is_i2v:
+            # I2V: pass image parameter
+            if req.image and req.image.strip():
                 img_bytes = base64.b64decode(req.image)
                 img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
                 img = img.resize((width, height), Image.LANCZOS)
                 kwargs["image"] = img
-                result = _i2v_pipe(**kwargs)
-            else:
-                result = _t2v_pipe(**kwargs)
 
-            return result
+            return _pipe(**kwargs)
 
         result = await loop.run_in_executor(None, _run_inference)
 
-        # Extract video frames
-        videos = result.videos if hasattr(result, "videos") else None
-        frames_np = result.frames[0] if hasattr(result, "frames") and result.frames else None
+        # Extract frames - WanPipeline returns .frames[0] as list of PIL Images
+        frames = result.frames[0] if hasattr(result, "frames") and result.frames else None
+        if not frames:
+            raise HTTPException(status_code=500, detail="No video frames returned from model")
 
-        if videos is not None:
-            # videos is numpy array [batch, frames, height, width, channels]
-            video_np = videos[0] if len(videos.shape) == 5 else videos
-        elif frames_np is not None:
-            video_np = np.array([np.array(f) for f in frames_np])
-        else:
-            raise HTTPException(status_code=500, detail="No video returned from model")
-
-        # Check for audio
-        has_audio = hasattr(result, "audios") and result.audios is not None
-
-        # Encode to MP4
-        # Write frames to temp file, then read back as bytes
+        # Encode to MP4 via temp file
         with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
             tmp_path = tmp.name
 
         try:
-            # Try using diffusers' built-in export if audio is available
-            if has_audio:
-                try:
-                    from diffusers.utils import export_to_video
-                    export_to_video(video_np, tmp_path, fps=fps)
-                    # TODO: mux audio when diffusers supports it
-                except Exception:
-                    pass
-
-            # Fallback: write video with imageio
-            if not os.path.exists(tmp_path) or os.path.getsize(tmp_path) == 0:
-                import imageio
-                writer = imageio.get_writer(tmp_path, format="mp4", fps=fps, codec="libx264",
-                                            output_params=["-pix_fmt", "yuv420p", "-crf", "23"])
-                for frame in video_np:
-                    if frame.dtype != np.uint8:
-                        if frame.max() <= 1.0:
-                            frame = (frame * 255).astype(np.uint8)
-                        else:
-                            frame = frame.astype(np.uint8)
-                    writer.append_data(frame)
-                writer.close()
+            from diffusers.utils import export_to_video
+            export_to_video(frames, tmp_path, fps=fps)
 
             with open(tmp_path, "rb") as f:
                 mp4_bytes = f.read()
@@ -358,7 +315,7 @@ async def generate(req: VideoGenerateRequest):
             os.unlink(tmp_path)
 
         video_b64 = base64.b64encode(mp4_bytes).decode()
-        actual_duration = round(len(video_np) / fps, 2)
+        actual_duration = round(len(frames) / fps, 2)
 
     except HTTPException:
         raise
@@ -381,10 +338,10 @@ async def generate(req: VideoGenerateRequest):
         "elapsed_s": elapsed,
         "width": width,
         "height": height,
-        "num_frames": len(video_np),
+        "num_frames": len(frames),
         "fps": fps,
         "duration": actual_duration,
-        "has_audio": has_audio,
+        "has_audio": False,
         "seed": seed,
-        "model": "LTX-2",
+        "model": "Wan 2.2",
     }
