@@ -7550,28 +7550,92 @@ document.getElementById("video-fav-close").addEventListener("click", () => {
 
 async function refreshVideoFavoritesPanel() {
   const favs = await loadAllVideoFavorites();
-  videoFavContent.innerHTML = "";
+  favs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+  _updateVideoFavBadge();
+  const emptyEl = videoFavContent.querySelector(".fav-panel-empty");
+  videoFavContent.querySelectorAll(".video-fav-card").forEach(c => c.remove());
   if (!favs.length) {
-    videoFavContent.innerHTML = `<div id="video-fav-empty" class="fav-panel-empty">
+    if (emptyEl) emptyEl.style.display = "";
+    else videoFavContent.innerHTML = `<div class="fav-panel-empty">
       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.3"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
       <p>Click the heart on any video to add it to your favorites.</p>
     </div>`;
     return;
   }
-  favs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+  if (emptyEl) emptyEl.style.display = "none";
   for (const fav of favs) {
-    const mini = document.createElement("div");
-    mini.className = "video-result";
-    mini.style.marginBottom = "8px";
-    const title = fav.title || fav.rawPrompt?.slice(0, 30) || "Untitled";
-    mini.innerHTML = `
-      <div class="video-result-body" style="padding:8px;">
-        <div class="video-result-title" style="font-size:0.78rem;">${esc(title)}</div>
-        <div class="video-result-prompt" style="font-size:0.68rem;">${esc(fav.rawPrompt || "")}</div>
-      </div>
-    `;
-    videoFavContent.appendChild(mini);
+    videoFavContent.appendChild(_createVideoFavCard(fav));
   }
+}
+
+function _createVideoFavCard(fav) {
+  const card = document.createElement("div");
+  card.className = "video-fav-card music-fav-card";
+  card.dataset.favId = fav.id;
+
+  const durStr = fav.duration ? fav.duration + "s" : "";
+  const title = fav.title || fav.rawPrompt?.slice(0, 40) || "Untitled";
+
+  card.innerHTML = `
+    <div class="music-fav-cover" style="width:56px;height:42px;border-radius:6px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" stroke-width="1.5"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+    </div>
+    <div class="music-fav-info">
+      <div class="music-fav-title">${esc(title)}</div>
+      <div class="music-fav-duration">${durStr}</div>
+    </div>
+    <div class="music-fav-card-actions">
+      <button class="music-action-btn video-fav-dl" title="Download"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+      <button class="music-action-btn video-fav-reuse" title="Reuse settings"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
+      <button class="music-action-btn video-fav-remove" title="Remove from favorites"><svg width="12" height="12" viewBox="0 0 24 24" fill="#f472b6" stroke="#f472b6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+    </div>
+  `;
+
+  // Download
+  card.querySelector(".video-fav-dl").addEventListener("click", () => {
+    if (!fav.video) return;
+    const byteStr = atob(fav.video);
+    const bytes = new Uint8Array(byteStr.length);
+    for (let i = 0; i < byteStr.length; i++) bytes[i] = byteStr.charCodeAt(i);
+    const blob = new Blob([bytes], { type: "video/mp4" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = (fav.title || "video").replace(/[^a-zA-Z0-9_-]/g, "_") + ".mp4";
+    a.click();
+  });
+
+  // Reuse settings
+  card.querySelector(".video-fav-reuse").addEventListener("click", () => {
+    if (fav.rawPrompt) document.getElementById("video-prompt").value = fav.rawPrompt;
+    if (fav.body) {
+      const b = fav.body;
+      if (b.width && b.height) document.getElementById("video-resolution").value = b.width + "x" + b.height;
+      if (b.num_frames) { document.getElementById("video-frames").value = b.num_frames; document.getElementById("video-frames").dispatchEvent(new Event("input")); }
+      if (b.num_inference_steps) { document.getElementById("video-steps").value = b.num_inference_steps; document.getElementById("video-steps").dispatchEvent(new Event("input")); }
+      if (b.guidance_scale) { document.getElementById("video-guidance").value = b.guidance_scale; document.getElementById("video-guidance").dispatchEvent(new Event("input")); }
+      if (b.fps) document.getElementById("video-fps").value = b.fps;
+    }
+    document.getElementById("video-prompt").focus();
+  });
+
+  // Remove from favorites
+  card.querySelector(".video-fav-remove").addEventListener("click", async () => {
+    await deleteVideoFavorite(fav.id);
+    card.remove();
+    _updateVideoFavBadge();
+    // Update the main canvas fav button if visible
+    const mainCard = videoCanvas.querySelector(`[data-video-id="${fav.id}"]`);
+    if (mainCard) {
+      const btn = mainCard.querySelector(".video-fav-btn");
+      if (btn) { btn.classList.remove("active"); btn.querySelector("svg").setAttribute("fill", "none"); }
+    }
+    if (!videoFavContent.querySelector(".video-fav-card")) {
+      const empty = videoFavContent.querySelector(".fav-panel-empty");
+      if (empty) empty.style.display = "";
+    }
+  });
+
+  return card;
 }
 
 async function _updateVideoFavBadge() {
