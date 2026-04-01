@@ -221,59 +221,89 @@ class ReleaseRequest(BaseModel):
     service: str
 
 
+# -- VRAM profiles per service --
+# Each profile defines what should be in VRAM for that service.
+#   keep_services: other services to keep loaded alongside
+#   keep_utility_llm: whether the utility LLM stays in VRAM
+#   evict_all_llms: evict ALL Ollama models including utility
+VRAM_PROFILES = {
+    "chat": {
+        # Chat: only the selected LLM, nothing else
+        "keep_services": [],
+        "keep_utility_llm": False,
+        "evict_all_llms": True,
+    },
+    "image": {
+        # Image: utility LLM (for session naming) + image model
+        "keep_services": [],
+        "keep_utility_llm": True,
+        "evict_all_llms": False,
+    },
+    "music": {
+        # Music: utility LLM (for naming/lyrics) + SDXL (cover art) + ACE-Step
+        "keep_services": ["image"],
+        "keep_utility_llm": True,
+        "evict_all_llms": False,
+    },
+    "video": {
+        # Video: Wan only, nothing else (needs all VRAM)
+        "keep_services": [],
+        "keep_utility_llm": False,
+        "evict_all_llms": True,
+    },
+}
+
+# SDXL Turbo is the small/fast model used for cover art
+COVER_ART_MODEL = "sdxl-turbo"
+
+
 @app.post("/acquire")
 async def acquire(req: AcquireRequest):
-    """Acquire VRAM for a service. Evicts everything else first, serialized via lock."""
+    """Acquire VRAM for a service using per-service VRAM profiles."""
     if req.service not in list(SERVICES.keys()) + ["chat"]:
         raise HTTPException(status_code=400, detail=f"Unknown service: {req.service}")
 
+    profile = VRAM_PROFILES[req.service]
+
     async with _lock:
         t0 = time.time()
-        logger.info(f"Acquiring VRAM for {req.service}")
+        logger.info(f"Acquiring VRAM for {req.service} (profile: keep={profile['keep_services']}, utility={profile['keep_utility_llm']})")
 
-        # 1. Check if target is already the only thing loaded
-        if req.service in SERVICES:
-            target_health = await _get_service_health(SERVICES[req.service])
-            if target_health.get("model_loaded"):
-                # Target loaded - but are others also loaded?
-                others_loaded = False
-                for svc, url in SERVICES.items():
-                    if svc == req.service:
-                        continue
-                    h = await _get_service_health(url)
-                    if h.get("model_loaded"):
-                        others_loaded = True
-                        break
-                if not others_loaded:
-                    # Target is loaded and nothing else is - we're good
-                    elapsed = round(time.time() - t0, 2)
-                    logger.info(f"VRAM already acquired for {req.service} ({elapsed}s)")
-                    return {
-                        "ok": True,
-                        "service": req.service,
-                        "model": target_health.get("current_model"),
-                        "vram_mb": target_health.get("vram_mb", 0),
-                        "skipped": True,
-                        "elapsed_s": elapsed,
-                    }
-
-        # 2. Unload all other services
         await _broadcast("acquiring", {"service": req.service, "model": req.model or req.service, "phase": "unloading"})
+
+        # 1. Unload services not in the keep list and not the target
         for svc in SERVICES:
             if svc == req.service:
                 continue
+            if svc in profile["keep_services"]:
+                continue
             await _unload_service(svc)
 
-        # 3. Evict Ollama LLMs (keep utility model)
-        await _evict_ollama(keep_utility=True)
+        # 2. Evict Ollama LLMs per profile
+        if profile["evict_all_llms"]:
+            await _evict_ollama(keep_utility=False)
+        else:
+            # Evict non-utility LLMs (keep utility for naming/lyrics)
+            await _evict_ollama(keep_utility=True)
 
-        # 4. Wait for VRAM to clear
+        # 3. Wait for unloaded services to clear
         await _broadcast_status()
-        await _wait_vram_clear(exclude=req.service)
+        services_to_wait = [svc for svc in SERVICES if svc != req.service and svc not in profile["keep_services"]]
+        for _ in range(30):
+            all_clear = True
+            for svc in services_to_wait:
+                health = await _get_service_health(SERVICES[svc])
+                if health.get("model_loaded"):
+                    all_clear = False
+                    break
+            if all_clear:
+                break
+            await asyncio.sleep(1)
 
-        # 5. Load the target
+        # 4. Load the target service
         await _broadcast("acquiring", {"service": req.service, "model": req.model or req.service, "phase": "loading"})
         result = {}
+
         if req.service == "chat":
             await _warmup_llm(req.model)
             result = {"model": req.model or "default", "vram_mb": 0}
@@ -286,6 +316,16 @@ async def acquire(req: AcquireRequest):
                 }
             else:
                 result = await _load_service(req.service, req.model)
+
+        # 5. For music: ensure SDXL Turbo is loaded for cover art
+        if req.service == "music":
+            img_health = await _get_service_health(IMAGE_GEN_URL)
+            if not img_health.get("model_loaded") or img_health.get("current_model") != COVER_ART_MODEL:
+                logger.info(f"Loading {COVER_ART_MODEL} for music cover art")
+                try:
+                    await _load_service("image", COVER_ART_MODEL)
+                except Exception as e:
+                    logger.warning(f"Failed to load cover art model: {e}")
 
         elapsed = round(time.time() - t0, 2)
         logger.info(f"VRAM acquired for {req.service} in {elapsed}s")
@@ -304,7 +344,7 @@ async def acquire(req: AcquireRequest):
 async def release(req: ReleaseRequest):
     """Release VRAM held by a service."""
     if req.service == "chat":
-        await _evict_ollama(keep_utility=True)
+        await _evict_ollama(keep_utility=False)
         await _broadcast_status()
         return {"ok": True, "service": "chat"}
 
