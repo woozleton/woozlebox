@@ -655,7 +655,7 @@
     <div id="video-studio-header" class="studio-header">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
       <h2>Video Studio</h2>
-      <span class="studio-subtitle" id="video-model-label">LTX Video 2.3</span>
+      <span class="studio-subtitle" id="video-model-label">LTX-2</span>
       <button id="video-trash-btn" title="Trash">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
         <span id="video-trash-badge"></span>
@@ -678,7 +678,7 @@
           <div id="video-settings-crumb" class="settings-crumb">
             <span id="video-settings-trigger" class="settings-trigger">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
-              <span id="video-settings-summary">704x480 · 97 frames · ~4s</span>
+              <span id="video-settings-summary">768x512 · 121 frames · ~5s</span>
               <svg class="chevron-icon" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.5;"><polyline points="6 9 12 15 18 9"/></svg>
             </span>
           </div>
@@ -695,17 +695,17 @@
               <div class="ss-group" title="Output video resolution">
                 <div class="ss-group-label">Resolution</div>
                 <select id="video-resolution" class="setting-input" style="padding:4px 8px;font-size:0.78rem;border-radius:6px;background:var(--surface2);color:var(--text);border:1px solid var(--border);width:100%;">
-                  <option value="704x480" selected>704 x 480</option>
+                  <option value="768x512" selected>768 x 512</option>
                   <option value="512x512">512 x 512</option>
-                  <option value="480x704">480 x 704 (Portrait)</option>
-                  <option value="1024x576">1024 x 576 (HD)</option>
+                  <option value="512x768">512 x 768 (Portrait)</option>
+                  <option value="1280x720">1280 x 720 (HD)</option>
                 </select>
               </div>
               <div class="ss-group" title="Number of frames to generate">
                 <div class="ss-group-label">Frames</div>
                 <div class="sc-slider">
-                  <input type="range" id="video-frames" min="9" max="257" value="97" step="8">
-                  <span class="field-val" id="video-frames-val">97 (~4.0s)</span>
+                  <input type="range" id="video-frames" min="9" max="257" value="121" step="8">
+                  <span class="field-val" id="video-frames-val">121 (~5.0s)</span>
                 </div>
               </div>
             </div>
@@ -720,15 +720,15 @@
                   <div class="ss-group" title="Number of diffusion inference steps">
                     <div class="ss-group-label">Steps</div>
                     <div class="sc-slider">
-                      <input type="range" id="video-steps" min="10" max="50" value="30" step="1">
-                      <span class="field-val" id="video-steps-val">30</span>
+                      <input type="range" id="video-steps" min="10" max="50" value="40" step="1">
+                      <span class="field-val" id="video-steps-val">40</span>
                     </div>
                   </div>
                   <div class="ss-group" title="How closely the output follows the prompt">
                     <div class="ss-group-label">Guidance</div>
                     <div class="sc-slider">
-                      <input type="range" id="video-guidance" min="1" max="15" value="7.5" step="0.5">
-                      <span class="field-val" id="video-guidance-val">7.5</span>
+                      <input type="range" id="video-guidance" min="1" max="15" value="4" step="0.5">
+                      <span class="field-val" id="video-guidance-val">4.0</span>
                     </div>
                   </div>
                   <div class="ss-group" title="Frames per second">
@@ -5084,7 +5084,7 @@ async function prepareModelsForView(view) {
   _modelReady[view] = false;
   const modelName = view === "studio"
     ? (studioModelSelect.options[studioModelSelect.selectedIndex]?.textContent || "image model")
-    : view === "video" ? "LTX Video" : "ACE-Step";
+    : view === "video" ? "LTX-2" : "ACE-Step";
   _setModelLoading(view, true, modelName);
 
   const abort = new AbortController();
@@ -7277,7 +7277,6 @@ function createVideoResultCard(record) {
 
   el.innerHTML = `
     <div class="video-result-cover">
-      ${record.coverArt ? `<img src="data:image/png;base64,${record.coverArt}" alt="cover">` : ""}
       <video src="${blobUrl}" controls preload="metadata"></video>
     </div>
     <div class="video-result-body">
@@ -7438,7 +7437,7 @@ async function videoGenerate() {
 
   let aborted = false;
   const abortCtrl = new AbortController();
-  stopBtn.addEventListener("click", () => { aborted = true; abortCtrl.abort(); });
+  stopBtn.addEventListener("click", () => { aborted = true; apiFetch("/video/cancel", { method: "POST" }).catch(() => {}); abortCtrl.abort(); });
 
   // Progress polling
   const progressInterval = setInterval(async () => {
@@ -7486,8 +7485,6 @@ async function videoGenerate() {
       model: data.model,
       seed: data.seed,
       timestamp: Date.now(),
-      coverArt: null,
-      _pendingCoverArt: true,
     };
 
     await saveVideoClip(record);
@@ -7514,30 +7511,7 @@ async function videoGenerate() {
       } catch {}
     })();
 
-    // Generate cover art in background
-    (async () => {
-      try {
-        const artRes = await apiFetch("/video/cover-art", {
-          method: "POST",
-          body: JSON.stringify({ prompt: rawPrompt, title: record.title }),
-        });
-        const artData = await artRes.json();
-        if (artData.image) {
-          record.coverArt = artData.image;
-          record._pendingCoverArt = false;
-          await saveVideoClip(record);
-          const coverEl = card.querySelector(".video-result-cover img");
-          if (coverEl) {
-            coverEl.src = "data:image/png;base64," + artData.image;
-          } else {
-            const img = document.createElement("img");
-            img.src = "data:image/png;base64," + artData.image;
-            img.alt = "cover";
-            card.querySelector(".video-result-cover").prepend(img);
-          }
-        }
-      } catch {}
-    })();
+    // No cover art generation for video - the video itself serves as its own preview
 
   } catch (e) {
     if (e.name === "AbortError" || aborted) {

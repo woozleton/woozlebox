@@ -1235,20 +1235,15 @@ async def prepare_music_studio(request: Request, user: dict = Depends(get_curren
 
 @app.post("/models/prepare-video-studio")
 async def prepare_video_studio(request: Request, user: dict = Depends(get_current_user)):
-    """Preload the video model, evicting other models only if needed."""
-    # Check if video model is already loaded
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            health = await client.get(f"{VIDEO_GEN_URL}/health")
-            hdata = health.json()
-            if hdata.get("model_loaded"):
-                return {"ok": True, "evicted": [], "video_ready": True, "skipped": True}
-    except Exception:
-        pass
+    """Preload the video model, always evicting all other models first.
 
-    # Video model not loaded - evict to free VRAM
+    Video uses ~12GB VRAM so there is no room for other models.
+    Unlike image/music, we always evict even if video is already loaded.
+    """
+    # Always evict all non-utility Ollama models
     evicted = await _evict_ollama_models()
 
+    # Always unload image and music models
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             await client.post(f"{IMAGE_GEN_URL}/models/unload")
@@ -1260,8 +1255,18 @@ async def prepare_video_studio(request: Request, user: dict = Depends(get_curren
     except Exception:
         pass
 
-    # Load video model
+    # Check if video model is already loaded
     video_ready = False
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            health = await client.get(f"{VIDEO_GEN_URL}/health")
+            hdata = health.json()
+            if hdata.get("model_loaded"):
+                return {"ok": True, "evicted": evicted, "video_ready": True, "skipped": True}
+    except Exception:
+        pass
+
+    # Load video model
     try:
         async with httpx.AsyncClient(timeout=300.0) as client:
             resp = await client.post(f"{VIDEO_GEN_URL}/models/load")
@@ -2189,6 +2194,16 @@ async def music_generate_proxy(req: MusicGenerateRequest, user: dict = Depends(g
 
 
 # --- Video generation proxy ---
+
+@app.post("/video/cancel")
+async def video_cancel(user: dict = Depends(get_current_user)):
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.post(f"{VIDEO_GEN_URL}/cancel")
+            return resp.json()
+    except Exception:
+        return {"ok": False}
+
 
 @app.get("/video/health")
 async def video_health(user: dict = Depends(get_current_user)):
