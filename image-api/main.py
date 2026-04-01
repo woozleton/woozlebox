@@ -130,10 +130,10 @@ def _load_pipeline(model_key: str):
     elif cfg["loader"] == "sd3":
         from diffusers import StableDiffusion3Pipeline
         try:
-            from diffusers.quantizers import PipelineQuantizationConfig
-            from diffusers import BitsAndBytesConfig
+            from diffusers import PipelineQuantizationConfig, TorchAoConfig
+            from torchao.quantization import Float8WeightOnlyConfig
             quant_config = PipelineQuantizationConfig(
-                quant_mapping={"transformer": BitsAndBytesConfig(load_in_8bit=True)}
+                quant_mapping={"transformer": TorchAoConfig(Float8WeightOnlyConfig())}
             )
             pipe = StableDiffusion3Pipeline.from_pretrained(
                 cfg["hf_id"],
@@ -142,7 +142,7 @@ def _load_pipeline(model_key: str):
                 token=HF_TOKEN or None,
                 cache_dir=HF_CACHE,
             )
-            logger.info("SD 3.5 loaded with FP8 quantization")
+            logger.info("SD 3.5 loaded with FP8 weight-only quantization via torchao")
         except Exception as e:
             logger.warning(f"FP8 quantization failed ({e}), loading in fp16")
             pipe = StableDiffusion3Pipeline.from_pretrained(

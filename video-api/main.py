@@ -76,11 +76,11 @@ def _load_model():
 
     # FP8 quantization on the transformer to fit in 24GB with no offloading
     try:
-        from diffusers.quantizers import PipelineQuantizationConfig
-        from diffusers import BitsAndBytesConfig
+        from diffusers import PipelineQuantizationConfig, TorchAoConfig
+        from torchao.quantization import Float8WeightOnlyConfig
 
         quant_config = PipelineQuantizationConfig(
-            quant_mapping={"transformer": BitsAndBytesConfig(load_in_8bit=True)}
+            quant_mapping={"transformer": TorchAoConfig(Float8WeightOnlyConfig())}
         )
         _pipe = WanPipeline.from_pretrained(
             MODEL_ID,
@@ -88,7 +88,7 @@ def _load_model():
             quantization_config=quant_config,
             torch_dtype=torch.bfloat16,
         )
-        logger.info("Loaded with FP8 quantization via PipelineQuantizationConfig")
+        logger.info("Loaded with FP8 weight-only quantization via torchao")
     except Exception as e:
         logger.warning(f"FP8 quantization failed ({e}), loading in bfloat16")
         _pipe = WanPipeline.from_pretrained(
