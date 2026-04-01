@@ -265,24 +265,14 @@
     </div>
 
     <div id="input-area">
-      <div id="folder-crumb">
-        <span id="folder-crumb-trigger" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;">
-          <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
-            <path d="M1.5 3.5C1.5 2.948 1.948 2.5 2.5 2.5H6.086a1 1 0 0 1 .707.293L7.914 3.914A1 1 0 0 0 8.621 4.2H13.5c.552 0 1 .448 1 1v7.3c0 .552-.448 1-1 1h-11c-.552 0-1-.448-1-1V3.5z"/>
-          </svg>
-          <span id="folder-crumb-name"></span>
-          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.5;"><polyline points="6 9 12 15 18 9"/></svg>
-        </span>
-        <div id="ctx-bar-wrap" style="display:none;align-items:center;gap:5px;margin-left:auto;padding-left:10px;font-size:0.7rem;color:var(--text-faint);">
-          <svg id="ctx-pie" width="14" height="14" viewBox="0 0 16 16" style="flex-shrink:0;transform:rotate(-90deg);">
-            <circle cx="8" cy="8" r="6" fill="none" stroke="var(--surface3)" stroke-width="3"/>
-            <circle id="ctx-pie-arc" cx="8" cy="8" r="6" fill="none" stroke="var(--accent)" stroke-width="3"
-              stroke-dasharray="0 37.7" stroke-linecap="round" style="transition:stroke-dasharray 0.4s,stroke 0.4s;"/>
-          </svg>
-          <span id="ctx-label">0%</span>
-        </div>
+      <div id="ctx-bar-wrap" style="display:none;align-items:center;gap:5px;padding:0 4px 8px;font-size:0.7rem;color:var(--text-faint);">
+        <svg id="ctx-pie" width="14" height="14" viewBox="0 0 16 16" style="flex-shrink:0;transform:rotate(-90deg);">
+          <circle cx="8" cy="8" r="6" fill="none" stroke="var(--surface3)" stroke-width="3"/>
+          <circle id="ctx-pie-arc" cx="8" cy="8" r="6" fill="none" stroke="var(--accent)" stroke-width="3"
+            stroke-dasharray="0 37.7" stroke-linecap="round" style="transition:stroke-dasharray 0.4s,stroke 0.4s;"/>
+        </svg>
+        <span id="ctx-label">0%</span>
       </div>
-      <div id="folder-crumb-menu"></div>
       <div id="image-preview-bar"></div>
       <div id="queue-tray"></div>
       <div id="input-box">
@@ -2437,72 +2427,29 @@ async function ensureDefaultFolder() {
   }
 }
 
-function updateFolderCrumb() {
-  const p = chatFolders.find(p => p.id === activeChatFolderId);
-  document.getElementById("folder-crumb-name").textContent = p ? p.name : "";
-}
-
-document.getElementById("folder-crumb-trigger").addEventListener("click", e => {
-  e.stopPropagation();
-  const crumb = document.getElementById("folder-crumb-name");
-  const menu = document.getElementById("folder-crumb-menu");
-  const isOpen = menu.classList.contains("open");
-  menu.innerHTML = "";
-  chatFolders.forEach(p => {
-    const item = document.createElement("div");
-    item.className = "crumb-menu-item" + (p.id === activeChatFolderId ? " active" : "");
-    const isActive = p.id === activeChatFolderId;
-    const folderSvg = isActive
-      ? `<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" style="flex-shrink:0;"><path d="M1.5 3.5C1.5 2.948 1.948 2.5 2.5 2.5H6.086a1 1 0 0 1 .707.293L7.914 3.914A1 1 0 0 0 8.621 4.2H13.5c.552 0 1 .448 1 1v7.3c0 .552-.448 1-1 1h-11c-.552 0-1-.448-1-1V3.5z"/></svg>`
-      : `<svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;"><path d="M1.5 3.5C1.5 2.948 1.948 2.5 2.5 2.5H6.086a1 1 0 0 1 .707.293L7.914 3.914A1 1 0 0 0 8.621 4.2H13.5c.552 0 1 .448 1 1v7.3c0 .552-.448 1-1 1h-11c-.552 0-1-.448-1-1V3.5z" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"/></svg>`;
-    item.innerHTML = `${folderSvg}<span style="flex:1;">${esc(p.name)}</span>`;
-    item.addEventListener("click", e => {
-      e.stopPropagation();
-      activeChatFolderId = p.id;
-      localStorage.setItem("diab_chat_folder", p.id);
-      renderFoldersSidebar();
-      updateFolderCrumb();
-      renderSidebar(allConversations, false);
-      menu.classList.remove("open");
-    });
-    menu.appendChild(item);
-  });
-  if (!isOpen) {
-    const rect = document.getElementById("folder-crumb-trigger").getBoundingClientRect();
-    menu.style.left = rect.left + "px";
-    menu.style.top = (rect.top - 8) + "px";
-    menu.style.transform = "translateY(-100%)";
-    menu.style.position = "fixed";
-  }
-  menu.classList.toggle("open", !isOpen);
-});
-document.addEventListener("click", () => {
-  document.getElementById("folder-crumb-menu").classList.remove("open");
-});
 
 function renderFoldersSidebar() {
   const list = document.getElementById("chat-folders-list");
   list.innerHTML = "";
   chatFolders.forEach(p => {
     const row = document.createElement("div");
-    row.className = "sb-folder-row folder-row" + (p.id === activeChatFolderId ? " active" : "");
+    row.className = "sb-folder-row" + (p.id === activeChatFolderId ? " active" : "");
     row.dataset.id = p.id;
     row.innerHTML = `
-      <svg class="sb-folder-icon folder-row-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg class="sb-folder-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M1.5 3.5C1.5 2.948 1.948 2.5 2.5 2.5H6.086a1 1 0 0 1 .707.293L7.914 3.914A1 1 0 0 0 8.621 4.2H13.5c.552 0 1 .448 1 1v7.3c0 .552-.448 1-1 1h-11c-.552 0-1-.448-1-1V3.5z" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"/>
       </svg>
-      <div class="sb-folder-info folder-row-info">
-        <div class="sb-folder-name folder-row-name">${esc(p.name)}</div>
-        ${p.description ? `<div class="sb-folder-desc folder-row-desc">${esc(p.description)}</div>` : ""}
+      <div class="sb-folder-info">
+        <div class="sb-folder-name">${esc(p.name)}</div>
+        ${p.description ? `<div class="sb-folder-desc">${esc(p.description)}</div>` : ""}
       </div>
-      <button class="sb-folder-menu folder-menu-btn" title="Folder options">⋯</button>`;
+      <button class="sb-folder-menu" title="Folder options">⋯</button>`;
     // Click to select (no deselect - a folder is always active)
     row.addEventListener("click", e => {
-      if (e.target.classList.contains("folder-menu-btn")) return;
+      if (e.target.classList.contains("sb-folder-menu")) return;
       activeChatFolderId = p.id;
       localStorage.setItem("diab_chat_folder", p.id);
       renderFoldersSidebar();
-      updateFolderCrumb();
       renderSidebar(allConversations, false);
     });
     // Drag-and-drop target
@@ -2528,7 +2475,7 @@ function renderFoldersSidebar() {
       localStorage.setItem("diab_chat_folder", p.id);
       await loadConversations();
     });
-    row.querySelector(".folder-menu-btn").addEventListener("click", e => {
+    row.querySelector(".sb-folder-menu").addEventListener("click", e => {
       e.stopPropagation();
       folderCtxTargetId = p.id;
       const menu = document.getElementById("folder-ctx-menu");
@@ -2710,7 +2657,7 @@ document.getElementById("conv-list").addEventListener("click", (e) => {
 });
 // Also close on folder click
 document.getElementById("chat-folders-list").addEventListener("click", (e) => {
-  if (isMobile() && e.target.closest(".folder-row")) closeMobileSidebar();
+  if (isMobile() && e.target.closest(".sb-folder-row")) closeMobileSidebar();
 });
 
 // On resize, clean up mobile state if switching to desktop
@@ -5670,12 +5617,12 @@ function renderMusicFoldersSidebar() {
   list.innerHTML = "";
   musicFolders.forEach(col => {
     const row = document.createElement("div");
-    row.className = "sb-folder-row music-folder-row" + (col.id === activeMusicFolderId ? " active" : "");
+    row.className = "sb-folder-row" + (col.id === activeMusicFolderId ? " active" : "");
     row.dataset.id = col.id;
-    const iconSvg = `<svg class="sb-folder-icon music-folder-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
-    row.innerHTML = `${iconSvg}<div class="sb-folder-info music-folder-row-info"><div class="sb-folder-name music-folder-row-name">${esc(col.name)}</div>${col.description ? `<div class="sb-folder-desc music-folder-row-desc">${esc(col.description)}</div>` : ""}</div><button class="sb-folder-menu music-folder-menu-btn" title="Options">⋯</button>`;
+    const iconSvg = `<svg class="sb-folder-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1.5 3.5C1.5 2.948 1.948 2.5 2.5 2.5H6.086a1 1 0 0 1 .707.293L7.914 3.914A1 1 0 0 0 8.621 4.2H13.5c.552 0 1 .448 1 1v7.3c0 .552-.448 1-1 1h-11c-.552 0-1-.448-1-1V3.5z" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"/></svg>`;
+    row.innerHTML = `${iconSvg}<div class="sb-folder-info"><div class="sb-folder-name">${esc(col.name)}</div>${col.description ? `<div class="sb-folder-desc">${esc(col.description)}</div>` : ""}</div><button class="sb-folder-menu" title="Options">⋯</button>`;
     row.addEventListener("click", e => {
-      if (e.target.classList.contains("music-folder-menu-btn")) return;
+      if (e.target.classList.contains("sb-folder-menu")) return;
       if (col.id === activeMusicFolderId) return;
       activeMusicFolderId = col.id;
       localStorage.setItem("diab_music_folder", col.id);
@@ -5686,7 +5633,7 @@ function renderMusicFoldersSidebar() {
       restoreMusicTracks();
       renderMusicSessionsList();
     });
-    row.querySelector(".music-folder-menu-btn").addEventListener("click", e => {
+    row.querySelector(".sb-folder-menu").addEventListener("click", e => {
       e.stopPropagation();
       showMusicColCtxMenu(col, e);
     });
@@ -7012,8 +6959,8 @@ async function _getVideoSessions() {
   const clips = await loadAllVideoClips();
   const map = {};
   for (const c of clips) {
-    if (activeVideoFolderId && c.folder_id !== activeVideoFolderId) continue;
-    if (!activeVideoFolderId && c.folder_id) continue;
+    const clipFolder = c.folder_id || (videoFolders.length ? videoFolders[0].id : null);
+    if (activeVideoFolderId && clipFolder !== activeVideoFolderId) continue;
     const sid = c.session_id || "default";
     if (!map[sid]) map[sid] = { id: sid, clips: [], title: null, ts: 0 };
     map[sid].clips.push(c);
@@ -7057,44 +7004,133 @@ async function renderVideoSessionsList() {
 
 async function loadVideoFolders() {
   videoFolders = await loadAllVideoFolders();
+  if (videoFolders.length === 0) {
+    const defaultCol = { id: "vfolder_" + Date.now(), name: "My Videos", timestamp: Date.now() };
+    await saveVideoFolder(defaultCol);
+    videoFolders = [defaultCol];
+  }
+  if (!activeVideoFolderId || !videoFolders.find(c => c.id === activeVideoFolderId)) {
+    activeVideoFolderId = videoFolders[0].id;
+    localStorage.setItem("diab_video_folder", activeVideoFolderId);
+  }
+  renderVideoFoldersSidebar();
+}
+
+function renderVideoFoldersSidebar() {
   const listEl = document.getElementById("video-folders-list");
   if (!listEl) return;
   listEl.innerHTML = "";
-  // "All" item
-  const allRow = document.createElement("div");
-  allRow.className = "sidebar-row" + (!activeVideoFolderId ? " active" : "");
-  allRow.innerHTML = `<span style="flex:1;font-size:0.82rem;">All Videos</span>`;
-  allRow.addEventListener("click", () => {
-    activeVideoFolderId = null;
-    localStorage.removeItem("diab_video_folder");
-    loadVideoFolders();
-    renderVideoSessionsList();
-    restoreVideoClips();
-  });
-  listEl.appendChild(allRow);
   for (const col of videoFolders) {
     const row = document.createElement("div");
-    row.className = "sidebar-row" + (activeVideoFolderId === col.id ? " active" : "");
-    row.innerHTML = `<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.82rem;">${esc(col.name)}</span>`;
-    row.addEventListener("click", () => {
+    row.className = "sb-folder-row" + (activeVideoFolderId === col.id ? " active" : "");
+    row.dataset.id = col.id;
+    const iconSvg = `<svg class="sb-folder-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1.5 3.5C1.5 2.948 1.948 2.5 2.5 2.5H6.086a1 1 0 0 1 .707.293L7.914 3.914A1 1 0 0 0 8.621 4.2H13.5c.552 0 1 .448 1 1v7.3c0 .552-.448 1-1 1h-11c-.552 0-1-.448-1-1V3.5z" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"/></svg>`;
+    row.innerHTML = `${iconSvg}<div class="sb-folder-info"><div class="sb-folder-name">${esc(col.name)}</div>${col.description ? `<div class="sb-folder-desc">${esc(col.description)}</div>` : ""}</div><button class="sb-folder-menu" title="Options">⋯</button>`;
+    row.addEventListener("click", e => {
+      if (e.target.classList.contains("sb-folder-menu")) return;
+      if (col.id === activeVideoFolderId) return;
       activeVideoFolderId = col.id;
       localStorage.setItem("diab_video_folder", col.id);
-      loadVideoFolders();
+      renderVideoFoldersSidebar();
       renderVideoSessionsList();
       restoreVideoClips();
+    });
+    row.querySelector(".sb-folder-menu").addEventListener("click", e => {
+      e.stopPropagation();
+      showVideoFolderCtxMenu(col, e);
+    });
+    // Drag-and-drop target for video sessions
+    row.addEventListener("dragover", e => {
+      if (!e.dataTransfer.types.includes("text/video-session")) return;
+      e.preventDefault();
+      row.classList.add("drag-over");
+    });
+    row.addEventListener("dragleave", () => row.classList.remove("drag-over"));
+    row.addEventListener("drop", async e => {
+      e.preventDefault();
+      row.classList.remove("drag-over");
+      const sid = e.dataTransfer.getData("text/video-session");
+      if (!sid) return;
+      try {
+        const allClips = await loadAllVideoClips();
+        const matching = allClips.filter(r => (r.session_id || "default") === sid);
+        if (!matching.length) return;
+        const db = await openVideoDB();
+        const tx = db.transaction("videos", "readwrite");
+        const store = tx.objectStore("videos");
+        for (const rec of matching) {
+          rec.folder_id = col.id;
+          store.put(rec);
+        }
+        await new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = rej; });
+        renderVideoSessionsList();
+      } catch (err) { console.warn("Failed to move video session:", err); }
     });
     listEl.appendChild(row);
   }
 }
 
+function showVideoFolderCtxMenu(col, e) {
+  document.querySelectorAll(".video-folder-ctx-menu").forEach(el => el.remove());
+  const menu = document.createElement("div");
+  menu.className = "video-folder-ctx-menu";
+  menu.style.cssText = `position:fixed;z-index:999;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:4px;box-shadow:0 8px 24px rgba(0,0,0,0.4);min-width:120px;`;
+  menu.innerHTML = `
+    <div class="video-folder-ctx-item" data-action="rename" style="padding:6px 12px;cursor:pointer;font-size:0.8rem;border-radius:6px;color:var(--text-dim);">Edit</div>
+    <div class="video-folder-ctx-item" data-action="delete" style="padding:6px 12px;cursor:pointer;font-size:0.8rem;border-radius:6px;color:var(--danger);">Delete</div>
+  `;
+  menu.style.left = e.clientX + "px";
+  menu.style.top = Math.min(e.clientY, window.innerHeight - 80) + "px";
+  document.body.appendChild(menu);
+  menu.querySelector('[data-action="rename"]').addEventListener("click", () => {
+    menu.remove();
+    const newName = prompt("Rename folder:", col.name);
+    if (!newName?.trim()) return;
+    col.name = newName.trim();
+    saveVideoFolder(col).then(() => renderVideoFoldersSidebar());
+  });
+  menu.querySelector('[data-action="delete"]').addEventListener("click", async () => {
+    menu.remove();
+    if (videoFolders.length <= 1) { showToast("At least one folder must exist."); return; }
+    const confirmed = await showConfirm({ title: "Delete Folder", message: `Delete "${col.name}"? All videos will be deleted.` });
+    if (!confirmed) return;
+    const allClips = await loadAllVideoClips();
+    const toDelete = allClips.filter(r => r.folder_id === col.id);
+    for (const clip of toDelete) { await deleteVideoClip(clip.id); }
+    await deleteVideoFolder(col.id);
+    videoFolders = videoFolders.filter(c => c.id !== col.id);
+    if (activeVideoFolderId === col.id) {
+      activeVideoFolderId = videoFolders[0].id;
+      localStorage.setItem("diab_video_folder", activeVideoFolderId);
+    }
+    renderVideoFoldersSidebar();
+    activeVideoSessionId = null;
+    localStorage.removeItem("diab_video_session");
+    restoreVideoClips();
+    renderVideoSessionsList();
+  });
+  menu.querySelectorAll(".video-folder-ctx-item").forEach(item => {
+    item.addEventListener("mouseenter", () => item.style.background = "var(--surface2)");
+    item.addEventListener("mouseleave", () => item.style.background = "");
+  });
+  setTimeout(() => {
+    const handler = (ev) => { if (!menu.contains(ev.target)) { menu.remove(); document.removeEventListener("click", handler); } };
+    document.addEventListener("click", handler);
+  });
+}
+
 document.getElementById("video-folder-new-btn").addEventListener("click", async () => {
   const name = prompt("Folder name:");
   if (!name?.trim()) return;
-  const col = { id: "vfolder_" + Date.now(), name: name.trim() };
+  const col = { id: "vfolder_" + Date.now(), name: name.trim(), timestamp: Date.now() };
   await saveVideoFolder(col);
+  videoFolders.push(col);
   activeVideoFolderId = col.id;
   localStorage.setItem("diab_video_folder", col.id);
-  loadVideoFolders();
+  renderVideoFoldersSidebar();
+  activeVideoSessionId = null;
+  localStorage.removeItem("diab_video_session");
+  restoreVideoClips();
   renderVideoSessionsList();
 });
 
@@ -7777,12 +7813,12 @@ function renderImageFoldersSidebar() {
   list.innerHTML = "";
   imageFolders.forEach(pg => {
     const row = document.createElement("div");
-    row.className = "sb-folder-row image-folder-row" + (pg.id === activeImageFolderId ? " active" : "");
+    row.className = "sb-folder-row" + (pg.id === activeImageFolderId ? " active" : "");
     row.dataset.id = pg.id;
-    const iconSvg = `<svg class="sb-folder-icon image-folder-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><rect x="6" y="11" width="12" height="7" rx="1"/><circle cx="8.5" cy="13.5" r="1" fill="currentColor" stroke="none"/><path d="M18 18l-3.5-3.5-5.5 4.5"/></svg>`;
-    row.innerHTML = `${iconSvg}<div class="sb-folder-info image-folder-row-info"><div class="sb-folder-name image-folder-row-name">${esc(pg.name)}</div>${pg.description ? `<div class="sb-folder-desc image-folder-row-desc">${esc(pg.description)}</div>` : ""}</div><button class="sb-folder-menu image-folder-menu-btn" title="Options">⋯</button>`;
+    const iconSvg = `<svg class="sb-folder-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1.5 3.5C1.5 2.948 1.948 2.5 2.5 2.5H6.086a1 1 0 0 1 .707.293L7.914 3.914A1 1 0 0 0 8.621 4.2H13.5c.552 0 1 .448 1 1v7.3c0 .552-.448 1-1 1h-11c-.552 0-1-.448-1-1V3.5z" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"/></svg>`;
+    row.innerHTML = `${iconSvg}<div class="sb-folder-info"><div class="sb-folder-name">${esc(pg.name)}</div>${pg.description ? `<div class="sb-folder-desc">${esc(pg.description)}</div>` : ""}</div><button class="sb-folder-menu" title="Options">⋯</button>`;
     row.addEventListener("click", e => {
-      if (e.target.classList.contains("image-folder-menu-btn")) return;
+      if (e.target.classList.contains("sb-folder-menu")) return;
       if (pg.id === activeImageFolderId) return;
       activeImageFolderId = pg.id;
       localStorage.setItem("diab_image_folder", pg.id);
@@ -7790,7 +7826,7 @@ function renderImageFoldersSidebar() {
       _studioRestored = false;
       restoreStudioImages(true);
     });
-    row.querySelector(".image-folder-menu-btn").addEventListener("click", e => {
+    row.querySelector(".sb-folder-menu").addEventListener("click", e => {
       e.stopPropagation();
       showImageFolderCtxMenu(pg, e);
     });
@@ -8997,7 +9033,6 @@ async function loadConversations() {
     chatFolders = await projRes.json();
     await ensureDefaultFolder();
     renderFoldersSidebar();
-    updateFolderCrumb();
     renderSidebar(allConversations, false);
   } catch(e) { console.error("loadConversations error:", e); }
 }

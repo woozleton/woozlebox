@@ -381,13 +381,14 @@
       display: flex; align-items: flex-start; gap: 6px;
       padding: 5px 8px; border-radius: 7px; cursor: pointer;
       font-size: 0.82rem; color: var(--text-dim); position: relative;
-      margin-bottom: 2px;
+      margin-bottom: 2px; min-height: 42px;
     }
     .sb-folder-row:hover { background: var(--surface2); color: var(--text); }
     .sb-folder-row.active { background: var(--surface3); color: var(--text); }
     .sb-folder-row.drag-over { background: var(--accent-glow); outline: 1px dashed var(--accent); }
     .sb-folder-icon { flex-shrink: 0; width: 15px; height: 15px; color: var(--text-faint); margin-top: 2px; }
     .sb-folder-row.active .sb-folder-icon { color: var(--accent); }
+    .sb-folder-row.active .sb-folder-icon path { fill: var(--accent); stroke: var(--accent); }
     .sb-folder-info { flex: 1; overflow: hidden; }
     .sb-folder-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .sb-folder-desc { font-size: 0.68rem; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -429,8 +430,6 @@
       letter-spacing: 0.08em;
       padding: 10px 8px 4px;
     }
-    .folder-row { min-height: 42px; }
-    .folder-row.active .sb-folder-icon path { fill: var(--accent); stroke: var(--accent); }
     body.sidebar-collapsed #chat-folders-section { display: none; }
     body.sidebar-collapsed #chat-folders-divider { display: none; }
     body.sidebar-collapsed #image-folders-section { display: none !important; }
@@ -526,29 +525,6 @@
     #ctx-menu button:hover { background: var(--surface3); }
     #ctx-menu button.danger { color: var(--danger); }
 
-    #folder-crumb {
-      display: flex; align-items: center; gap: 5px;
-      font-size: 0.68rem; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase;
-      color: var(--text-faint);
-      white-space: nowrap;
-      padding: 0 4px 8px;
-    }
-    #folder-crumb-trigger:hover { color: var(--text-dim); }
-    #folder-crumb-menu {
-      display: none; position: fixed;
-      background: none; border: none;
-      border-radius: 0; padding: 0; min-width: 160px;
-      z-index: 50;
-    }
-    #folder-crumb-menu.open { display: block; }
-    .crumb-menu-item {
-      display: flex; align-items: center; gap: 5px;
-      padding: 5px 0; border-radius: 0; cursor: pointer;
-      font-size: 0.68rem; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase;
-      color: var(--text-faint);
-    }
-    .crumb-menu-item:hover { background: none; color: var(--text-dim); }
-    .crumb-menu-item.active { color: var(--accent); }
 
     /* Chat header */
     #chat-header {
@@ -3180,8 +3156,6 @@
         right: 8px;
       }
 
-      /* Folder crumb: compact */
-      #folder-crumb { padding: 0 2px 6px; }
       #ctx-bar-wrap { display: none !important; } /* hide context meter on phone */
 
       /* Mobile header -show with left padding for hamburger */
@@ -3285,7 +3259,7 @@
       /* Touch-friendly targets */
       .sb-item { padding: 8px 10px; min-height: 40px; }
       .sb-item-menu { opacity: 1; padding: 4px 8px; } /* Always visible on touch */
-      .folder-menu-btn { opacity: 1; }
+      .sb-folder-menu { opacity: 1; }
       .vault-folder-actions { opacity: 1; }
       .bubble-actions { opacity: 1; pointer-events: auto; }
       .strip-btn { width: 40px; height: 40px; }
