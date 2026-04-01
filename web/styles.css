@@ -486,12 +486,10 @@
     .vram-dot {
       width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
     }
-    .vram-dot.llm { background: var(--accent); }
-    .vram-dot.image { background: #f472b6; }
-    .vram-dot.music { background: #34d399; }
-    .vram-dot.video { background: #60a5fa; }
+    .vram-dot.loaded { background: #34d399; }
     .vram-dot.loading { background: #f59e0b; animation: vram-pulse 1s ease-in-out infinite; }
-    .vram-dot.unloading { background: #ef4444; animation: vram-pulse 1s ease-in-out infinite; }
+    .vram-dot.unloading { background: #f59e0b; animation: vram-pulse 1s ease-in-out infinite; }
+    .vram-dot.error { background: #ef4444; }
     .vram-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .vram-name.transitioning { font-style: italic; opacity: 0.7; }
     .vram-size { font-family: monospace; font-size: 0.6rem; color: var(--text-faint); }

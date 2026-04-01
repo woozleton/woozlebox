@@ -258,7 +258,7 @@ async def acquire(req: AcquireRequest):
                     }
 
         # 2. Unload all other services
-        await _broadcast("acquiring", {"service": req.service, "phase": "unloading"})
+        await _broadcast("acquiring", {"service": req.service, "model": req.model or req.service, "phase": "unloading"})
         for svc in SERVICES:
             if svc == req.service:
                 continue
@@ -272,7 +272,7 @@ async def acquire(req: AcquireRequest):
         await _wait_vram_clear(exclude=req.service)
 
         # 5. Load the target
-        await _broadcast("acquiring", {"service": req.service, "phase": "loading"})
+        await _broadcast("acquiring", {"service": req.service, "model": req.model or req.service, "phase": "loading"})
         result = {}
         if req.service == "chat":
             await _warmup_llm(req.model)

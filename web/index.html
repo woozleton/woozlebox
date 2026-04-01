@@ -5111,7 +5111,7 @@ async function prepareModelsForView(view) {
   _prepareAbort = abort;
 
   const svcName = view === "studio" ? "image" : view;
-  setVramAcquiring(svcName);
+  setVramAcquiring(svcName, modelName);
 
   try {
     if (view === "studio") {
@@ -11384,34 +11384,44 @@ const vramStatusEl = document.getElementById("vram-status");
 let _vramStatusTimer = null;
 let _vramEventSource = null;
 let _vramPendingAcquire = null;
+let _vramPendingModel = null; // actual model name to display
 let _vramAcquirePhase = null; // "unloading" | "loading" | null
 
-function setVramAcquiring(service) {
+function setVramAcquiring(service, modelName) {
   _vramPendingAcquire = service;
+  _vramPendingModel = modelName || service;
   _vramAcquirePhase = "unloading";
-  _renderVramDisplay([]);
+  pollVramStatus();
 }
 function clearVramAcquiring() {
   _vramPendingAcquire = null;
+  _vramPendingModel = null;
   _vramAcquirePhase = null;
 }
 
 function _renderVramDisplay(loaded) {
   if (!vramStatusEl) return;
   const displayItems = [];
+  const isAcquiring = !!_vramPendingAcquire;
+  const acquirePhase = _vramAcquirePhase || "loading";
+
   for (const m of loaded) {
-    const sizeStr = m.vram_mb > 0 ? `<span class="vram-size">${(m.vram_mb / 1024).toFixed(1)}G</span>` : "";
-    displayItems.push(`<div class="vram-item"><span class="vram-dot ${m.type}"></span><span class="vram-name">${m.name}</span>${sizeStr}</div>`);
-  }
-  // Show acquire phase
-  if (_vramPendingAcquire) {
-    const label = _vramPendingAcquire === "chat" ? "LLM" : _vramPendingAcquire;
-    const phase = _vramAcquirePhase || "loading";
-    const phaseLabel = phase === "unloading" ? "Clearing VRAM..." : "Loading...";
-    if (!loaded.some(m => m.type === _vramPendingAcquire)) {
-      displayItems.push(`<div class="vram-item"><span class="vram-dot ${phase}"></span><span class="vram-name transitioning">${label} - ${phaseLabel}</span></div>`);
+    // During acquire: models being evicted show orange, target stays green
+    let dotClass = "loaded";
+    if (isAcquiring && acquirePhase === "unloading" && m.type !== _vramPendingAcquire) {
+      dotClass = "unloading";
     }
+    const sizeStr = m.vram_mb > 0 ? `<span class="vram-size">${(m.vram_mb / 1024).toFixed(1)}G</span>` : "";
+    displayItems.push(`<div class="vram-item"><span class="vram-dot ${dotClass}"></span><span class="vram-name">${m.name}</span>${sizeStr}</div>`);
   }
+
+  // Show the model being loaded if not yet in loaded list
+  if (isAcquiring && !loaded.some(m => m.type === _vramPendingAcquire)) {
+    const modelName = _vramPendingModel || _vramPendingAcquire;
+    const phaseLabel = acquirePhase === "unloading" ? "Clearing VRAM..." : "Loading...";
+    displayItems.push(`<div class="vram-item"><span class="vram-dot loading"></span><span class="vram-name transitioning">${modelName} - ${phaseLabel}</span></div>`);
+  }
+
   if (!displayItems.length) {
     vramStatusEl.innerHTML = `<div class="vram-label">VRAM</div><div class="vram-item" style="opacity:0.5">No models loaded</div>`;
     return;
@@ -11435,6 +11445,7 @@ function _connectVramSSE() {
       try {
         const data = JSON.parse(e.data);
         _vramPendingAcquire = data.service;
+        _vramPendingModel = data.model || data.service;
         _vramAcquirePhase = data.phase || "loading";
       } catch {}
     });
