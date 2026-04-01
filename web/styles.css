@@ -865,6 +865,48 @@
     #music-trash-inner { width: min(700px, 94vw); }
     #video-trash-inner { width: 480px; max-width: 90vw; border-radius: 12px; }
 
+    /* Shared trash button (header) */
+    .studio-trash-btn {
+      background: none; border: 1px solid var(--border); color: var(--text-dim);
+      cursor: pointer; padding: 5px 10px; border-radius: 8px;
+      display: flex; align-items: center; gap: 6px; font-size: 0.78rem;
+      transition: all 0.15s; position: relative;
+    }
+    .studio-trash-btn:hover { background: var(--surface3); color: var(--text); }
+    .studio-trash-badge { font-size: 0.78rem; font-weight: 600; color: var(--text-dim); }
+
+    /* Shared trash card (modal list items) */
+    .studio-trash-card {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 14px;
+      margin-bottom: 6px; transition: border-color 0.15s;
+    }
+    .studio-trash-card:hover { border-color: var(--accent); }
+    .studio-trash-card-info { flex: 1; min-width: 0; }
+    .studio-trash-card-prompt { font-size: 0.8rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .studio-trash-card-meta { font-size: 0.68rem; color: var(--text-faint); margin-top: 2px; }
+    .studio-trash-card-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .studio-trash-card-actions button {
+      padding: 5px 8px; border-radius: 6px; border: 1px solid var(--border);
+      background: none; cursor: pointer; transition: background 0.15s;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* Shared trash modal controls */
+    .studio-trash-count-label { font-size: 0.72rem; color: var(--text-faint); margin-right: auto; }
+    .studio-trash-empty-btn {
+      padding: 5px 7px; border-radius: 7px; border: 1px solid var(--border);
+      background: none; color: var(--danger); cursor: pointer;
+      transition: background 0.15s; display: flex; align-items: center;
+    }
+    .studio-trash-empty-btn:hover { background: rgba(239,68,68,0.12); }
+    .studio-trash-close-btn {
+      background: none; border: none; color: var(--text-dim);
+      font-size: 1.2rem; cursor: pointer; line-height: 1;
+    }
+    .studio-trash-close-btn:hover { color: var(--text); }
+
     /* 14. .advanced-toggle / .advanced-body */
     .advanced-toggle {
       display: flex; align-items: center; gap: 5px; cursor: pointer;
@@ -1151,18 +1193,6 @@
     #studio-model-loading svg { animation: spin 1s linear infinite; }
 
     /* Image studio trash */
-    #studio-trash-count-label { font-size: 0.72rem; color: var(--text-faint); margin-right: auto; }
-    #studio-trash-empty-btn {
-      padding: 5px 7px; border-radius: 7px; border: 1px solid var(--border);
-      background: none; color: var(--danger); cursor: pointer;
-      transition: background 0.15s; display: flex; align-items: center;
-    }
-    #studio-trash-empty-btn:hover { background: rgba(239,68,68,0.12); }
-    #studio-trash-close-btn {
-      background: none; border: none; color: var(--text-dim);
-      font-size: 1.2rem; cursor: pointer; line-height: 1;
-    }
-    #studio-trash-close-btn:hover { color: var(--text); }
     #studio-trash-grid {
       display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
       gap: 10px; padding: 16px; overflow-y: auto;
@@ -1171,17 +1201,7 @@
       content: "Trash is empty"; grid-column: 1/-1;
       color: var(--text-faint); font-size: 0.85rem; text-align: center; padding: 32px 0;
     }
-    #studio-trash-btn {
-      background: none; border: 1px solid var(--border); color: var(--text-dim);
-      cursor: pointer; padding: 5px 10px; border-radius: 8px;
-      display: flex; align-items: center; gap: 6px; font-size: 0.78rem;
-      transition: all 0.15s; margin-left: auto;
-      position: relative;
-    }
-    #studio-trash-btn:hover { background: var(--surface3); color: var(--text); }
-    #studio-trash-badge {
-      font-size: 0.78rem; font-weight: 600; color: var(--text-dim);
-    }
+    #studio-trash-btn { margin-left: auto; }
 
     /* Image studio fav panel */
     #studio-fav-close {
@@ -1650,26 +1670,6 @@
     }
 
     /* Music trash */
-    #music-trash-btn {
-      background: none; border: 1px solid var(--border); color: var(--text-dim);
-      cursor: pointer; padding: 5px 10px; border-radius: 8px;
-      display: flex; align-items: center; gap: 6px; font-size: 0.78rem;
-      transition: all 0.15s; position: relative;
-    }
-    #music-trash-btn:hover { background: var(--surface3); color: var(--text); }
-    #music-trash-badge { font-size: 0.78rem; font-weight: 600; color: var(--text-dim); }
-    #music-trash-count-label { font-size: 0.72rem; color: var(--text-faint); margin-right: auto; }
-    #music-trash-empty-btn {
-      padding: 5px 7px; border-radius: 7px; border: 1px solid var(--border);
-      background: none; color: var(--danger); cursor: pointer;
-      transition: background 0.15s; display: flex; align-items: center;
-    }
-    #music-trash-empty-btn:hover { background: rgba(239,68,68,0.12); }
-    #music-trash-close-btn {
-      background: none; border: none; color: var(--text-dim);
-      font-size: 1.2rem; cursor: pointer; line-height: 1;
-    }
-    #music-trash-close-btn:hover { color: var(--text); }
     #music-trash-list {
       display: flex; flex-direction: column; gap: 8px;
       padding: 16px; overflow-y: auto;
@@ -1677,11 +1677,6 @@
     #music-trash-list:empty::after {
       content: "Trash is empty"; color: var(--text-faint);
       font-size: 0.85rem; text-align: center; padding: 32px 0;
-    }
-    .music-trash-card {
-      display: flex; align-items: center; gap: 12px;
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 10px; padding: 10px 14px;
     }
     .music-trash-play {
       width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
@@ -1695,19 +1690,10 @@
       content: ""; display: block; width: 10px; height: 12px;
       border-left: 3px solid #fff; border-right: 3px solid #fff;
     }
-    .music-trash-card-info { flex: 1; min-width: 0; }
-    .music-trash-card-prompt { font-size: 0.8rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .music-trash-card-meta { font-size: 0.68rem; color: var(--text-faint); margin-top: 2px; }
-    .music-trash-card-actions { display: flex; gap: 6px; flex-shrink: 0; }
-    .music-trash-card-actions button {
-      padding: 5px 8px; border-radius: 6px; border: 1px solid var(--border);
-      background: none; cursor: pointer; transition: background 0.15s;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .music-trash-restore { color: var(--accent); }
-    .music-trash-restore:hover { background: var(--accent-glow); }
-    .music-trash-del { color: var(--danger); }
-    .music-trash-del:hover { background: rgba(239,68,68,0.12); }
+    .studio-trash-restore { color: var(--accent); }
+    .studio-trash-restore:hover { background: var(--accent-glow); }
+    .studio-trash-del { color: var(--danger); }
+    .studio-trash-del:hover { background: rgba(239,68,68,0.12); }
 
     /* Music fav panel */
     #music-fav-content {
@@ -1862,34 +1848,7 @@
     .video-gen-placeholder .stop-btn:hover { background: var(--surface2); }
     #video-fav-content { flex: 1; overflow-y: auto; padding: 8px; }
     #video-trash-list { flex: 1; overflow-y: auto; padding: 8px; }
-    .video-trash-card {
-      display: flex; align-items: center; gap: 8px; padding: 8px;
-      border-radius: 8px; border: 1px solid var(--border); margin-bottom: 6px;
-    }
-    .video-trash-card-info { flex: 1; min-width: 0; }
-    .video-trash-card-prompt {
-      font-size: 0.82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .video-trash-card-meta { font-size: 0.7rem; color: var(--text-dim); }
-    .video-trash-card-actions { display: flex; gap: 4px; }
-    .video-trash-card-actions button {
-      background: none; border: none; color: var(--text-dim); cursor: pointer;
-      padding: 4px; border-radius: 4px;
-    }
-    .video-trash-card-actions button:hover { color: var(--text); background: var(--surface2); }
-    #video-studio-header #video-trash-btn {
-      position: relative; background: none; border: none; color: var(--text-dim);
-      cursor: pointer; padding: 4px; display: flex; align-items: center; gap: 4px;
-      font-size: 0.78rem; border-radius: 6px;
-    }
-    #video-studio-header #video-trash-btn:hover { color: var(--text); }
-    #video-trash-badge {
-      position: absolute; top: -2px; right: -6px; background: var(--accent);
-      color: #fff; font-size: 0.6rem; border-radius: 99px; min-width: 14px;
-      height: 14px; display: flex; align-items: center; justify-content: center;
-      padding: 0 3px; font-weight: 700;
-    }
-    #video-trash-badge:empty { display: none; }
+    .studio-trash-badge:empty { display: none; }
 
 /* ══════════════════════════════════════════════════════════════
    8. CHAT AREA

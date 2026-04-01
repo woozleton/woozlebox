@@ -10,16 +10,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && ln -sf /usr/bin/python3.12 /usr/bin/python \
     && rm -rf /var/lib/apt/lists/*
 
-# Upgrade pip
-RUN python3 -m pip install --no-cache-dir --upgrade pip setuptools wheel --break-system-packages
+# Create venv to avoid system pip issues on Ubuntu 24.04
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
 # Install PyTorch 2.7 with CUDA 12.8
-RUN pip install --no-cache-dir --break-system-packages \
+RUN pip install --no-cache-dir \
     torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
 
 # Install Python deps
 COPY requirements.txt .
-RUN pip install --no-cache-dir --break-system-packages -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY main.py .
 
