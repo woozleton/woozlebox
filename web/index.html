@@ -850,6 +850,9 @@
     html.music-preload #chat-area { display: none; }
     html.music-preload #music-studio { display: flex; }
     html.music-preload #conv-header { display: none !important; }
+    html.video-preload #chat-area { display: none; }
+    html.video-preload #video-studio { display: flex; }
+    html.video-preload #conv-header { display: none !important; }
     #image-studio-header {
       display: flex; align-items: center; gap: 12px;
       padding: 16px 24px 12px; border-bottom: 1px solid var(--border);
@@ -1761,73 +1764,92 @@
 
     /* ══ VIDEO STUDIO ══ */
     #video-studio {
-      display: none; flex-direction: column; height: 100%; overflow: hidden;
+      display: none; flex: 1; flex-direction: column; height: 100%; overflow: hidden;
+      background: var(--bg);
     }
     #video-studio.active { display: flex; }
     html.video-preload #video-studio { display: flex; }
     #video-studio-header {
-      display: flex; align-items: center; gap: 8px; padding: 12px 16px;
-      border-bottom: 1px solid var(--border); flex-shrink: 0;
+      display: flex; align-items: center; gap: 12px;
+      padding: 16px 24px 12px; border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
     }
-    #video-studio-header h2 { font-size: 1rem; font-weight: 600; margin: 0; white-space: nowrap; }
+    #video-studio-header h2 {
+      font-size: 1.1rem; font-weight: 600; color: var(--text); margin: 0;
+    }
     #video-studio-header .studio-subtitle {
-      font-size: 0.72rem; color: var(--text-dim); background: var(--surface2);
-      padding: 2px 8px; border-radius: 20px; white-space: nowrap;
+      font-size: 0.78rem; color: var(--text-dim); margin-left: auto;
     }
-    #video-studio-header button {
-      background: none; border: none; color: var(--text-dim); cursor: pointer;
-      padding: 4px; display: flex; align-items: center; gap: 4px; font-size: 0.78rem; border-radius: 6px;
-    }
-    #video-studio-header button:hover { color: var(--text); background: var(--surface2); }
-    #video-studio-header #video-trash-btn { margin-left: auto; position: relative; }
-    #video-studio-header #video-trash-badge {
-      position: absolute; top: -2px; right: -6px; background: var(--accent);
-      color: #fff; font-size: 0.6rem; border-radius: 99px; min-width: 14px;
-      height: 14px; display: flex; align-items: center; justify-content: center;
-      padding: 0 3px; font-weight: 700;
-    }
-    #video-studio-header #video-trash-badge:empty { display: none; }
     #video-body {
-      display: flex; flex: 1; overflow: hidden; position: relative;
+      display: flex; flex-direction: row; flex: 1; min-height: 0; overflow: hidden;
     }
     #video-main {
-      flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0;
+      flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden;
     }
     #video-canvas {
-      flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column-reverse; gap: 16px;
+      flex: 1; overflow-y: auto; padding: 20px;
+      display: flex; flex-direction: column; gap: 12px;
     }
+    #video-canvas::-webkit-scrollbar { width: 6px; }
+    #video-canvas::-webkit-scrollbar-track { background: transparent; }
+    #video-canvas::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
     #video-canvas-empty {
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      flex: 1; color: var(--text-dim); text-align: center; gap: 12px; padding: 40px; opacity: 0.6;
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 10px; color: var(--text-faint);
+      text-align: center; padding: 40px;
     }
-    #video-canvas-empty p { max-width: 320px; font-size: 0.85rem; line-height: 1.5; }
+    #video-canvas-empty svg { opacity: 0.3; }
+    #video-canvas-empty p { margin: 0; font-size: 0.85rem; max-width: 400px; }
     #video-controls {
-      border-top: 1px solid var(--border); padding: 0 16px 16px;
+      flex-shrink: 0;
+      background: transparent; padding: 8px 80px 56px;
+      display: flex; flex-direction: column; gap: 0;
     }
     #video-settings-crumb {
-      display: flex; align-items: center; padding: 8px 0 4px; cursor: pointer;
+      display: flex; align-items: center; gap: 5px;
+      font-size: 0.68rem; font-weight: 500; letter-spacing: 0.05em;
+      text-transform: uppercase; color: var(--text-faint);
+      white-space: nowrap; padding: 6px 12px;
+      border-radius: 10px;
+      transition: background 0.2s, color 0.2s;
     }
-    #video-settings-crumb.open #video-settings-panel { display: block; }
-    #video-settings-crumb.open .chevron-icon { transform: rotate(180deg); }
+    #video-settings-crumb.open {
+      background: rgba(255,255,255,0.06); color: var(--text-dim);
+      border: 1px solid rgba(255,255,255,0.06); border-bottom: none;
+      border-radius: 10px 10px 0 0; margin-bottom: 0;
+    }
     #video-settings-trigger {
-      display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-dim);
-      cursor: pointer; padding: 2px 0;
+      display: inline-flex; align-items: center; gap: 5px;
+      cursor: pointer; transition: color 0.15s;
     }
-    #video-settings-trigger:hover { color: var(--text); }
-    #video-settings-summary { opacity: 0.7; }
+    #video-settings-trigger:hover { color: var(--text-dim); }
+    #video-settings-trigger .chevron-icon { transition: transform 0.25s ease; }
+    #video-settings-crumb.open .chevron-icon { transform: rotate(180deg); }
     #video-settings-panel {
-      display: none; padding: 12px 0 4px; border-top: 1px solid var(--border); margin-top: 8px;
+      max-height: 0; overflow: hidden; opacity: 0;
+      transition: max-height 0.3s cubic-bezier(0.4,0,0.2,1), opacity 0.2s ease, padding 0.2s ease, margin 0.2s ease;
+      padding: 0; margin: 0;
+      background: rgba(255,255,255,0.06); backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.06); border-top: none;
+      border-radius: 0 0 12px 12px;
     }
+    #video-settings-panel.open {
+      max-height: min(700px, 70vh); opacity: 1; padding: 14px 16px 16px;
+      margin: 0 0 4px; overflow-y: auto;
+    }
+    #video-settings-panel::-webkit-scrollbar { width: 4px; }
+    #video-settings-panel::-webkit-scrollbar-track { background: transparent; }
+    #video-settings-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
     .video-settings-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px 16px;
     }
     .video-image-upload {
       border: 2px dashed var(--border); border-radius: 8px; padding: 16px;
-      text-align: center; cursor: pointer; color: var(--text-dim); font-size: 0.8rem;
+      text-align: center; cursor: pointer; color: var(--text-faint); font-size: 0.8rem;
       transition: border-color 0.15s, background 0.15s; margin-bottom: 12px; position: relative;
     }
     .video-image-upload:hover, .video-image-upload.dragover {
-      border-color: var(--accent); background: rgba(var(--accent-rgb, 99,102,241), 0.05);
+      border-color: var(--accent); background: var(--accent-glow);
     }
     .video-image-upload img {
       max-width: 200px; max-height: 120px; border-radius: 6px; margin-top: 8px;
@@ -1838,24 +1860,38 @@
       cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px;
     }
     #video-prompt-box {
-      display: flex; align-items: flex-end; gap: 4px; padding: 8px 0 0;
-      border-top: 1px solid var(--border); margin-top: 4px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.35);
+      display: flex; flex-direction: row; align-items: center;
+      gap: 6px; padding: 0 8px 0 14px; transition: box-shadow 0.2s;
+      position: relative; flex-shrink: 0;
     }
-    #video-prompt {
-      flex: 1; resize: none; border: none; background: transparent; color: var(--text);
-      font-size: 0.88rem; line-height: 1.5; padding: 6px 0; outline: none;
-      font-family: inherit; min-height: 24px; max-height: 120px;
+    #video-prompt-box:focus-within {
+      box-shadow: 0 4px 24px rgba(0,0,0,0.45), 0 0 0 1px var(--accent);
+    }
+    #video-prompt-box textarea {
+      flex: 1; background: none; border: none; color: var(--text);
+      font-size: 0.9rem; font-family: inherit; outline: none;
+      resize: none; padding: 12px 0; min-height: 44px; max-height: 140px; overflow: hidden;
+      line-height: 1.4;
     }
     #video-prompt-box button {
-      background: none; border: none; color: var(--text-dim); cursor: pointer;
-      padding: 6px; border-radius: 6px; display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
+      width: 32px; height: 32px; padding: 0; border: none; border-radius: 8px;
+      background: none; color: var(--text-faint); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: color 0.15s, background 0.15s;
     }
-    #video-prompt-box button:hover { color: var(--text); background: var(--surface2); }
+    #video-prompt-box button:hover { color: var(--accent); background: var(--accent-glow); }
+    #video-generate-btn {
+      background: var(--accent) !important; color: #fff !important; border-radius: 50% !important;
+    }
+    #video-generate-btn:hover { opacity: 0.85; }
     .video-result {
-      background: var(--surface); border-radius: 12px; overflow: hidden;
-      border: 1px solid var(--border);
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; overflow: hidden;
+      animation: fadeIn 0.25s ease; transition: border-color 0.15s;
     }
+    .video-result:hover { border-color: var(--accent); }
     .video-result-cover {
       position: relative; width: 100%; aspect-ratio: 16/9; background: #000;
       display: flex; align-items: center; justify-content: center;
@@ -1886,7 +1922,7 @@
       display: flex; gap: 4px; justify-content: flex-end;
     }
     .video-gen-placeholder {
-      background: var(--surface); border-radius: 12px; padding: 24px;
+      background: var(--surface); border-radius: 14px; padding: 24px;
       border: 1px solid var(--border); text-align: center;
     }
     .video-gen-placeholder .progress-ring { margin: 0 auto 12px; }
@@ -1951,6 +1987,29 @@
       padding: 4px; border-radius: 4px;
     }
     .video-trash-card-actions button:hover { color: var(--text); background: var(--surface2); }
+    /* Video header buttons */
+    #video-studio-header #video-trash-btn {
+      position: relative; background: none; border: none; color: var(--text-dim);
+      cursor: pointer; padding: 4px; display: flex; align-items: center; gap: 4px;
+      font-size: 0.78rem; border-radius: 6px;
+    }
+    #video-studio-header #video-trash-btn:hover { color: var(--text); }
+    #video-trash-badge {
+      position: absolute; top: -2px; right: -6px; background: var(--accent);
+      color: #fff; font-size: 0.6rem; border-radius: 99px; min-width: 14px;
+      height: 14px; display: flex; align-items: center; justify-content: center;
+      padding: 0 3px; font-weight: 700;
+    }
+    #video-trash-badge:empty { display: none; }
+    #video-fav-toggle {
+      background: none; border: 1px solid var(--border); color: var(--text-dim);
+      cursor: pointer; padding: 5px 10px; border-radius: 8px;
+      display: flex; align-items: center; gap: 6px; font-size: 0.78rem;
+      transition: all 0.15s;
+    }
+    #video-fav-toggle:hover { background: var(--surface3); color: var(--text); }
+    #video-fav-toggle.active { background: rgba(244,114,182,0.12); color: #f472b6; border-color: #f472b6; }
+    #video-fav-toggle svg { width: 14px; height: 14px; }
 
     /* ── Unified image action button -used on cards, lightbox, and favorites ── */
     .img-action-btn {
@@ -2774,6 +2833,11 @@
       background: var(--accent-glow); color: var(--accent);
     }
     #music-sidebar-btn.active svg { opacity: 1; }
+    #video-sidebar-btn { font-weight: 600; color: var(--text); }
+    #video-sidebar-btn.active {
+      background: var(--accent-glow); color: var(--accent);
+    }
+    #video-sidebar-btn.active svg { opacity: 1; }
 
     #sidebar-bottom {
       flex-shrink: 0;
@@ -10632,10 +10696,8 @@ document.getElementById("video-settings-trigger").addEventListener("click", func
 });
 
 document.getElementById("video-advanced-toggle").addEventListener("click", function() {
-  const body = document.getElementById("video-advanced-body");
-  const open = body.style.display !== "block";
-  body.style.display = open ? "block" : "none";
-  this.querySelector(".chevron-icon").style.transform = open ? "rotate(90deg)" : "";
+  this.classList.toggle("open");
+  document.getElementById("video-advanced-body").classList.toggle("open");
 });
 
 // Slider value displays
@@ -11055,7 +11117,10 @@ async function refreshVideoFavoritesPanel() {
   const favs = await loadAllVideoFavorites();
   videoFavContent.innerHTML = "";
   if (!favs.length) {
-    videoFavContent.innerHTML = document.getElementById("video-fav-empty").outerHTML;
+    videoFavContent.innerHTML = `<div id="video-fav-empty">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.3"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      <p>Click the heart on any video to add it to your favorites.</p>
+    </div>`;
     return;
   }
   favs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
