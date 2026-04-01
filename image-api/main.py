@@ -129,12 +129,28 @@ def _load_pipeline(model_key: str):
         pipe.scheduler = EDMDPMSolverMultistepScheduler()
     elif cfg["loader"] == "sd3":
         from diffusers import StableDiffusion3Pipeline
-        pipe = StableDiffusion3Pipeline.from_pretrained(
-            cfg["hf_id"],
-            torch_dtype=torch.float16,
-            token=HF_TOKEN or None,
-            cache_dir=HF_CACHE,
-        )
+        try:
+            from diffusers.quantizers import PipelineQuantizationConfig
+            from diffusers import BitsAndBytesConfig
+            quant_config = PipelineQuantizationConfig(
+                quant_mapping={"transformer": BitsAndBytesConfig(load_in_8bit=True)}
+            )
+            pipe = StableDiffusion3Pipeline.from_pretrained(
+                cfg["hf_id"],
+                quantization_config=quant_config,
+                torch_dtype=torch.bfloat16,
+                token=HF_TOKEN or None,
+                cache_dir=HF_CACHE,
+            )
+            logger.info("SD 3.5 loaded with FP8 quantization")
+        except Exception as e:
+            logger.warning(f"FP8 quantization failed ({e}), loading in fp16")
+            pipe = StableDiffusion3Pipeline.from_pretrained(
+                cfg["hf_id"],
+                torch_dtype=torch.float16,
+                token=HF_TOKEN or None,
+                cache_dir=HF_CACHE,
+            )
     elif cfg["loader"] == "sdxl-turbo":
         from diffusers import AutoPipelineForText2Image
         pipe = AutoPipelineForText2Image.from_pretrained(
