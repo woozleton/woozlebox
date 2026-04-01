@@ -74,17 +74,21 @@ def _load_model():
     # VAE must be float32 for quality
     vae = AutoencoderKLWan.from_pretrained(MODEL_ID, subfolder="vae", torch_dtype=torch.float32)
 
-    # Try FP8 quantization to fit in 24GB with no offloading
+    # FP8 quantization on the transformer to fit in 24GB with no offloading
     try:
+        from diffusers.quantizers import PipelineQuantizationConfig
         from diffusers import BitsAndBytesConfig
-        quant_config = BitsAndBytesConfig(load_in_8bit=True)
+
+        quant_config = PipelineQuantizationConfig(
+            quant_mapping={"transformer": BitsAndBytesConfig(load_in_8bit=True)}
+        )
         _pipe = WanPipeline.from_pretrained(
             MODEL_ID,
             vae=vae,
             quantization_config=quant_config,
             torch_dtype=torch.bfloat16,
         )
-        logger.info("Loaded with FP8 quantization via BitsAndBytesConfig")
+        logger.info("Loaded with FP8 quantization via PipelineQuantizationConfig")
     except Exception as e:
         logger.warning(f"FP8 quantization failed ({e}), loading in bfloat16")
         _pipe = WanPipeline.from_pretrained(
