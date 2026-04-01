@@ -5110,6 +5110,9 @@ async function prepareModelsForView(view) {
   const abort = new AbortController();
   _prepareAbort = abort;
 
+  const svcName = view === "studio" ? "image" : view;
+  setVramAcquiring(svcName);
+
   try {
     if (view === "studio") {
       const _savedImgModel = localStorage.getItem("diab_image_model") || null;
@@ -5151,6 +5154,8 @@ async function prepareModelsForView(view) {
       console.warn("Model preparation failed:", e);
       _setModelLoading(view, false);
     }
+  } finally {
+    clearVramAcquiring();
   }
 }
 
@@ -11378,7 +11383,17 @@ modelSelect.addEventListener("change", () => { checkVisionSupport(modelSelect.va
 const vramStatusEl = document.getElementById("vram-status");
 let _vramStatusTimer = null;
 let _lastVramModels = new Map(); // name → {type, vram_mb}
-let _vramTransitions = new Map(); // name → {action: "loading"|"unloading", type, ts}
+let _vramTransitions = new Map(); // name → {action, type, ts}
+let _vramPendingAcquire = null; // service name currently being acquired
+
+function setVramAcquiring(service) {
+  _vramPendingAcquire = service;
+  pollVramStatus();
+}
+function clearVramAcquiring() {
+  _vramPendingAcquire = null;
+  pollVramStatus();
+}
 
 async function pollVramStatus() {
   if (!currentUser || currentUser.role !== "admin") return;
@@ -11390,33 +11405,32 @@ async function pollVramStatus() {
 
     // Detect transitions
     const now = Date.now();
-    // Models that disappeared → unloading
     for (const [name, info] of _lastVramModels) {
       if (!currentModels.has(name)) {
         _vramTransitions.set(name, { action: "unloading", type: info.type, ts: now });
       }
     }
-    // Models that appeared → clear any "loading" transition
     for (const [name] of currentModels) {
-      if (!_lastVramModels.has(name)) {
-        _vramTransitions.delete(name);
-      }
+      if (_vramTransitions.has(name)) _vramTransitions.delete(name);
     }
-    // Expire old transitions (>8s)
     for (const [name, t] of _vramTransitions) {
-      if (now - t.ts > 8000) _vramTransitions.delete(name);
+      if (now - t.ts > 10000) _vramTransitions.delete(name);
     }
     _lastVramModels = currentModels;
 
-    // Build display items: current models + transitions
+    // Build display
     const displayItems = [];
     for (const m of loaded) {
       const sizeStr = m.vram_mb > 0 ? `<span class="vram-size">${(m.vram_mb / 1024).toFixed(1)}G</span>` : "";
       displayItems.push(`<div class="vram-item"><span class="vram-dot ${m.type}"></span><span class="vram-name">${m.name}</span>${sizeStr}</div>`);
     }
     for (const [name, t] of _vramTransitions) {
-      const label = t.action === "loading" ? "Loading..." : "Unloading...";
-      displayItems.push(`<div class="vram-item"><span class="vram-dot ${t.action}"></span><span class="vram-name transitioning">${name} -${label}</span></div>`);
+      displayItems.push(`<div class="vram-item"><span class="vram-dot unloading"></span><span class="vram-name transitioning">${name} - Unloading...</span></div>`);
+    }
+    // Show "Loading..." for pending acquire if target not yet in loaded list
+    if (_vramPendingAcquire && !loaded.some(m => m.type === _vramPendingAcquire)) {
+      const label = _vramPendingAcquire === "chat" ? "LLM" : _vramPendingAcquire;
+      displayItems.push(`<div class="vram-item"><span class="vram-dot loading"></span><span class="vram-name transitioning">${label} - Loading...</span></div>`);
     }
 
     if (!displayItems.length) {
@@ -11434,7 +11448,7 @@ function startVramPolling() {
   if (!currentUser || currentUser.role !== "admin") return;
   vramStatusEl.style.display = "";
   pollVramStatus();
-  _vramStatusTimer = setInterval(pollVramStatus, 5000);
+  _vramStatusTimer = setInterval(pollVramStatus, 1500);
 }
 
 // ── iOS / Mobile fixes ──
