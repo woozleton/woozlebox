@@ -91,8 +91,7 @@ def _load_model():
 
 @app.on_event("startup")
 async def startup():
-    loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, _load_model)
+    logger.info("Music API started - model will load on first request or /models/load")
 
 
 class MusicGenerateRequest(BaseModel):

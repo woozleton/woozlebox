@@ -1681,6 +1681,10 @@ const API = window.location.hostname === "localhost" || window.location.hostname
   ? "http://localhost:8000"
   : `http://${window.location.hostname}:8000`;
 
+const GPU_API = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+  ? "http://localhost:8400"
+  : `http://${window.location.hostname}:8400`;
+
 // ── Auth state ──
 let currentUser = null;
 
@@ -3418,7 +3422,11 @@ modelSelect.addEventListener("change", async () => {
   if (activeConvId) updateContextBar(activeConvId);
   // Preload the new model into VRAM (non-blocking)
   if (selectedModel) {
-    apiFetch("/models/warmup", { method: "POST", body: JSON.stringify({ model: selectedModel }) }).catch(() => {});
+    fetch(GPU_API + "/acquire", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ service: "chat", model: selectedModel }),
+    }).catch(() => {});
   }
 });
 document.getElementById("songwrite-model-select").addEventListener("change", () => {
@@ -5036,9 +5044,10 @@ async function prepareModelsForView(view) {
   if (view === "chat") {
     _modelReady.chat = true;
     const _chatModel = selectedModel || localStorage.getItem("diab_model") || null;
-    apiFetch("/models/warmup", {
+    fetch(GPU_API + "/acquire", {
       method: "POST",
-      body: JSON.stringify(_chatModel ? { model: _chatModel } : {}),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ service: "chat", model: _chatModel }),
     }).catch(() => {});
     return;
   }
@@ -5048,23 +5057,32 @@ async function prepareModelsForView(view) {
 
   // Check if target model already loaded
   try {
-    const psRes = await apiFetch("/models/ps");
+    const psRes = await fetch(GPU_API + "/status");
     const psData = await psRes.json();
     const loaded = psData.loaded || [];
     if (view === "studio" && loaded.some(m => m.type === "image")) {
       _modelReady.studio = true;
       _setModelLoading("studio", false);
-      // Unload music model in background if loaded
-      if (loaded.some(m => m.type === "music")) {
-        apiFetch("/models/prepare-studio", { method: "POST", body: JSON.stringify({}) }).catch(() => {});
+      // Evict other models in background if loaded
+      if (loaded.some(m => m.type === "music") || loaded.some(m => m.type === "video")) {
+        const _savedImgModel = localStorage.getItem("diab_image_model") || null;
+        fetch(GPU_API + "/acquire", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ service: "image", model: _savedImgModel }),
+        }).catch(() => {});
       }
       return;
     }
     if (view === "music" && loaded.some(m => m.type === "music")) {
       _modelReady.music = true;
       _setModelLoading("music", false);
-      if (loaded.some(m => m.type === "image")) {
-        apiFetch("/models/prepare-music-studio", { method: "POST" }).catch(() => {});
+      if (loaded.some(m => m.type === "image") || loaded.some(m => m.type === "video")) {
+        fetch(GPU_API + "/acquire", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ service: "music" }),
+        }).catch(() => {});
       }
       return;
     }
@@ -5072,7 +5090,11 @@ async function prepareModelsForView(view) {
       _modelReady.video = true;
       _setModelLoading("video", false);
       if (loaded.some(m => m.type === "image") || loaded.some(m => m.type === "music")) {
-        apiFetch("/models/prepare-video-studio", { method: "POST" }).catch(() => {});
+        fetch(GPU_API + "/acquire", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ service: "video" }),
+        }).catch(() => {});
       }
       return;
     }
@@ -5091,9 +5113,10 @@ async function prepareModelsForView(view) {
   try {
     if (view === "studio") {
       const _savedImgModel = localStorage.getItem("diab_image_model") || null;
-      await apiFetch("/models/prepare-studio", {
+      await fetch(GPU_API + "/acquire", {
         method: "POST",
-        body: JSON.stringify(_savedImgModel ? { model: _savedImgModel } : {}),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ service: "image", model: _savedImgModel }),
         signal: abort.signal,
       });
       if (!abort.signal.aborted) {
@@ -5101,9 +5124,10 @@ async function prepareModelsForView(view) {
         _setModelLoading("studio", false);
       }
     } else if (view === "music") {
-      await apiFetch("/models/prepare-music-studio", {
+      await fetch(GPU_API + "/acquire", {
         method: "POST",
-        body: JSON.stringify({}),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ service: "music" }),
         signal: abort.signal,
       });
       if (!abort.signal.aborted) {
@@ -5111,9 +5135,10 @@ async function prepareModelsForView(view) {
         _setModelLoading("music", false);
       }
     } else if (view === "video") {
-      await apiFetch("/models/prepare-video-studio", {
+      await fetch(GPU_API + "/acquire", {
         method: "POST",
-        body: JSON.stringify({}),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ service: "video" }),
         signal: abort.signal,
       });
       if (!abort.signal.aborted) {
@@ -11358,7 +11383,7 @@ let _vramTransitions = new Map(); // name → {action: "loading"|"unloading", ty
 async function pollVramStatus() {
   if (!currentUser || currentUser.role !== "admin") return;
   try {
-    const res = await apiFetch("/models/ps");
+    const res = await fetch(GPU_API + "/status");
     const data = await res.json();
     const loaded = data.loaded || [];
     const currentModels = new Map(loaded.map(m => [m.name, m]));

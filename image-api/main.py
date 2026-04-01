@@ -161,11 +161,7 @@ def _load_pipeline(model_key: str):
 
 @app.on_event("startup")
 async def startup():
-    """Load default model at startup."""
-    global _pipeline, _current_model
-    loop = asyncio.get_event_loop()
-    _pipeline = await loop.run_in_executor(None, _load_pipeline, DEFAULT_MODEL)
-    _current_model = DEFAULT_MODEL
+    logger.info("Image API started - model will load on first request or /models/load")
 
 
 class GenerateRequest(BaseModel):
@@ -345,8 +341,12 @@ async def generate(req: GenerateRequest):
         _pipeline = await loop.run_in_executor(None, _load_pipeline, requested_model)
         _current_model = requested_model
 
+    # Auto-load default model if nothing is loaded
     if _pipeline is None:
-        raise HTTPException(status_code=503, detail="Model not loaded yet, please retry shortly")
+        logger.info(f"No model loaded, auto-loading {DEFAULT_MODEL}")
+        loop = asyncio.get_event_loop()
+        _pipeline = await loop.run_in_executor(None, _load_pipeline, DEFAULT_MODEL)
+        _current_model = DEFAULT_MODEL
 
     cfg = MODELS[_current_model]
     dims = cfg["dimensions"]
