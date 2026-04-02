@@ -33,10 +33,34 @@ HF_CACHE = os.environ.get("HF_HOME", "/root/.cache/huggingface")
 # Ollama connection -used to evict loaded models from VRAM before inference
 OLLAMA_URL = os.environ.get("OLLAMA_BASE_URL", "http://ollama:11434")
 UTILITY_MODEL = os.environ.get("UTILITY_MODEL", "qwen3:0.6b")
+GPU_MANAGER_URL = os.environ.get("GPU_MANAGER_URL", "http://gpu-manager:8400")
 
 
 def _is_utility_model(name: str) -> bool:
     return name.split(":")[0].lower() == UTILITY_MODEL.split(":")[0].lower()
+
+
+async def _report_vram(action: str, model: str, vram_mb: int = 0, detail: str = ""):
+    """Fire-and-forget VRAM activity report to gpu-manager."""
+    try:
+        async with httpx.AsyncClient(timeout=2.0) as c:
+            await c.post(f"{GPU_MANAGER_URL}/vram/log", json={
+                "service": "image-api", "action": action, "model": model,
+                "vram_mb": vram_mb, "detail": detail,
+            })
+    except Exception:
+        pass
+
+
+def _report_vram_sync(action: str, model: str, vram_mb: int = 0, detail: str = ""):
+    """Synchronous VRAM report for use in executor threads."""
+    try:
+        httpx.post(f"{GPU_MANAGER_URL}/vram/log", json={
+            "service": "image-api", "action": action, "model": model,
+            "vram_mb": vram_mb, "detail": detail,
+        }, timeout=2.0)
+    except Exception:
+        pass
 
 MODELS = {
     "playground-v2.5": {
@@ -172,6 +196,7 @@ def _load_pipeline(model_key: str):
     pipe.to("cuda")
     vram = torch.cuda.memory_allocated() // 1024 // 1024
     logger.info(f"{cfg['name']} ready in {time.time()-t0:.1f}s -VRAM: {vram}MB")
+    _report_vram_sync("load", cfg['name'], vram_mb=vram)
     return pipe
 
 
@@ -337,6 +362,7 @@ async def unload_model():
     torch.cuda.empty_cache()
     vram = torch.cuda.memory_allocated() // 1024 // 1024
     logger.info(f"Unloaded {prev} -VRAM after: {vram}MB")
+    await _report_vram("unload", prev, vram_mb=vram)
     return {"ok": True, "was_loaded": True, "freed_model": prev, "vram_mb": vram}
 
 
@@ -388,6 +414,7 @@ async def generate(req: GenerateRequest):
                     continue
                 logger.info(f"Evicting {model_name} from VRAM")
                 await client.post(f"{OLLAMA_URL}/api/generate", json={"model": model_name, "keep_alive": 0})
+                await _report_vram("evict", model_name, detail="pre-generate")
                 evicted.append(model_name)
         if evicted:
             for _ in range(30):
@@ -483,6 +510,7 @@ async def upscale(req: UpscaleRequest):
                     continue
                 logger.info(f"Evicting {model_name} from VRAM for upscale")
                 await client.post(f"{OLLAMA_URL}/api/generate", json={"model": model_name, "keep_alive": 0})
+                await _report_vram("evict", model_name, detail="pre-upscale")
                 evicted.append(model_name)
             if evicted:
                 for _ in range(15):
@@ -566,6 +594,7 @@ async def inpaint(req: InpaintRequest):
                     continue
                 logger.info(f"Evicting {model_name} from VRAM for inpaint")
                 await client.post(f"{OLLAMA_URL}/api/generate", json={"model": model_name, "keep_alive": 0})
+                await _report_vram("evict", model_name, detail="pre-inpaint")
                 evicted.append(model_name)
             if evicted:
                 for _ in range(30):

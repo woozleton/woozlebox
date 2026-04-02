@@ -54,9 +54,22 @@ VIDEO_GEN_URL     = os.environ.get("VIDEO_GEN_URL", "http://video-api:8300")
 _image_gen_active = False  # Guard flag -blocks Ollama calls while image gen is using the GPU
 _music_gen_active = False  # Guard flag -blocks Ollama calls while music gen is using the GPU
 _video_gen_active = False  # Guard flag -blocks Ollama calls while video gen is using the GPU
+GPU_MANAGER_URL   = os.environ.get("GPU_MANAGER_URL", "http://gpu-manager:8400")
 DEFAULT_TOP_K     = 30
 NOT_FOUND_MSG     = "I couldn't find that in your vault."
 SUPPORTED_UPLOAD_EXTENSIONS = {".md", ".txt", ".pdf"}
+
+
+async def _report_vram(action: str, model: str, vram_mb: int = 0, detail: str = ""):
+    """Fire-and-forget VRAM activity report to gpu-manager."""
+    try:
+        async with httpx.AsyncClient(timeout=2.0) as c:
+            await c.post(f"{GPU_MANAGER_URL}/vram/log", json={
+                "service": "rag-api", "action": action, "model": model,
+                "vram_mb": vram_mb, "detail": detail,
+            })
+    except Exception:
+        pass
 
 KOKORO_VOICES = [
     # American English -Female
@@ -396,9 +409,12 @@ def _get_utility_model(user: dict = None) -> str:
     return UTILITY_MODEL
 
 
-async def _utility_llm(system: str, prompt: str, temperature: float = 0.8, num_predict: int = 80, user: dict = None) -> str:
-    """Quick LLM call using the small utility model. Does NOT evict other models."""
-    model = _get_utility_model(user)
+async def _utility_llm(system: str, prompt: str, temperature: float = 0.8, num_predict: int = 80, user: dict = None, force_default: bool = False, caller: str = "utility") -> str:
+    """Quick LLM call using the small utility model. Does NOT evict other models.
+    When force_default=True, always uses the server default utility model (small)
+    to avoid loading a large user-configured model into VRAM during generation."""
+    model = UTILITY_MODEL if force_default else _get_utility_model(user)
+    await _report_vram("call", model, detail=caller)
     async with httpx.AsyncClient(timeout=30.0) as client:
         resp = await client.post(
             f"{OLLAMA_BASE_URL}/api/generate",
@@ -438,6 +454,7 @@ async def chat_stream(request: ChatRequest, user_id: str) -> AsyncGenerator[str,
     timings = {}
 
     yield sse({"type": "status", "step": "embed", "text": "Understanding your question…"})
+    await _report_vram("call", EMBED_MODEL, detail="chat embedding")
     try:
         loop = asyncio.get_event_loop()
         query_embedding = await loop.run_in_executor(
@@ -516,6 +533,7 @@ async def chat_stream(request: ChatRequest, user_id: str) -> AsyncGenerator[str,
                         loc_match = re.search(r'Location:\s*(.+)', request.user_context)
                         if loc_match:
                             loc_ctx = f"\nUser location: {loc_match.group(1).strip()}"
+                    await _report_vram("call", model, detail="chat query rewrite")
                     rewrite_resp = httpx.post(
                         f"{OLLAMA_BASE_URL}/api/chat",
                         json={
@@ -698,6 +716,7 @@ Answer concisely."""
                     history_text = "\n\n".join(
                         f"{m['role'].upper()}: {m['content']}" for m in conv_check["messages"]
                     )
+                    await _report_vram("call", model, detail="chat auto-compact")
                     compact_resp = httpx.post(
                         f"{OLLAMA_BASE_URL}/api/chat",
                         json={
@@ -745,6 +764,7 @@ Answer concisely."""
         pass
 
     # Stream LLM response
+    await _report_vram("call", model, detail="chat streaming response")
     ctx_kb = round(len(context_text) / 1024, 1)
     llm_status = f"Thinking through {ctx_kb} KB of context…" if ctx_kb > 0 else "Thinking…"
     yield sse({"type": "status", "step": "llm", "text": llm_status})
@@ -1450,7 +1470,7 @@ async def image_inspire(user: dict = Depends(get_current_user)):
         "Output ONLY the prompt text, nothing else -no quotes, no explanation, no numbering."
     )
     try:
-        text = await _utility_llm(system, "Give me a fresh, creative image generation prompt.", temperature=1.2, num_predict=150, user=user)
+        text = await _utility_llm(system, "Give me a fresh, creative image generation prompt.", temperature=1.2, num_predict=150, user=user, force_default=True, caller="image inspire")
         return {"prompt": text.strip('"').strip("'")}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Could not generate idea: {e}")
@@ -1609,7 +1629,7 @@ async def image_name_session(req: SessionNameRequest, user: dict = Depends(get_c
             "Generate a short, descriptive title (3-6 words) for an image generation session based on the prompt. "
             "Capture the main subject and mood. "
             "Output ONLY the title text, no quotes, no explanation.",
-            req.prompt[:200], temperature=0.5, num_predict=15, user=user,
+            req.prompt[:200], temperature=0.5, num_predict=15, user=user, force_default=True, caller="image name-session",
         )
         name = name.strip('"').strip("'").split("\n")[0].strip().title()[:60]
         return {"name": name}
@@ -1630,7 +1650,7 @@ async def music_inspire(user: dict = Depends(get_current_user)):
         "Output ONLY the prompt text, nothing else -no quotes, no explanation, no numbering. Keep it to 1-2 sentences."
     )
     try:
-        text = await _utility_llm(system, "Give me a fresh, creative music generation prompt.", temperature=1.2, num_predict=100, user=user)
+        text = await _utility_llm(system, "Give me a fresh, creative music generation prompt.", temperature=1.2, num_predict=100, user=user, force_default=True, caller="music inspire")
         return {"prompt": text.strip('"').strip("'")}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Could not generate idea: {e}")
@@ -1652,7 +1672,7 @@ async def name_song(req: SongNameRequest, user: dict = Depends(get_current_user)
             "You are a creative music producer. Given a song's style description and optional lyrics, "
             "generate exactly ONE short, catchy song title (1-5 words). "
             "Be creative and evocative. Output ONLY the title -no quotes, no explanation, no punctuation except what's part of the title.",
-            context, temperature=1.0, num_predict=20, user=user,
+            context, temperature=1.0, num_predict=20, user=user, force_default=True, caller="music name-song",
         )
         title = title.strip('"').strip("'").split("\n")[0].strip().title()
         return {"title": title}
@@ -1696,6 +1716,8 @@ async def music_cover_art(req: CoverArtRequest, user: dict = Depends(get_current
             temperature=0.9,
             num_predict=80,
             user=user,
+            force_default=True,
+            caller="music cover-art prompt",
         )
         image_prompt = raw.strip('"').strip("'").strip().split("\n")[0].strip() + ", no text, no words, no letters"
     except Exception as e:
@@ -1775,12 +1797,14 @@ LYRICS:
     except Exception:
         pass
 
+    songwriting_model = req.model or LLM_MODEL
+    await _report_vram("call", songwriting_model, detail="music songwriting")
     try:
         async with httpx.AsyncClient(timeout=180.0) as client:
             resp = await client.post(
                 f"{OLLAMA_BASE_URL}/api/chat",
                 json={
-                    "model": req.model or LLM_MODEL,
+                    "model": songwriting_model,
                     "messages": [
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": user_msg},
@@ -1962,7 +1986,7 @@ async def video_inspire(user: dict = Depends(get_current_user)):
         "Output ONLY the prompt text, nothing else -no quotes, no explanation, no numbering. Keep it to 1-2 sentences."
     )
     try:
-        text = await _utility_llm(system, "Give me a fresh, creative video generation prompt.", temperature=1.2, num_predict=100, user=user)
+        text = await _utility_llm(system, "Give me a fresh, creative video generation prompt.", temperature=1.2, num_predict=100, user=user, force_default=True, caller="video inspire")
         return {"prompt": text.strip('"').strip("'")}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Could not generate idea: {e}")
@@ -1980,7 +2004,7 @@ async def video_name_session(req: VideoNameRequest, user: dict = Depends(get_cur
             "Generate a short, descriptive title (3-6 words) for a video generation session based on the prompt. "
             "Capture the main scene and mood. "
             "Output ONLY the title text, no quotes, no explanation.",
-            req.prompt[:200], temperature=0.5, num_predict=15, user=user,
+            req.prompt[:200], temperature=0.5, num_predict=15, user=user, force_default=True, caller="video name-session",
         )
         name = name.strip('"').strip("'").split("\n")[0].strip().title()[:60]
         return {"name": name}
@@ -2019,6 +2043,8 @@ async def video_cover_art(req: VideoCoverArtRequest, user: dict = Depends(get_cu
             temperature=0.9,
             num_predict=80,
             user=user,
+            force_default=True,
+            caller="video thumbnail prompt",
         )
         image_prompt = raw.strip('"').strip("'").strip().split("\n")[0].strip()
     except Exception as e:

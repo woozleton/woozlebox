@@ -49,6 +49,28 @@ app.add_middleware(
 
 _lock = asyncio.Lock()
 
+# -- Shared HTTP client (created at startup, reuses TCP connections) --
+_http: httpx.AsyncClient = None
+
+
+@app.on_event("startup")
+async def startup():
+    global _http
+    _http = httpx.AsyncClient(
+        timeout=30.0,
+        limits=httpx.Limits(max_connections=20, max_keepalive_connections=10),
+    )
+    logger.info("gpu-manager started")
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    global _http
+    if _http:
+        await _http.aclose()
+        _http = None
+
+
 # -- SSE broadcast --
 _sse_clients: list[asyncio.Queue] = []
 
@@ -70,25 +92,45 @@ async def _broadcast_status():
 
 
 async def _get_loaded_models() -> list:
-    """Get all currently loaded models across all services."""
-    loaded = []
-    try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.get(f"{OLLAMA_BASE_URL}/api/ps")
-            for m in resp.json().get("models", []):
-                name = m.get("name", "")
-                size = m.get("size_vram", m.get("size", 0))
-                loaded.append({"name": name, "type": "llm", "vram_mb": round(size / 1024 / 1024)})
-    except Exception:
-        pass
-    for svc, url in SERVICES.items():
+    """Get all currently loaded models across all services (parallel)."""
+    async def _get_ollama():
+        try:
+            resp = await _http.get(f"{OLLAMA_BASE_URL}/api/ps", timeout=5.0)
+            return [
+                {"name": m.get("name", ""), "type": "llm",
+                 "vram_mb": round(m.get("size_vram", m.get("size", 0)) / 1024 / 1024)}
+                for m in resp.json().get("models", []) if m.get("name")
+            ]
+        except Exception:
+            return []
+
+    async def _get_svc(svc, url):
         health = await _get_service_health(url)
         if health.get("model_loaded") and health.get("current_model"):
-            loaded.append({
-                "name": health["current_model"],
-                "type": svc,
-                "vram_mb": health.get("vram_mb", 0),
-            })
+            return {"name": health["current_model"], "type": svc, "vram_mb": health.get("vram_mb", 0)}
+        return None
+
+    results = await asyncio.gather(
+        _get_ollama(),
+        *[_get_svc(svc, url) for svc, url in SERVICES.items()],
+    )
+
+    loaded = results[0]  # Ollama models list
+    for r in results[1:]:
+        if r:
+            loaded.append(r)
+    return loaded
+
+
+async def _log_vram_state(label: str):
+    """Log a detailed VRAM snapshot: every loaded model with its type and VRAM usage."""
+    loaded = await _get_loaded_models()
+    total_vram = sum(m.get("vram_mb", 0) for m in loaded)
+    if loaded:
+        parts = [f"{m['name']}({m['type']})={m['vram_mb']}MB" for m in loaded]
+        logger.info(f"[VRAM] {label}: {', '.join(parts)} | total={total_vram}MB")
+    else:
+        logger.info(f"[VRAM] {label}: (no models loaded)")
     return loaded
 
 
@@ -99,9 +141,8 @@ def _is_utility_model(name: str) -> bool:
 async def _get_service_health(url: str) -> dict:
     """Get health status from a service. Returns empty dict on failure."""
     try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.get(f"{url}/health")
-            return resp.json()
+        resp = await _http.get(f"{url}/health", timeout=5.0)
+        return resp.json()
     except Exception:
         return {}
 
@@ -114,13 +155,18 @@ async def _unload_service(service: str) -> bool:
     try:
         health = await _get_service_health(url)
         if not health.get("model_loaded"):
+            logger.info(f"[VRAM] {service}: already unloaded, skipping")
             return False
-        logger.info(f"Unloading {service} model")
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            await client.post(f"{url}/models/unload")
+        model_name = health.get("current_model", "unknown")
+        vram_before = health.get("vram_mb", 0)
+        logger.info(f"[VRAM] Unloading {service} model={model_name} vram={vram_before}MB")
+        resp = await _http.post(f"{url}/models/unload")
+        result = resp.json()
+        vram_after = result.get("vram_mb", 0)
+        logger.info(f"[VRAM] Unloaded {service} model={model_name}: freed ~{vram_before - vram_after}MB, remaining={vram_after}MB")
         return True
     except Exception as e:
-        logger.warning(f"Failed to unload {service}: {e}")
+        logger.warning(f"[VRAM] Failed to unload {service}: {e}")
         return False
 
 
@@ -130,70 +176,92 @@ async def _load_service(service: str, model: str = None) -> dict:
     if not url:
         raise HTTPException(status_code=400, detail=f"Unknown service: {service}")
 
+    model_label = model or "(default)"
+    logger.info(f"[VRAM] Loading {service} model={model_label}...")
+    t0 = time.time()
+
     timeout = 300.0 if service == "video" else 180.0
     try:
-        async with httpx.AsyncClient(timeout=timeout) as client:
-            body = {"model": model} if model else {}
-            resp = await client.post(f"{url}/models/load", json=body)
-            return resp.json()
+        body = {"model": model} if model else {}
+        resp = await _http.post(f"{url}/models/load", json=body, timeout=timeout)
+        result = resp.json()
+        elapsed = round(time.time() - t0, 1)
+        loaded_model = result.get("model", model_label)
+        vram = result.get("vram_mb", 0)
+        already = result.get("already_loaded", False)
+        if already:
+            logger.info(f"[VRAM] {service} model={loaded_model} already loaded, vram={vram}MB")
+        else:
+            logger.info(f"[VRAM] Loaded {service} model={loaded_model} in {elapsed}s, vram={vram}MB")
+        return result
     except Exception as e:
-        logger.error(f"Failed to load {service}: {e}")
+        logger.error(f"[VRAM] Failed to load {service} model={model_label}: {e}")
         raise HTTPException(status_code=503, detail=f"Failed to load {service} model: {e}")
 
 
 async def _evict_ollama(keep_utility: bool = True):
     """Evict all Ollama LLMs from VRAM, optionally keeping the utility model."""
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            ps = await client.get(f"{OLLAMA_BASE_URL}/api/ps")
-            loaded = [m.get("name", "") for m in ps.json().get("models", []) if m.get("name")]
-            evicted = []
-            for model_name in loaded:
-                if keep_utility and _is_utility_model(model_name):
-                    continue
-                logger.info(f"Evicting Ollama model: {model_name}")
-                try:
-                    await client.post(
-                        f"{OLLAMA_BASE_URL}/api/generate",
-                        json={"model": model_name, "prompt": "", "keep_alive": 0, "stream": False},
-                    )
-                    evicted.append(model_name)
-                except Exception:
-                    pass
-            return evicted
+        ps = await _http.get(f"{OLLAMA_BASE_URL}/api/ps")
+        models = [m for m in ps.json().get("models", []) if m.get("name")]
+        if not models:
+            logger.info("[VRAM] Ollama: no models loaded, nothing to evict")
+            return []
+        evicted = []
+        kept = []
+        for m in models:
+            model_name = m.get("name", "")
+            vram = round(m.get("size_vram", m.get("size", 0)) / 1024 / 1024)
+            if keep_utility and _is_utility_model(model_name):
+                kept.append(model_name)
+                logger.info(f"[VRAM] Keeping utility model: {model_name} vram={vram}MB")
+                continue
+            logger.info(f"[VRAM] Evicting Ollama model: {model_name} (freeing ~{vram}MB)")
+            try:
+                await _http.post(
+                    f"{OLLAMA_BASE_URL}/api/generate",
+                    json={"model": model_name, "prompt": "", "keep_alive": 0, "stream": False},
+                )
+                evicted.append(model_name)
+            except Exception as e:
+                logger.warning(f"[VRAM] Failed to evict {model_name}: {e}")
+        if evicted:
+            logger.info(f"[VRAM] Ollama eviction requested: evicted={evicted} kept={kept}")
+        return evicted
     except Exception as e:
-        logger.warning(f"Ollama eviction failed: {e}")
+        logger.warning(f"[VRAM] Ollama eviction failed: {e}")
         return []
 
 
 async def _wait_vram_clear(exclude: str = None, timeout_s: int = 30):
     """Poll service health endpoints until all non-excluded services report model_loaded=False."""
     for _ in range(timeout_s):
-        all_clear = True
-        for svc, url in SERVICES.items():
-            if svc == exclude:
-                continue
-            health = await _get_service_health(url)
-            if health.get("model_loaded"):
-                all_clear = False
-                break
-        if all_clear:
-            # Also check Ollama if we're not acquiring chat
-            if exclude != "chat":
-                try:
-                    async with httpx.AsyncClient(timeout=5.0) as client:
-                        ps = await client.get(f"{OLLAMA_BASE_URL}/api/ps")
+        checks = {
+            svc: _get_service_health(url)
+            for svc, url in SERVICES.items() if svc != exclude
+        }
+        if checks:
+            results = await asyncio.gather(*checks.values())
+            healths = dict(zip(checks.keys(), results))
+            if all(not h.get("model_loaded") for h in healths.values()):
+                # Also check Ollama if we're not acquiring chat
+                if exclude != "chat":
+                    try:
+                        ps = await _http.get(f"{OLLAMA_BASE_URL}/api/ps", timeout=5.0)
                         remaining = [
                             m.get("name", "") for m in ps.json().get("models", [])
                             if m.get("name") and not _is_utility_model(m.get("name", ""))
                         ]
                         if remaining:
-                            all_clear = False
-                except Exception:
-                    pass
-            if all_clear:
+                            await asyncio.sleep(1)
+                            continue
+                    except Exception:
+                        pass
                 logger.info("VRAM clear confirmed")
                 return
+        else:
+            logger.info("VRAM clear confirmed")
+            return
         await asyncio.sleep(1)
     logger.warning(f"VRAM clear timed out after {timeout_s}s")
 
@@ -201,15 +269,24 @@ async def _wait_vram_clear(exclude: str = None, timeout_s: int = 30):
 async def _warmup_llm(model: str = None):
     """Send a minimal request to Ollama to preload an LLM into VRAM."""
     use_model = model or os.environ.get("LLM_MODEL", "qwen3:30b-a3b")
+    logger.info(f"[VRAM] Warming up LLM: {use_model}")
+    t0 = time.time()
     try:
-        async with httpx.AsyncClient(timeout=120.0) as client:
-            await client.post(
-                f"{OLLAMA_BASE_URL}/api/generate",
-                json={"model": use_model, "prompt": "", "keep_alive": "5m", "stream": False},
-            )
-        logger.info(f"LLM {use_model} warmed up")
+        await _http.post(
+            f"{OLLAMA_BASE_URL}/api/generate",
+            json={"model": use_model, "prompt": "", "keep_alive": "5m", "stream": False},
+            timeout=120.0,
+        )
+        # Query actual VRAM usage after warmup
+        ps = await _http.get(f"{OLLAMA_BASE_URL}/api/ps", timeout=5.0)
+        for m in ps.json().get("models", []):
+            name = m.get("name", "")
+            vram = round(m.get("size_vram", m.get("size", 0)) / 1024 / 1024)
+            logger.info(f"[VRAM] Ollama model after warmup: {name} vram={vram}MB")
+        elapsed = round(time.time() - t0, 1)
+        logger.info(f"[VRAM] LLM {use_model} warmed up in {elapsed}s")
     except Exception as e:
-        logger.warning(f"LLM warmup failed: {e}")
+        logger.warning(f"[VRAM] LLM warmup failed for {use_model}: {e}")
 
 
 class AcquireRequest(BaseModel):
@@ -219,6 +296,23 @@ class AcquireRequest(BaseModel):
 
 class ReleaseRequest(BaseModel):
     service: str
+
+
+class VramLogEntry(BaseModel):
+    service: str
+    action: str
+    model: str
+    vram_mb: int = 0
+    detail: str = ""
+
+
+@app.post("/vram/log")
+async def vram_log(entry: VramLogEntry):
+    """Receive VRAM activity reports from other services."""
+    vram = f" vram={entry.vram_mb}MB" if entry.vram_mb else ""
+    reason = f" for {entry.detail}" if entry.detail else ""
+    logger.info(f"[VRAM] {entry.service} → {entry.action} {entry.model}{vram}{reason}")
+    return {"ok": True}
 
 
 # -- VRAM profiles per service --
@@ -267,41 +361,73 @@ async def acquire(req: AcquireRequest):
 
     async with _lock:
         t0 = time.time()
-        logger.info(f"Acquiring VRAM for {req.service} (profile: keep={profile['keep_services']}, utility={profile['keep_utility_llm']})")
+        model_label = req.model or req.service
+        logger.info(f"[VRAM] ={'='*60}")
+        logger.info(f"[VRAM] ACQUIRE START: service={req.service} model={model_label}")
+        logger.info(f"[VRAM] Profile: keep_services={profile['keep_services']} keep_utility={profile['keep_utility_llm']} evict_all_llms={profile['evict_all_llms']}")
+        await _log_vram_state("before acquire")
 
-        await _broadcast("acquiring", {"service": req.service, "model": req.model or req.service, "phase": "unloading"})
+        await _broadcast("acquiring", {"service": req.service, "model": model_label, "phase": "unloading"})
 
-        # 1. Unload services not in the keep list and not the target
-        for svc in SERVICES:
-            if svc == req.service:
-                continue
-            if svc in profile["keep_services"]:
-                continue
-            await _unload_service(svc)
+        # 1. Unload services not in the keep list and not the target (parallel)
+        services_to_unload = [svc for svc in SERVICES if svc != req.service and svc not in profile["keep_services"]]
+        if services_to_unload:
+            logger.info(f"[VRAM] Phase 1: unloading services {services_to_unload}")
+            await asyncio.gather(*[_unload_service(svc) for svc in services_to_unload])
+        else:
+            logger.info("[VRAM] Phase 1: no services to unload")
 
         # 2. Evict Ollama LLMs per profile
+        logger.info(f"[VRAM] Phase 2: evicting Ollama LLMs (evict_all={profile['evict_all_llms']})")
         if profile["evict_all_llms"]:
-            await _evict_ollama(keep_utility=False)
+            evicted = await _evict_ollama(keep_utility=False)
         else:
-            # Evict non-utility LLMs (keep utility for naming/lyrics)
-            await _evict_ollama(keep_utility=True)
+            evicted = await _evict_ollama(keep_utility=True)
 
-        # 3. Wait for unloaded services to clear
+        # 3. Wait for unloaded services AND evicted Ollama models to clear
         await _broadcast_status()
         services_to_wait = [svc for svc in SERVICES if svc != req.service and svc not in profile["keep_services"]]
-        for _ in range(30):
+        keep_utility = profile["keep_utility_llm"]
+        if services_to_wait or evicted:
+            logger.info(f"[VRAM] Phase 3: waiting for VRAM to clear (services={services_to_wait} evicted_llms={evicted})")
+        wait_start = time.time()
+        for i in range(30):
             all_clear = True
-            for svc in services_to_wait:
-                health = await _get_service_health(SERVICES[svc])
-                if health.get("model_loaded"):
+
+            # Check services in parallel
+            if services_to_wait:
+                health_tasks = {svc: _get_service_health(SERVICES[svc]) for svc in services_to_wait}
+                results = await asyncio.gather(*health_tasks.values())
+                healths = dict(zip(health_tasks.keys(), results))
+                if not all(not h.get("model_loaded") for h in healths.values()):
                     all_clear = False
-                    break
+
+            # Check Ollama for evicted models still lingering
+            if all_clear and evicted:
+                try:
+                    ps = await _http.get(f"{OLLAMA_BASE_URL}/api/ps", timeout=5.0)
+                    still_loaded = [
+                        m.get("name", "") for m in ps.json().get("models", [])
+                        if m.get("name") and m.get("name") in evicted
+                    ]
+                    if still_loaded:
+                        if i == 0:
+                            logger.info(f"[VRAM] Phase 3: Ollama models still unloading: {still_loaded}")
+                        all_clear = False
+                except Exception:
+                    pass
+
             if all_clear:
                 break
             await asyncio.sleep(1)
+        wait_elapsed = round(time.time() - wait_start, 1)
+        if services_to_wait or evicted:
+            logger.info(f"[VRAM] Phase 3: VRAM clear after {wait_elapsed}s")
+        await _log_vram_state("after eviction/unload")
 
         # 4. Load the target service
-        await _broadcast("acquiring", {"service": req.service, "model": req.model or req.service, "phase": "loading"})
+        logger.info(f"[VRAM] Phase 4: loading target service={req.service} model={model_label}")
+        await _broadcast("acquiring", {"service": req.service, "model": model_label, "phase": "loading"})
         result = {}
 
         if req.service == "chat":
@@ -310,6 +436,7 @@ async def acquire(req: AcquireRequest):
         else:
             target_health = await _get_service_health(SERVICES[req.service])
             if target_health.get("model_loaded"):
+                logger.info(f"[VRAM] {req.service} already loaded: model={target_health.get('current_model')} vram={target_health.get('vram_mb', 0)}MB")
                 result = {
                     "model": target_health.get("current_model"),
                     "vram_mb": target_health.get("vram_mb", 0),
@@ -321,14 +448,16 @@ async def acquire(req: AcquireRequest):
         if req.service == "music":
             img_health = await _get_service_health(IMAGE_GEN_URL)
             if not img_health.get("model_loaded") or img_health.get("current_model") != COVER_ART_MODEL:
-                logger.info(f"Loading {COVER_ART_MODEL} for music cover art")
+                logger.info(f"[VRAM] Phase 5: loading {COVER_ART_MODEL} for music cover art")
                 try:
                     await _load_service("image", COVER_ART_MODEL)
                 except Exception as e:
-                    logger.warning(f"Failed to load cover art model: {e}")
+                    logger.warning(f"[VRAM] Failed to load cover art model: {e}")
 
         elapsed = round(time.time() - t0, 2)
-        logger.info(f"VRAM acquired for {req.service} in {elapsed}s")
+        await _log_vram_state("after acquire complete")
+        logger.info(f"[VRAM] ACQUIRE DONE: service={req.service} model={result.get('model')} elapsed={elapsed}s")
+        logger.info(f"[VRAM] ={'='*60}")
         await _broadcast_status()
 
         return {
@@ -343,8 +472,12 @@ async def acquire(req: AcquireRequest):
 @app.post("/release")
 async def release(req: ReleaseRequest):
     """Release VRAM held by a service."""
+    logger.info(f"[VRAM] RELEASE: service={req.service}")
+    await _log_vram_state("before release")
+
     if req.service == "chat":
         await _evict_ollama(keep_utility=False)
+        await _log_vram_state("after release chat")
         await _broadcast_status()
         return {"ok": True, "service": "chat"}
 
@@ -352,6 +485,7 @@ async def release(req: ReleaseRequest):
         raise HTTPException(status_code=400, detail=f"Unknown service: {req.service}")
 
     was_loaded = await _unload_service(req.service)
+    await _log_vram_state("after release")
     await _broadcast_status()
     return {"ok": True, "service": req.service, "was_loaded": was_loaded}
 
