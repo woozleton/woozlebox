@@ -479,6 +479,18 @@
       letter-spacing: 0.06em; color: var(--text-faint); opacity: 0.6;
       margin-bottom: 1px;
     }
+    .vram-bar {
+      height: 4px;
+      background: var(--surface2);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 3px;
+    }
+    .vram-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.5s ease, background 0.5s ease;
+    }
     .vram-item {
       display: flex; align-items: center; gap: 6px;
       font-size: 0.65rem; color: var(--text-dim); line-height: 1.3;
@@ -487,14 +499,38 @@
       width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
     }
     .vram-dot.loaded { background: #34d399; }
-    .vram-dot.loading { background: #f59e0b; animation: vram-pulse 1s ease-in-out infinite; }
-    .vram-dot.unloading { background: #f59e0b; animation: vram-pulse 1s ease-in-out infinite; }
-    .vram-dot.error { background: #ef4444; }
     .vram-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .vram-name.transitioning { font-style: italic; opacity: 0.7; }
     .vram-size { font-family: monospace; font-size: 0.6rem; color: var(--text-faint); }
     #vram-status:empty { display: none; }
     body.sidebar-collapsed #vram-status { display: none; }
+
+    .vram-log {
+      display: none;
+      max-height: 140px;
+      overflow-y: auto;
+      border-top: 1px solid var(--border);
+      padding-top: 3px;
+      margin-top: 3px;
+    }
+    body.debug-on .vram-log { display: block; }
+    .vram-log-entry {
+      font-size: 0.55rem;
+      font-family: monospace;
+      color: var(--text-faint);
+      line-height: 1.4;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding: 0 2px;
+    }
+    .vram-log-entry strong { color: var(--text); font-weight: 600; }
+    .vram-log-icon { margin-right: 4px; font-size: 0.6rem; }
+    .vram-log-icon.load { color: #34d399; }
+    .vram-log-icon.unload { color: #f59e0b; }
+    .vram-log-icon.evict { color: #ef4444; }
+    .vram-log-icon.call { color: #60a5fa; }
+    .vram-log-time { opacity: 0.4; margin-right: 4px; }
+    .vram-log-svc { color: var(--accent); opacity: 0.8; margin-right: 3px; }
 
     /* ── Context menu ── */
     #ctx-menu {

@@ -18,7 +18,6 @@ import asyncio
 from typing import Optional
 
 import torch
-import httpx
 import numpy as np
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -28,36 +27,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 HF_CACHE = os.environ.get("HF_HOME", "/root/.cache/huggingface")
-OLLAMA_URL = os.environ.get("OLLAMA_BASE_URL", "http://ollama:11434")
-UTILITY_MODEL = os.environ.get("UTILITY_MODEL", "qwen3:0.6b")
-GPU_MANAGER_URL = os.environ.get("GPU_MANAGER_URL", "http://gpu-manager:8400")
-
-
-def _is_utility_model(name: str) -> bool:
-    return name.split(":")[0].lower() == UTILITY_MODEL.split(":")[0].lower()
-
-
-async def _report_vram(action: str, model: str, vram_mb: int = 0, detail: str = ""):
-    """Fire-and-forget VRAM activity report to gpu-manager."""
-    try:
-        async with httpx.AsyncClient(timeout=2.0) as c:
-            await c.post(f"{GPU_MANAGER_URL}/vram/log", json={
-                "service": "music-api", "action": action, "model": model,
-                "vram_mb": vram_mb, "detail": detail,
-            })
-    except Exception:
-        pass
-
-
-def _report_vram_sync(action: str, model: str, vram_mb: int = 0, detail: str = ""):
-    """Synchronous VRAM report for use in executor threads."""
-    try:
-        httpx.post(f"{GPU_MANAGER_URL}/vram/log", json={
-            "service": "music-api", "action": action, "model": model,
-            "vram_mb": vram_mb, "detail": detail,
-        }, timeout=2.0)
-    except Exception:
-        pass
 ACESTEP_ROOT = os.environ.get("ACESTEP_ROOT", "/opt/ace-step")
 
 # ── Global state ──
@@ -111,7 +80,6 @@ def _load_model():
 
     vram = torch.cuda.memory_allocated() // 1024 // 1024
     logger.info(f"ACE-Step ready in {time.time()-t0:.1f}s -VRAM: {vram}MB")
-    _report_vram_sync("load", "ace-step-1.5", vram_mb=vram)
 
 
 @app.on_event("startup")
@@ -180,36 +148,7 @@ async def unload_model():
     torch.cuda.empty_cache()
     vram = torch.cuda.memory_allocated() // 1024 // 1024
     logger.info(f"Unloaded ACE-Step -VRAM after: {vram}MB")
-    await _report_vram("unload", "ace-step-1.5", vram_mb=vram)
     return {"ok": True, "was_loaded": True, "freed_model": "ace-step-1.5", "vram_mb": vram}
-
-
-async def _evict_ollama():
-    """Evict all Ollama models from VRAM before inference."""
-    try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            ps = await client.get(f"{OLLAMA_URL}/api/ps")
-            loaded_models = [m.get("name", "") for m in ps.json().get("models", []) if m.get("name")]
-            evicted = []
-            for model_name in loaded_models:
-                if _is_utility_model(model_name):
-                    continue
-                logger.info(f"Evicting {model_name} from VRAM")
-                await client.post(f"{OLLAMA_URL}/api/generate", json={"model": model_name, "keep_alive": 0})
-                await _report_vram("evict", model_name, detail="pre-generate")
-                evicted.append(model_name)
-        if evicted:
-            for _ in range(30):
-                await asyncio.sleep(1)
-                async with httpx.AsyncClient(timeout=5) as client:
-                    ps = await client.get(f"{OLLAMA_URL}/api/ps")
-                    remaining = [m.get("name", "") for m in ps.json().get("models", []) if m.get("name") and not _is_utility_model(m.get("name", ""))]
-                    if not remaining:
-                        break
-            await asyncio.sleep(1)
-            logger.info("Ollama VRAM cleared")
-    except Exception as e:
-        logger.warning(f"Could not evict Ollama models: {e}")
 
 
 def _encode_audio_mp3(audio_np: np.ndarray, sample_rate: int) -> bytes:
@@ -252,9 +191,6 @@ async def generate(req: MusicGenerateRequest):
     if not _model_loaded:
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(None, _load_model)
-
-    # Evict Ollama models from VRAM
-    await _evict_ollama()
 
     duration = max(10.0, min(600.0, req.duration or 30.0))
     infer_steps = max(1, min(50, req.infer_steps or 20))

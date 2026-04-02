@@ -83,8 +83,6 @@ services:
     environment:
       - HF_TOKEN=${HF_TOKEN}
       - HF_HOME=/root/.cache/huggingface
-      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
-      - GPU_MANAGER_URL=${GPU_MANAGER_URL:-http://gpu-manager:8400}
     deploy:
       resources:
         reservations:
@@ -103,8 +101,6 @@ services:
       - hf_cache:/root/.cache/huggingface
     environment:
       - HF_HOME=/root/.cache/huggingface
-      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
-      - GPU_MANAGER_URL=${GPU_MANAGER_URL:-http://gpu-manager:8400}
     deploy:
       resources:
         reservations:
@@ -123,8 +119,6 @@ services:
       - hf_cache:/root/.cache/huggingface
     environment:
       - HF_HOME=/root/.cache/huggingface
-      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
-      - GPU_MANAGER_URL=${GPU_MANAGER_URL:-http://gpu-manager:8400}
     deploy:
       resources:
         reservations:
@@ -146,6 +140,13 @@ services:
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
       - UTILITY_MODEL=${UTILITY_MODEL:-qwen3:0.6b}
       - LLM_MODEL=${LLM_MODEL:-qwen3:30b-a3b}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     restart: unless-stopped
 
   web:

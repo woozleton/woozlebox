@@ -71,6 +71,21 @@ async def _report_vram(action: str, model: str, vram_mb: int = 0, detail: str = 
     except Exception:
         pass
 
+
+async def _acquire_gpu(service: str, model: str = None):
+    """Ask gpu-manager to prepare VRAM for a service. Idempotent — fast no-op if already acquired."""
+    try:
+        body = {"service": service}
+        if model:
+            body["model"] = model
+        async with httpx.AsyncClient(timeout=120.0) as c:
+            resp = await c.post(f"{GPU_MANAGER_URL}/acquire", json=body)
+            resp.raise_for_status()
+            return resp.json()
+    except Exception as e:
+        logger.warning(f"gpu-manager acquire failed for {service}: {e}")
+        return None
+
 KOKORO_VOICES = [
     # American English -Female
     "af_heart", "af_bella", "af_nicole", "af_aoede", "af_kore",
@@ -1520,6 +1535,7 @@ async def image_generate_proxy(req: ImageGenerateRequest, user: dict = Depends(g
     if not req.prompt.strip():
         raise HTTPException(status_code=400, detail="prompt is required")
 
+    await _acquire_gpu("image", model=req.model)
     _image_gen_active = True
     try:
         async with httpx.AsyncClient(timeout=300.0) as client:
@@ -1554,6 +1570,7 @@ async def image_upscale_proxy(req: ImageUpscaleRequest, user: dict = Depends(get
     if not req.image:
         raise HTTPException(status_code=400, detail="image is required")
 
+    await _acquire_gpu("image")
     _image_gen_active = True
     try:
         async with httpx.AsyncClient(timeout=300.0) as client:
@@ -1585,6 +1602,7 @@ async def image_inpaint_proxy(req: ImageInpaintRequest, user: dict = Depends(get
     if not req.prompt.strip():
         raise HTTPException(status_code=400, detail="prompt is required")
 
+    await _acquire_gpu("image")
     _image_gen_active = True
     try:
         async with httpx.AsyncClient(timeout=300.0) as client:
@@ -1880,6 +1898,7 @@ async def music_generate_proxy(req: MusicGenerateRequest, user: dict = Depends(g
     if not req.prompt.strip():
         raise HTTPException(status_code=400, detail="prompt is required")
 
+    await _acquire_gpu("music")
     _music_gen_active = True
     try:
         async with httpx.AsyncClient(timeout=600.0) as client:
@@ -1954,6 +1973,7 @@ async def video_generate_proxy(req: VideoGenerateRequest, user: dict = Depends(g
     if not req.prompt.strip():
         raise HTTPException(status_code=400, detail="prompt is required")
 
+    await _acquire_gpu("video")
     _video_gen_active = True
     try:
         async with httpx.AsyncClient(timeout=600.0) as client:

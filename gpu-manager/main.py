@@ -32,6 +32,32 @@ MUSIC_GEN_URL = os.environ.get("MUSIC_GEN_URL", "http://music-api:8200")
 VIDEO_GEN_URL = os.environ.get("VIDEO_GEN_URL", "http://video-api:8300")
 OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://ollama:11434")
 UTILITY_MODEL = os.environ.get("UTILITY_MODEL", "qwen3:0.6b")
+DEFAULT_LLM = DEFAULT_LLM
+
+
+_GPU_FALLBACK = {"used_mb": 0, "free_mb": 0, "total_mb": 24576, "gpu_name": "Unknown"}
+
+
+async def _query_nvidia_smi() -> dict:
+    """Query nvidia-smi for real GPU memory stats (non-blocking)."""
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "nvidia-smi", "--query-gpu=memory.used,memory.free,memory.total,gpu_name",
+            "--format=csv,noheader,nounits",
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=5)
+        if proc.returncode == 0:
+            parts = [p.strip() for p in stdout.decode().strip().split(",")]
+            return {
+                "used_mb": int(parts[0]),
+                "free_mb": int(parts[1]),
+                "total_mb": int(parts[2]),
+                "gpu_name": parts[3] if len(parts) > 3 else "Unknown",
+            }
+    except Exception as e:
+        logger.warning(f"nvidia-smi query failed: {e}")
+    return _GPU_FALLBACK
 
 SERVICES = {
     "image": IMAGE_GEN_URL,
@@ -85,10 +111,16 @@ async def _broadcast(event: str, data: dict):
             pass
 
 
+async def _broadcast_vram_log(service: str, action: str, model: str, vram_mb: int = 0, detail: str = ""):
+    """Broadcast a VRAM activity event to SSE clients."""
+    await _broadcast("vram_log", {"service": service, "action": action, "model": model, "vram_mb": vram_mb, "detail": detail})
+
+
 async def _broadcast_status():
     """Fetch current status and broadcast it."""
     loaded = await _get_loaded_models()
-    await _broadcast("status", {"loaded": loaded})
+    gpu = await _query_nvidia_smi()
+    await _broadcast("status", {"loaded": loaded, "gpu": gpu})
 
 
 async def _get_loaded_models() -> list:
@@ -164,6 +196,7 @@ async def _unload_service(service: str) -> bool:
         result = resp.json()
         vram_after = result.get("vram_mb", 0)
         logger.info(f"[VRAM] Unloaded {service} model={model_name}: freed ~{vram_before - vram_after}MB, remaining={vram_after}MB")
+        await _broadcast_vram_log("gpu-manager", "unload", model_name, vram_after, f"freed ~{vram_before - vram_after}MB from {service}")
         return True
     except Exception as e:
         logger.warning(f"[VRAM] Failed to unload {service}: {e}")
@@ -193,6 +226,7 @@ async def _load_service(service: str, model: str = None) -> dict:
             logger.info(f"[VRAM] {service} model={loaded_model} already loaded, vram={vram}MB")
         else:
             logger.info(f"[VRAM] Loaded {service} model={loaded_model} in {elapsed}s, vram={vram}MB")
+            await _broadcast_vram_log("gpu-manager", "load", loaded_model, vram, f"{service} loaded in {elapsed}s")
         return result
     except Exception as e:
         logger.error(f"[VRAM] Failed to load {service} model={model_label}: {e}")
@@ -223,6 +257,7 @@ async def _evict_ollama(keep_utility: bool = True):
                     json={"model": model_name, "prompt": "", "keep_alive": 0, "stream": False},
                 )
                 evicted.append(model_name)
+                await _broadcast_vram_log("gpu-manager", "evict", model_name, vram, f"freeing ~{vram}MB")
             except Exception as e:
                 logger.warning(f"[VRAM] Failed to evict {model_name}: {e}")
         if evicted:
@@ -268,7 +303,7 @@ async def _wait_vram_clear(exclude: str = None, timeout_s: int = 30):
 
 async def _warmup_llm(model: str = None):
     """Send a minimal request to Ollama to preload an LLM into VRAM."""
-    use_model = model or os.environ.get("LLM_MODEL", "qwen3:30b-a3b")
+    use_model = model or DEFAULT_LLM
     logger.info(f"[VRAM] Warming up LLM: {use_model}")
     t0 = time.time()
     try:
@@ -278,6 +313,7 @@ async def _warmup_llm(model: str = None):
             timeout=120.0,
         )
         # Query actual VRAM usage after warmup
+        vram = 0
         ps = await _http.get(f"{OLLAMA_BASE_URL}/api/ps", timeout=5.0)
         for m in ps.json().get("models", []):
             name = m.get("name", "")
@@ -285,6 +321,7 @@ async def _warmup_llm(model: str = None):
             logger.info(f"[VRAM] Ollama model after warmup: {name} vram={vram}MB")
         elapsed = round(time.time() - t0, 1)
         logger.info(f"[VRAM] LLM {use_model} warmed up in {elapsed}s")
+        await _broadcast_vram_log("gpu-manager", "load", use_model, vram, f"LLM warmed up in {elapsed}s")
     except Exception as e:
         logger.warning(f"[VRAM] LLM warmup failed for {use_model}: {e}")
 
@@ -312,6 +349,7 @@ async def vram_log(entry: VramLogEntry):
     vram = f" vram={entry.vram_mb}MB" if entry.vram_mb else ""
     reason = f" for {entry.detail}" if entry.detail else ""
     logger.info(f"[VRAM] {entry.service} → {entry.action} {entry.model}{vram}{reason}")
+    await _broadcast_vram_log(entry.service, entry.action, entry.model, entry.vram_mb, entry.detail)
     return {"ok": True}
 
 
@@ -362,6 +400,49 @@ async def acquire(req: AcquireRequest):
     async with _lock:
         t0 = time.time()
         model_label = req.model or req.service
+
+        # ── Fast path: if VRAM already matches the target profile, return immediately ──
+        try:
+            if req.service == "chat":
+                target_llm = req.model or DEFAULT_LLM
+                ps = await _http.get(f"{OLLAMA_BASE_URL}/api/ps", timeout=5.0)
+                loaded_llms = [m.get("name", "") for m in ps.json().get("models", []) if m.get("name")]
+                if target_llm in loaded_llms:
+                    svc_healths = await asyncio.gather(*[_get_service_health(url) for url in SERVICES.values()])
+                    if not any(h.get("model_loaded") for h in svc_healths):
+                        elapsed = round(time.time() - t0, 3)
+                        logger.info(f"[VRAM] ACQUIRE fast-path: {req.service} already in correct state ({elapsed}s)")
+                        return {"ok": True, "service": req.service, "model": target_llm, "vram_mb": 0, "elapsed_s": elapsed, "fast_path": True}
+            else:
+                target_health = await _get_service_health(SERVICES[req.service])
+                model_ok = target_health.get("model_loaded") and (not req.model or target_health.get("current_model") == req.model)
+                if model_ok:
+                    stale = [svc for svc in SERVICES if svc != req.service and svc not in profile["keep_services"]]
+                    stale_healths = await asyncio.gather(*[_get_service_health(SERVICES[s]) for s in stale]) if stale else []
+                    no_stale = not any(h.get("model_loaded") for h in stale_healths)
+                    # Verify Ollama matches profile (no unwanted LLMs hogging VRAM)
+                    ollama_ok = True
+                    ps = await _http.get(f"{OLLAMA_BASE_URL}/api/ps", timeout=5.0)
+                    loaded_llms = [m.get("name", "") for m in ps.json().get("models", []) if m.get("name")]
+                    if profile["evict_all_llms"] and loaded_llms:
+                        ollama_ok = False
+                    elif not profile["evict_all_llms"] and loaded_llms:
+                        unwanted = [m for m in loaded_llms if not _is_utility_model(m)]
+                        if unwanted:
+                            ollama_ok = False
+                    if no_stale and ollama_ok:
+                        elapsed = round(time.time() - t0, 3)
+                        logger.info(f"[VRAM] ACQUIRE fast-path: {req.service} already in correct state ({elapsed}s)")
+                        return {
+                            "ok": True, "service": req.service,
+                            "model": target_health.get("current_model"),
+                            "vram_mb": target_health.get("vram_mb", 0),
+                            "elapsed_s": elapsed, "fast_path": True,
+                        }
+        except Exception as e:
+            logger.debug(f"[VRAM] Fast-path check failed, using full path: {e}")
+
+        # ── Full acquire path ──
         logger.info(f"[VRAM] ={'='*60}")
         logger.info(f"[VRAM] ACQUIRE START: service={req.service} model={model_label}")
         logger.info(f"[VRAM] Profile: keep_services={profile['keep_services']} keep_utility={profile['keep_utility_llm']} evict_all_llms={profile['evict_all_llms']}")
@@ -490,11 +571,18 @@ async def release(req: ReleaseRequest):
     return {"ok": True, "service": req.service, "was_loaded": was_loaded}
 
 
+@app.get("/gpu")
+async def gpu_stats():
+    """Return real GPU memory stats from nvidia-smi."""
+    return await _query_nvidia_smi()
+
+
 @app.get("/status")
 async def status():
     """Report all currently loaded models across all services."""
     loaded = await _get_loaded_models()
-    return {"loaded": loaded}
+    gpu = await _query_nvidia_smi()
+    return {"loaded": loaded, "gpu": gpu}
 
 
 @app.get("/events")
@@ -507,7 +595,8 @@ async def events():
         try:
             # Send current state immediately on connect
             loaded = await _get_loaded_models()
-            yield f"event: status\ndata: {json.dumps({'loaded': loaded})}\n\n"
+            gpu = await _query_nvidia_smi()
+            yield f"event: status\ndata: {json.dumps({'loaded': loaded, 'gpu': gpu})}\n\n"
             while True:
                 msg = await q.get()
                 yield msg
