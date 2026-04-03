@@ -800,17 +800,17 @@ function _createMusicFavCard(fav) {
   playBtn.addEventListener("click", () => {
     if (isPlaying) {
       audio.pause(); playBtn.classList.remove("playing");
-      playBtn.innerHTML = '${icon("play", 16)}';
+      playBtn.innerHTML = icon("play", 16);
     } else {
       document.querySelectorAll(".music-fav-play.playing").forEach(b => b.click());
       audio.play(); playBtn.classList.add("playing");
-      playBtn.innerHTML = '${icon("pause", 16)}';
+      playBtn.innerHTML = icon("pause", 16);
     }
     isPlaying = !isPlaying;
   });
   audio.addEventListener("ended", () => {
     isPlaying = false; playBtn.classList.remove("playing");
-    playBtn.innerHTML = '${icon("play", 16)}';
+    playBtn.innerHTML = icon("play", 16);
   });
 
   // Download
@@ -1192,7 +1192,7 @@ function createMusicResultCard(record) {
     if (isPlaying) {
       audio.pause();
       playBtn.classList.remove("playing");
-      playBtn.innerHTML = '${icon("play", 16)}';
+      playBtn.innerHTML = icon("play", 16);
     } else {
       document.querySelectorAll(".music-play-btn.playing").forEach(btn => btn.click());
       audio.play();
@@ -1205,7 +1205,7 @@ function createMusicResultCard(record) {
   audio.addEventListener("ended", () => {
     isPlaying = false;
     playBtn.classList.remove("playing");
-    playBtn.innerHTML = '${icon("play", 16)}';
+    playBtn.innerHTML = icon("play", 16);
     waveProgress.style.width = "0%";
   });
 
@@ -1662,14 +1662,14 @@ async function renderMusicTrashList() {
         _trashAudio.addEventListener("ended", () => {
           _trashPlaying = false;
           playBtn.classList.remove("playing");
-          playBtn.innerHTML = '${icon("play")}';
+          playBtn.innerHTML = icon("play");
         });
       }
       if (!_trashAudio) return;
       if (_trashPlaying) {
         _trashAudio.pause();
         playBtn.classList.remove("playing");
-        playBtn.innerHTML = '${icon("play")}';
+        playBtn.innerHTML = icon("play");
       } else {
         // Stop any other playing trash audio
         document.querySelectorAll(".music-trash-play.playing").forEach(b => b.click());
