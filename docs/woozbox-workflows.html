@@ -247,7 +247,7 @@
         <div class="vram-state">
           <div class="vram-state-label">VRAM During Peak</div>
           <div class="vram-bar">
-            <span class="vram-chip chip-green">stable-diffusion-3.5 <span class="vram-size">13.1G base, ~23G peak</span></span>
+            <span class="vram-chip chip-green">stable-diffusion-3.5 <span class="vram-size">13.1G base, ~10G peak</span></span>
           </div>
         </div>
       </div>
@@ -421,7 +421,7 @@
 
 <!-- ═══════════════════════════════════════════════════════════ -->
 <h2 class="c-red">Video Studio</h2>
-<p class="h2-desc">Wan 2.2 needs all VRAM - everything else is evicted</p>
+<p class="h2-desc">Wan 2.1 needs all VRAM - everything else is evicted</p>
 
 <div class="workflow">
   <div class="step">
@@ -437,7 +437,7 @@
         <div class="step-actions">
           <div class="action"><span class="action-icon c-red">&#10005;</span> Evict ALL Ollama models (including utility)</div>
           <div class="action"><span class="action-icon c-amber">&#9660;</span> Unload image-api, music-api</div>
-          <div class="action"><span class="action-icon c-red">&#9650;</span> Load Wan 2.2 TI2V 5B (~18GB)</div>
+          <div class="action"><span class="action-icon c-red">&#9650;</span> Load Wan 2.1 T2V 1.3B (~5GB)</div>
         </div>
         <div class="vram-state">
           <div class="vram-state-label">VRAM Before (example: coming from Music Studio)</div>
@@ -448,9 +448,9 @@
           </div>
         </div>
         <div class="vram-state" style="border-top:none; padding-top:4px;">
-          <div class="vram-state-label">VRAM After (~18GB)</div>
+          <div class="vram-state-label">VRAM After (~5GB)</div>
           <div class="vram-bar">
-            <span class="vram-chip chip-red">wan-2.2-ti2v-5b <span class="vram-size">18.4G</span></span>
+            <span class="vram-chip chip-red">wan-2.1-t2v-1.3b <span class="vram-size">~5G</span></span>
           </div>
         </div>
       </div>
@@ -469,13 +469,13 @@
         <div class="step-title">media-api /video/inspire</div>
         <div class="step-actions">
           <div class="action"><span class="action-icon c-purple">&#9679;</span> qwen3:0.6b loads on-demand</div>
-          <div class="action"><span class="action-icon c-dim">&#9888;</span> <span class="c-dim">Tight VRAM - Wan + utility = ~22GB of 24GB</span></div>
+          <div class="action"><span class="action-icon c-dim">&#9888;</span> <span class="c-dim">Wan + utility coexist (~5.4GB total)</span></div>
         </div>
         <div class="vram-state">
           <div class="vram-state-label">VRAM After</div>
           <div class="vram-bar">
             <span class="vram-chip chip-purple">qwen3:0.6b <span class="vram-size">0.4G</span></span>
-            <span class="vram-chip chip-red">wan-2.2-ti2v-5b <span class="vram-size">18.4G</span></span>
+            <span class="vram-chip chip-red">wan-2.1-t2v-1.3b <span class="vram-size">~5G</span></span>
           </div>
         </div>
       </div>
@@ -494,13 +494,13 @@
         <div class="step-title">gpu-manager /acquire (video, pre_inference)</div>
         <div class="step-actions">
           <div class="action"><span class="action-icon c-red">&#10005;</span> Evict ALL Ollama models (including qwen3:0.6b)</div>
-          <div class="action"><span class="action-icon c-dim">&#10003;</span> Wan 2.2 already loaded</div>
+          <div class="action"><span class="action-icon c-dim">&#10003;</span> Wan 2.1 already loaded</div>
         </div>
         <div class="vram-state">
           <div class="vram-state-label">VRAM After</div>
           <div class="vram-bar">
             <span class="vram-chip chip-gone">qwen3:0.6b evicted <span class="vram-size">-0.4G</span></span>
-            <span class="vram-chip chip-red">wan-2.2-ti2v-5b <span class="vram-size">18.4G</span></span>
+            <span class="vram-chip chip-red">wan-2.1-t2v-1.3b <span class="vram-size">~5G</span></span>
           </div>
         </div>
       </div>
@@ -518,13 +518,13 @@
       <div class="step-card">
         <div class="step-title">video-api /generate</div>
         <div class="step-actions">
-          <div class="action"><span class="action-icon c-red">&#9679;</span> Wan 2.2 generates video frames</div>
+          <div class="action"><span class="action-icon c-red">&#9679;</span> Wan 2.1 generates video frames</div>
           <div class="action"><span class="action-icon c-red">&#9679;</span> Full VRAM available - no contention</div>
         </div>
         <div class="vram-state">
           <div class="vram-state-label">VRAM During Peak</div>
           <div class="vram-bar">
-            <span class="vram-chip chip-red">wan-2.2-ti2v-5b <span class="vram-size">18.4G base, ~23G peak</span></span>
+            <span class="vram-chip chip-red">wan-2.1-t2v-1.3b <span class="vram-size">~5G base, ~10G peak</span></span>
           </div>
         </div>
       </div>
