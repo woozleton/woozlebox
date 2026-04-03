@@ -71,6 +71,7 @@ const _imageDB = createStudioDB({
     }
   }
 });
+const STUDIO_DB_STORE = "images";
 function openStudioDB() { return _imageDB.open(); }
 
 // ── Image Folders CRUD ──
