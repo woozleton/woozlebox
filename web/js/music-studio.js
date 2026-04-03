@@ -947,7 +947,7 @@ function _formatMusicTime(s) {
 // ── Create music result card ──
 function createMusicResultCard(record) {
   const el = document.createElement("div");
-  el.className = "music-result";
+  el.className = "media-result music-result";
   el.dataset.musicId = record.id;
 
   // Decode base64 audio to blob
@@ -993,11 +993,11 @@ function createMusicResultCard(record) {
       </div>
       <div class="music-meta-details">
         ${record.title ? `<div class="music-meta-title">${esc(record.title)}</div>` : ""}
-        <div class="music-meta-prompt">${esc(record.rawPrompt)}</div>
+        <div class="meta-prompt">${esc(record.rawPrompt)}</div>
         <div class="music-meta-bottom">
-          <div class="music-meta-pills">
+          <div class="meta-pills">
             ${pills.map(p => `<span class="meta-pill">${esc(p)}</span>`).join("")}
-            <button class="music-prompt-toggle">${icon("chevron-down", 8)} Prompt</button>
+            <button class="prompt-toggle">${icon("chevron-down", 8)} Prompt</button>
             ${lyricsToggleHtml}
           </div>
           <div class="music-result-actions">
@@ -1034,11 +1034,11 @@ function createMusicResultCard(record) {
   }
 
   // Prompt toggle
-  const promptToggle = el.querySelector(".music-prompt-toggle");
+  const promptToggle = el.querySelector(".prompt-toggle");
   if (promptToggle) {
     promptToggle.addEventListener("click", () => {
       promptToggle.classList.toggle("open");
-      el.querySelector(".music-meta-prompt").classList.toggle("open");
+      el.querySelector(".meta-prompt").classList.toggle("open");
     });
   }
 

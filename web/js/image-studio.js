@@ -2177,8 +2177,8 @@ function _createLiveResult(id, rawPrompt, body, totalCount) {
       <button class="studio-live-stop" title="Stop generation"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>Stop</button>
     </div>
     <div class="studio-meta-details">
-      <div class="studio-meta-prompt">${esc(rawPrompt)}${preset ? ` <span style="color:var(--accent);">[${preset}]</span>` : ""}</div>
-      <span class="studio-meta-pills"></span>
+      <div class="meta-prompt">${esc(rawPrompt)}${preset ? ` <span style="color:var(--accent);">[${preset}]</span>` : ""}</div>
+      <span class="meta-pills"></span>
     </div>
   `;
   return result;
@@ -2291,7 +2291,7 @@ function _appendImageToGrid(grid, result, data, idx, id, rawPrompt, body, allRes
 
   // Update meta pills (target inner span to preserve action buttons)
   const totalElapsed = allResults.reduce((s, d) => s + (d.elapsed_s || 0), 0);
-  result.querySelector(".studio-meta-pills").innerHTML = `
+  result.querySelector(".meta-pills").innerHTML = `
     <span class="meta-pill">${esc(data.model)}</span>
     <span class="meta-pill">${data.width}×${data.height}</span>
     <span class="meta-pill">${body.steps} steps</span>
@@ -2364,15 +2364,15 @@ function appendStudioResult(dataArr, rawPrompt, body, recordId) {
   result.innerHTML = `
     <div class="studio-result-images ${gridClass}">${imagesHtml}</div>
     <div class="studio-meta-details">
-      <span class="studio-meta-pills">
+      <span class="meta-pills">
         ${dataArr[0].model ? `<span class="meta-pill">${esc(dataArr[0].model)}</span>` : ""}
         ${dataArr[0].width ? `<span class="meta-pill">${dataArr[0].width}×${dataArr[0].height}</span>` : ""}
         ${body?.steps ? `<span class="meta-pill">${body.steps} steps</span>` : ""}
         ${body?.guidance_scale != null ? `<span class="meta-pill">cfg ${body.guidance_scale}</span>` : ""}
         ${totalElapsed > 0 ? `<span class="meta-pill">${totalElapsed.toFixed(1)}s</span>` : ""}
-        <button class="studio-prompt-toggle">${icon("chevron-down", 8)} Prompt</button>
+        <button class="prompt-toggle">${icon("chevron-down", 8)} Prompt</button>
       </span>
-      <div class="studio-meta-prompt">${esc(rawPrompt)}${preset ? ` <span style="color:var(--accent);">[${preset}]</span>` : ""}</div>
+      <div class="meta-prompt">${esc(rawPrompt)}${preset ? ` <span style="color:var(--accent);">[${preset}]</span>` : ""}</div>
     </div>
   `;
 
@@ -2383,11 +2383,11 @@ function appendStudioResult(dataArr, rawPrompt, body, recordId) {
   }));
 
   // Prompt toggle
-  const promptToggle = result.querySelector(".studio-prompt-toggle");
+  const promptToggle = result.querySelector(".prompt-toggle");
   if (promptToggle) {
     promptToggle.addEventListener("click", () => {
       promptToggle.classList.toggle("open");
-      result.querySelector(".studio-meta-prompt").classList.toggle("open");
+      result.querySelector(".meta-prompt").classList.toggle("open");
     });
   }
 

@@ -1188,26 +1188,28 @@
       font-size: 0.75rem; color: var(--text-dim);
       width: 0; min-width: 100%;
     }
-    .studio-meta-details .meta-pill {
+    /* Shared meta pill styling (image + music) */
+    .meta-pills { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+    .meta-pill {
       background: var(--surface2); border-radius: 4px; padding: 2px 7px;
-      font-family: monospace; font-size: 0.7rem;
+      font-family: monospace; font-size: 0.7rem; color: var(--text-faint);
     }
-    .studio-meta-pills { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-    .studio-prompt-toggle {
+    /* Shared prompt toggle + collapsible meta prompt (image + music) */
+    .prompt-toggle {
       display: inline-flex; align-items: center; gap: 3px; cursor: pointer;
       background: none; border: none; color: var(--accent); font-size: 0.65rem;
       padding: 2px 4px; border-radius: 4px; font-weight: 500;
     }
-    .studio-prompt-toggle svg { transition: transform 0.2s; flex-shrink: 0; }
-    .studio-prompt-toggle.open svg { transform: rotate(180deg); }
-    .studio-meta-prompt {
+    .prompt-toggle svg { transition: transform 0.2s; flex-shrink: 0; }
+    .prompt-toggle.open svg { transform: rotate(180deg); }
+    .meta-prompt {
       font-size: 0.78rem; color: var(--text-dim); font-style: italic;
       line-height: 1.4; word-break: break-word; overflow-wrap: anywhere;
       max-height: 0; overflow: hidden; opacity: 0;
       transition: max-height 0.3s ease, opacity 0.2s ease, margin 0.3s ease;
       margin-top: 0;
     }
-    .studio-meta-prompt.open { max-height: 200px; opacity: 1; margin-top: 4px; }
+    .meta-prompt.open { max-height: 200px; opacity: 1; margin-top: 4px; }
     .studio-result-images {
       display: grid; gap: 8px; width: 100%; justify-items: center;
     }
@@ -1220,11 +1222,12 @@
    5. IMAGE STUDIO
    ══════════════════════════════════════════════════════════════ */
 
-    #image-studio {
+    /* Shared studio container (image, music, video) */
+    .studio-view {
       display: none; flex: 1; flex-direction: row; height: 100%; overflow: hidden;
       background: var(--bg);
     }
-    #image-studio.active { display: flex; }
+    .studio-view.active { display: flex; }
 
     /* Image studio canvas overrides */
     #studio-canvas { padding: 20px 24px; align-items: center; justify-content: flex-start; gap: 20px; min-height: 0; overflow-x: hidden; }
@@ -1285,9 +1288,15 @@
       display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--fav-thumb-size, 120px), var(--fav-thumb-size, 120px)));
       gap: 8px; align-content: start; justify-content: center;
     }
-    #studio-fav-content::-webkit-scrollbar { width: 4px; }
-    #studio-fav-content::-webkit-scrollbar-track { background: transparent; }
-    #studio-fav-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+    #studio-fav-content::-webkit-scrollbar,
+    #music-fav-content::-webkit-scrollbar,
+    #video-fav-content::-webkit-scrollbar { width: 4px; }
+    #studio-fav-content::-webkit-scrollbar-track,
+    #music-fav-content::-webkit-scrollbar-track,
+    #video-fav-content::-webkit-scrollbar-track { background: transparent; }
+    #studio-fav-content::-webkit-scrollbar-thumb,
+    #music-fav-content::-webkit-scrollbar-thumb,
+    #video-fav-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
     .fav-card {
       position: relative; overflow: hidden; border-radius: 8px;
       border: 1px solid var(--border); transition: border-color 0.15s;
@@ -1582,20 +1591,18 @@
    6. MUSIC STUDIO
    ══════════════════════════════════════════════════════════════ */
 
-    #music-studio {
-      display: none; flex: 1; flex-direction: row; height: 100%; overflow: hidden;
-      background: var(--bg);
-    }
-    #music-studio.active { display: flex; }
+    /* (music studio container uses shared .studio-view class) */
 
-    /* Music result cards */
-    .music-result {
+    /* Shared result card base (music + video) */
+    .media-result {
       background: var(--surface); border: 1px solid var(--border);
       border-radius: 14px; padding: 0; display: flex; flex-direction: row; gap: 0;
       animation: fadeIn 0.25s ease; transition: border-color 0.15s;
     }
+    .media-result:hover { border-color: var(--accent); }
+
+    /* Music result cards */
     .music-result-cover { border-radius: 14px 0 0 14px; }
-    .music-result:hover { border-color: var(--accent); }
     .music-result-cover {
       flex-shrink: 0; width: 120px; min-height: 120px;
       background: var(--surface2); display: flex; align-items: center; justify-content: center;
@@ -1651,21 +1658,7 @@
       font-size: 0.85rem; font-weight: 600; color: var(--text); line-height: 1.3;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .music-meta-prompt {
-      font-size: 0.75rem; color: var(--text-dim); line-height: 1.4;
-      font-style: italic;
-      max-height: 0; overflow: hidden; opacity: 0;
-      transition: max-height 0.3s ease, opacity 0.2s ease, margin 0.3s ease;
-      margin-top: 0;
-    }
-    .music-meta-prompt.open { max-height: 200px; opacity: 1; margin-top: 4px; }
-    .music-prompt-toggle {
-      display: inline-flex; align-items: center; gap: 3px; cursor: pointer;
-      background: none; border: none; color: var(--accent); font-size: 0.65rem;
-      padding: 2px 4px; border-radius: 4px; font-weight: 500;
-    }
-    .music-prompt-toggle svg { transition: transform 0.2s; flex-shrink: 0; }
-    .music-prompt-toggle.open svg { transform: rotate(180deg); }
+    /* (music prompt toggle + meta prompt use shared .prompt-toggle / .meta-prompt) */
     .music-meta-bottom {
       display: flex; align-items: center; gap: 8px; justify-content: space-between;
     }
@@ -1687,13 +1680,7 @@
     .music-meta-lyrics::-webkit-scrollbar { width: 4px; }
     .music-meta-lyrics::-webkit-scrollbar-track { background: transparent; }
     .music-meta-lyrics::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
-    .music-meta-pills {
-      display: flex; flex-wrap: wrap; gap: 5px; align-items: center;
-    }
-    .music-meta-pills .meta-pill {
-      background: var(--surface2); border-radius: 4px; padding: 2px 7px;
-      font-family: monospace; font-size: 0.7rem; color: var(--text-faint);
-    }
+    /* (music meta pills use shared .meta-pills / .meta-pill) */
     .music-result-actions {
       display: flex; gap: 4px; align-items: center; flex-shrink: 0;
     }
@@ -1769,9 +1756,7 @@
       flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 10px;
       display: flex; flex-direction: column; gap: 8px; align-content: start;
     }
-    #music-fav-content::-webkit-scrollbar { width: 4px; }
-    #music-fav-content::-webkit-scrollbar-track { background: transparent; }
-    #music-fav-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+    /* (music fav scrollbar consolidated into shared selector above) */
     .music-fav-card {
       background: var(--surface2); border: 1px solid var(--border);
       border-radius: 10px; display: flex; align-items: center; gap: 10px;
@@ -1813,11 +1798,7 @@
    7. VIDEO STUDIO
    ══════════════════════════════════════════════════════════════ */
 
-    #video-studio {
-      display: none; flex: 1; flex-direction: row; height: 100%; overflow: hidden;
-      background: var(--bg);
-    }
-    #video-studio.active { display: flex; }
+    /* (video studio container uses shared .studio-view class) */
     html.video-preload #video-studio { display: flex; }
 
     .video-settings-grid {
@@ -1839,12 +1820,7 @@
       border: none; color: #fff; border-radius: 50%; width: 20px; height: 20px;
       cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px;
     }
-    .video-result {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 14px; padding: 0; display: flex; flex-direction: row; gap: 0;
-      animation: fadeIn 0.25s ease; transition: border-color 0.15s;
-    }
-    .video-result:hover { border-color: var(--accent); }
+    /* (video result card uses shared .media-result class) */
     .video-result-cover {
       flex-shrink: 0; width: 200px; min-height: 120px;
       background: #000; display: flex; align-items: center; justify-content: center;
@@ -1879,9 +1855,7 @@
     .video-result:hover .video-result-actions { opacity: 1; }
     /* Video generation placeholder — uses shared .gen-progress */
     #video-fav-content { flex: 1; min-height: 0; overflow-y: auto; padding: 8px; }
-    #video-fav-content::-webkit-scrollbar { width: 4px; }
-    #video-fav-content::-webkit-scrollbar-track { background: transparent; }
-    #video-fav-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+    /* (video fav scrollbar consolidated into shared selector above) */
     #video-trash-list { flex: 1; overflow-y: auto; padding: 8px; }
     .studio-trash-badge:empty { display: none; }
 

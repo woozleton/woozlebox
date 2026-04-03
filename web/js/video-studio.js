@@ -362,7 +362,7 @@ document.getElementById("video-suggest-btn").addEventListener("click", async () 
 // ── Create video result card ──
 function createVideoResultCard(record) {
   const el = document.createElement("div");
-  el.className = "video-result";
+  el.className = "media-result video-result";
   el.dataset.videoId = record.id;
 
   // Decode base64 video to blob
