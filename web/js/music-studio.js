@@ -611,10 +611,7 @@ document.getElementById("music-folder-new-btn").addEventListener("click", () => 
 
 // ── Music favorites panel ──
 function updateMusicFavCount(count) {
-  if (musicFavBadge) {
-    musicFavBadge.textContent = count;
-    musicFavBadge.style.display = count > 0 ? "" : "none";
-  }
+  updateBadge("music-fav-badge", count);
   if (musicFavCountLabel) musicFavCountLabel.textContent = count;
 }
 
@@ -764,10 +761,7 @@ document.getElementById("music-sidebar-btn").addEventListener("click", toggleMus
 document.getElementById("strip-music-btn").addEventListener("click", toggleMusicStudio);
 
 // ── Music settings panel ──
-document.getElementById("music-settings-trigger").addEventListener("click", function() {
-  document.getElementById("music-settings-crumb").classList.toggle("open");
-  document.getElementById("music-settings-panel").classList.toggle("open");
-});
+wireSettingsToggle("music-settings-trigger", "music-settings-crumb", "music-settings-panel");
 
 // ── Music style presets ──
 const MUSIC_PRESETS = {
@@ -1487,9 +1481,7 @@ musicPrompt.addEventListener("keydown", (e) => {
 document.getElementById("music-trash-btn").addEventListener("click", () => openMusicTrashModal());
 
 async function openMusicTrashModal() {
-  const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
-  const all = await loadAllMusicTrash();
-  for (const item of all) { if (item.deletedAt < cutoff) await deleteFromMusicTrash(item.id); }
+  await purgeOldTrash(loadAllMusicTrash, deleteFromMusicTrash);
   document.getElementById("shared-trash-modal").classList.add("open");
   await renderMusicTrashList();
   document.getElementById("shared-trash-empty-btn").onclick = async () => {
@@ -1512,7 +1504,7 @@ async function renderMusicTrashList() {
   items.forEach(item => {
     const card = document.createElement("div");
     card.className = "studio-trash-card";
-    const age = _trashAge(item.deletedAt);
+    const age = trashAge(item.deletedAt);
     const durStr = item.duration ? item.duration + "s" : "";
     card.innerHTML = `
       <button class="music-trash-play" title="Play/Pause">
@@ -1609,8 +1601,7 @@ async function _restoreFromMusicTrash(item) {
 }
 
 function updateMusicTrashBadge(count) {
-  const badge = document.getElementById("music-trash-badge");
-  if (badge) { badge.textContent = count || ""; }
+  updateBadge("music-trash-badge", count);
 }
 
 async function _refreshMusicTrashBadge() {

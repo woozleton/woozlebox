@@ -251,10 +251,7 @@ document.getElementById("video-new-session-btn").addEventListener("click", () =>
 });
 
 // ── Video settings panel ──
-document.getElementById("video-settings-trigger").addEventListener("click", function() {
-  document.getElementById("video-settings-crumb").classList.toggle("open");
-  document.getElementById("video-settings-panel").classList.toggle("open");
-});
+wireSettingsToggle("video-settings-trigger", "video-settings-crumb", "video-settings-panel");
 
 document.getElementById("video-advanced-toggle").addEventListener("click", function() {
   this.classList.toggle("open");
@@ -730,18 +727,15 @@ function _createVideoFavCard(fav) {
 async function _updateVideoFavBadge() {
   const favs = await loadAllVideoFavorites();
   const count = favs.length;
-  videoFavBadge.textContent = count || "";
-  videoFavBadge.style.display = count ? "" : "none";
-  videoFavCountLabel.textContent = count;
+  updateBadge("video-fav-badge", count);
+  if (videoFavCountLabel) videoFavCountLabel.textContent = count;
 }
 
 // ── Video Trash ──
 document.getElementById("video-trash-btn").addEventListener("click", () => openVideoTrashModal());
 
 async function openVideoTrashModal() {
-  const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
-  const all = await loadAllVideoTrash();
-  for (const item of all) { if (item.deletedAt < cutoff) await deleteFromVideoTrash(item.id); }
+  await purgeOldTrash(loadAllVideoTrash, deleteFromVideoTrash);
   document.getElementById("shared-trash-modal").classList.add("open");
   await renderVideoTrashList();
   document.getElementById("shared-trash-empty-btn").onclick = async () => {
@@ -764,7 +758,7 @@ async function renderVideoTrashList() {
   items.forEach(item => {
     const card = document.createElement("div");
     card.className = "studio-trash-card";
-    const age = _trashAge(item.deletedAt);
+    const age = trashAge(item.deletedAt);
     const durStr = item.duration ? item.duration + "s" : "";
     card.innerHTML = `
       <div class="studio-trash-card-info">
@@ -798,8 +792,7 @@ async function renderVideoTrashList() {
 }
 
 function updateVideoTrashBadge(count) {
-  const badge = document.getElementById("video-trash-badge");
-  if (badge) badge.textContent = count || "";
+  updateBadge("video-trash-badge", count);
 }
 
 async function _refreshVideoTrashBadge() {

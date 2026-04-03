@@ -18,10 +18,7 @@ const studioSettingsPanel = document.getElementById("studio-settings-panel");
 const studioSettingsSummary = document.getElementById("studio-settings-summary");
 
 // Settings panel toggle
-document.getElementById("studio-settings-trigger").addEventListener("click", () => {
-  studioSettingsCrumb.classList.toggle("open");
-  studioSettingsPanel.classList.toggle("open");
-});
+wireSettingsToggle("studio-settings-trigger", "studio-settings-crumb", "studio-settings-panel");
 
 function updateStudioSettingsSummary() {
   const modelEl = studioModelSelect.options[studioModelSelect.selectedIndex];
@@ -251,9 +248,8 @@ async function refreshFavoritesPanel() {
 }
 
 function updateFavCount(count) {
-  studioFavBadge.textContent = count;
-  studioFavCountLabel.textContent = count;
-  studioFavBadge.style.display = count > 0 ? "" : "none";
+  updateBadge("studio-fav-badge", count);
+  if (studioFavCountLabel) studioFavCountLabel.textContent = count;
 }
 
 // Restore favorites panel state (suppress slide animation on load)
@@ -1216,9 +1212,7 @@ document.getElementById("studio-suggest-btn").addEventListener("click", pickStud
 document.getElementById("studio-trash-btn").addEventListener("click", () => openTrashModal());
 
 async function openTrashModal() {
-  const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
-  const all = await loadAllTrash();
-  for (const item of all) { if (item.deletedAt < cutoff) await deleteFromTrash(item.id); }
+  await purgeOldTrash(loadAllTrash, deleteFromTrash);
   document.getElementById("shared-trash-modal").classList.add("open");
   await renderTrashGrid();
   // Wire empty button for this studio
@@ -1242,7 +1236,7 @@ async function renderTrashGrid() {
   items.forEach(item => {
     const card = document.createElement("div");
     card.className = "trash-card";
-    const age = _trashAge(item.deletedAt);
+    const age = trashAge(item.deletedAt);
     card.innerHTML = `
       <img src="data:image/png;base64,${item.image}" alt="${esc(item.rawPrompt || "")}" />
       <div class="trash-card-info">
@@ -1295,18 +1289,8 @@ async function _restoreFromTrash(item) {
   }
 }
 
-function _trashAge(ts) {
-  const mins = Math.floor((Date.now() - ts) / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
-}
-
 function updateTrashBadge(count) {
-  const badge = document.getElementById("studio-trash-badge");
-  if (badge) { badge.textContent = count; badge.style.display = ""; }
+  updateBadge("studio-trash-badge", count);
 }
 
 async function _refreshTrashBadge() {
