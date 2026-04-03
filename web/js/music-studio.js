@@ -177,167 +177,48 @@ document.getElementById("music-write-song-btn").addEventListener("click", async 
 
 
 // ── Music IndexedDB ──
-const MUSIC_DB_NAME = "diab_music";
-const MUSIC_DB_VER = 4;
-const MUSIC_FOLDER_STORE = "folders";
-function openMusicDB() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(MUSIC_DB_NAME, MUSIC_DB_VER);
-    req.onupgradeneeded = (e) => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains("tracks")) db.createObjectStore("tracks", { keyPath: "id" });
-      if (!db.objectStoreNames.contains("favorites")) db.createObjectStore("favorites", { keyPath: "id" });
-      if (!db.objectStoreNames.contains("trash")) db.createObjectStore("trash", { keyPath: "id" });
-      if (!db.objectStoreNames.contains(MUSIC_FOLDER_STORE)) db.createObjectStore(MUSIC_FOLDER_STORE, { keyPath: "id" });
-      // v3 migration: assign folder_id to existing tracks
-      if (e.oldVersion < 3 && db.objectStoreNames.contains("tracks")) {
-        try {
-          const tx = req.transaction;
-          const store = tx.objectStore("tracks");
-          store.openCursor().onsuccess = (ev) => {
-            const cursor = ev.target.result;
-            if (cursor) {
-              const rec = cursor.value;
-              if (!rec.folder_id) { rec.folder_id = null; cursor.update(rec); }
-              cursor.continue();
-            }
-          };
-        } catch {}
-      }
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-async function saveMusicTrack(record) {
-  const db = await openMusicDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction("tracks", "readwrite");
-    tx.objectStore("tracks").put(record);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-async function loadAllMusicTracks() {
-  const db = await openMusicDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction("tracks", "readonly");
-    const req = tx.objectStore("tracks").getAll();
-    req.onsuccess = () => resolve(req.result || []);
-    req.onerror = () => reject(req.error);
-  });
-}
-async function deleteMusicTrack(id) {
-  const db = await openMusicDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction("tracks", "readwrite");
-    tx.objectStore("tracks").delete(id);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-async function saveMusicFavorite(fav) {
-  const db = await openMusicDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction("favorites", "readwrite");
-    tx.objectStore("favorites").put(fav);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-async function deleteMusicFavorite(id) {
-  const db = await openMusicDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction("favorites", "readwrite");
-    tx.objectStore("favorites").delete(id);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-async function loadAllMusicFavorites() {
-  const db = await openMusicDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction("favorites", "readonly");
-    const req = tx.objectStore("favorites").getAll();
-    req.onsuccess = () => resolve(req.result || []);
-    req.onerror = () => reject(req.error);
-  });
-}
-async function isMusicFavorite(id) {
-  const db = await openMusicDB();
-  return new Promise((resolve) => {
-    const tx = db.transaction("favorites", "readonly");
-    const req = tx.objectStore("favorites").get(id);
-    req.onsuccess = () => resolve(!!req.result);
-    req.onerror = () => resolve(false);
-  });
-}
+const _musicDB = createStudioDB({
+  name: "diab_music", version: 4,
+  stores: ["tracks", "favorites", "trash", "folders"],
+  onUpgrade(e, req) {
+    if (e.oldVersion < 3 && req.result.objectStoreNames.contains("tracks")) {
+      try {
+        const store = req.transaction.objectStore("tracks");
+        store.openCursor().onsuccess = (ev) => {
+          const cursor = ev.target.result;
+          if (cursor) {
+            const rec = cursor.value;
+            if (!rec.folder_id) { rec.folder_id = null; cursor.update(rec); }
+            cursor.continue();
+          }
+        };
+      } catch {}
+    }
+  }
+});
+function openMusicDB() { return _musicDB.open(); }
+
+async function saveMusicTrack(record) { return _musicDB.save("tracks", record); }
+async function loadAllMusicTracks() { return _musicDB.loadAll("tracks"); }
+async function deleteMusicTrack(id) { return _musicDB.remove("tracks", id); }
+async function saveMusicFavorite(fav) { return _musicDB.save("favorites", fav); }
+async function deleteMusicFavorite(id) { return _musicDB.remove("favorites", id); }
+async function loadAllMusicFavorites() { return _musicDB.loadAll("favorites"); }
+async function isMusicFavorite(id) { return _musicDB.has("favorites", id); }
 
 // ── Music trash CRUD ──
-async function saveMusicToTrash(item) {
-  const db = await openMusicDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction("trash", "readwrite");
-    tx.objectStore("trash").put(item);
-    tx.oncomplete = resolve; tx.onerror = () => reject(tx.error);
-  });
-}
-async function loadAllMusicTrash() {
-  const db = await openMusicDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction("trash", "readonly");
-    const r = tx.objectStore("trash").getAll();
-    r.onsuccess = () => resolve(r.result || []); r.onerror = reject;
-  });
-}
-async function deleteFromMusicTrash(id) {
-  const db = await openMusicDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction("trash", "readwrite");
-    tx.objectStore("trash").delete(id);
-    tx.oncomplete = resolve; tx.onerror = () => reject(tx.error);
-  });
-}
-async function emptyMusicTrash() {
-  const db = await openMusicDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction("trash", "readwrite");
-    tx.objectStore("trash").clear();
-    tx.oncomplete = resolve; tx.onerror = () => reject(tx.error);
-  });
-}
+async function saveMusicToTrash(item) { return _musicDB.save("trash", item); }
+async function loadAllMusicTrash() { return _musicDB.loadAll("trash"); }
+async function deleteFromMusicTrash(id) { return _musicDB.remove("trash", id); }
+async function emptyMusicTrash() { return _musicDB.clear("trash"); }
 function _makeMusicTrashId() {
   return "mtrash_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
 }
 
 // ── Music Folders CRUD ──
-async function saveMusicFolder(col) {
-  const db = await openMusicDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(MUSIC_FOLDER_STORE, "readwrite");
-    tx.objectStore(MUSIC_FOLDER_STORE).put(col);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-async function deleteMusicFolder(id) {
-  const db = await openMusicDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(MUSIC_FOLDER_STORE, "readwrite");
-    tx.objectStore(MUSIC_FOLDER_STORE).delete(id);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-async function loadAllMusicFolders() {
-  const db = await openMusicDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(MUSIC_FOLDER_STORE, "readonly");
-    const req = tx.objectStore(MUSIC_FOLDER_STORE).getAll();
-    req.onsuccess = () => resolve(req.result || []);
-    req.onerror = () => reject(req.error);
-  });
-}
+async function saveMusicFolder(col) { return _musicDB.save("folders", col); }
+async function deleteMusicFolder(id) { return _musicDB.remove("folders", id); }
+async function loadAllMusicFolders() { return _musicDB.loadAll("folders"); }
 let musicFolders = [];
 let activeMusicFolderId = localStorage.getItem("diab_music_folder") || null;
 

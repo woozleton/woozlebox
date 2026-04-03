@@ -54,173 +54,48 @@ document.querySelectorAll(".studio-count-btn").forEach(btn => {
 });
 
 // ── Studio IndexedDB persistence ──
-const STUDIO_DB_NAME = "diab_studio";
-const STUDIO_DB_STORE = "images";
-const STUDIO_FAV_STORE = "favorites";
-const IMAGE_FOLDER_STORE = "folders";
-function openStudioDB() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(STUDIO_DB_NAME, 6);
-    req.onupgradeneeded = (e) => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains(STUDIO_DB_STORE)) {
-        db.createObjectStore(STUDIO_DB_STORE, { keyPath: "id" });
-      }
-      if (!db.objectStoreNames.contains(STUDIO_FAV_STORE)) {
-        db.createObjectStore(STUDIO_FAV_STORE, { keyPath: "id" });
-      }
-      if (!db.objectStoreNames.contains(IMAGE_FOLDER_STORE)) {
-        db.createObjectStore(IMAGE_FOLDER_STORE, { keyPath: "id" });
-      }
-      if (!db.objectStoreNames.contains("trash")) {
-        db.createObjectStore("trash", { keyPath: "id" });
-      }
-      // v4 migration: assign unique session_id to existing records
-      if (e.oldVersion < 4) {
-        const tx = req.transaction;
-        const store = tx.objectStore(STUDIO_DB_STORE);
-        store.openCursor().onsuccess = (ev) => {
-          const cursor = ev.target.result;
-          if (cursor) {
-            const rec = cursor.value;
-            if (!rec.session_id) {
-              rec.session_id = "sess_" + rec.id;
-              cursor.update(rec);
-            }
-            cursor.continue();
-          }
-        };
-      }
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
+const _imageDB = createStudioDB({
+  name: "diab_studio", version: 6,
+  stores: ["images", "favorites", "folders", "trash"],
+  onUpgrade(e, req) {
+    if (e.oldVersion < 4) {
+      const store = req.transaction.objectStore("images");
+      store.openCursor().onsuccess = (ev) => {
+        const cursor = ev.target.result;
+        if (cursor) {
+          const rec = cursor.value;
+          if (!rec.session_id) { rec.session_id = "sess_" + rec.id; cursor.update(rec); }
+          cursor.continue();
+        }
+      };
+    }
+  }
+});
+function openStudioDB() { return _imageDB.open(); }
 
 // ── Image Folders CRUD ──
-async function saveImageFolder(pg) {
-  const db = await openStudioDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(IMAGE_FOLDER_STORE, "readwrite");
-    tx.objectStore(IMAGE_FOLDER_STORE).put(pg);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-async function deleteImageFolder(id) {
-  const db = await openStudioDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(IMAGE_FOLDER_STORE, "readwrite");
-    tx.objectStore(IMAGE_FOLDER_STORE).delete(id);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-async function loadAllImageFolders() {
-  const db = await openStudioDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(IMAGE_FOLDER_STORE, "readonly");
-    const req = tx.objectStore(IMAGE_FOLDER_STORE).getAll();
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
+async function saveImageFolder(pg) { return _imageDB.save("folders", pg); }
+async function deleteImageFolder(id) { return _imageDB.remove("folders", id); }
+async function loadAllImageFolders() { return _imageDB.loadAll("folders"); }
 let imageFolders = [];
 let activeImageFolderId = localStorage.getItem("diab_image_folder") || null;
-async function saveStudioImage(record) {
-  const db = await openStudioDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STUDIO_DB_STORE, "readwrite");
-    tx.objectStore(STUDIO_DB_STORE).put(record);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-async function deleteStudioImage(id) {
-  const db = await openStudioDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STUDIO_DB_STORE, "readwrite");
-    tx.objectStore(STUDIO_DB_STORE).delete(id);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-async function loadAllStudioImages() {
-  const db = await openStudioDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STUDIO_DB_STORE, "readonly");
-    const req = tx.objectStore(STUDIO_DB_STORE).getAll();
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
+async function saveStudioImage(record) { return _imageDB.save("images", record); }
+async function deleteStudioImage(id) { return _imageDB.remove("images", id); }
+async function loadAllStudioImages() { return _imageDB.loadAll("images"); }
 
 // ── Trash CRUD ──
-const STUDIO_TRASH_STORE = "trash";
-async function saveToTrash(item) {
-  const db = await openStudioDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STUDIO_TRASH_STORE, "readwrite");
-    tx.objectStore(STUDIO_TRASH_STORE).put(item);
-    tx.oncomplete = resolve; tx.onerror = () => reject(tx.error);
-  });
-}
-async function loadAllTrash() {
-  const db = await openStudioDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STUDIO_TRASH_STORE, "readonly");
-    const r = tx.objectStore(STUDIO_TRASH_STORE).getAll();
-    r.onsuccess = () => resolve(r.result); r.onerror = reject;
-  });
-}
-async function deleteFromTrash(id) {
-  const db = await openStudioDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STUDIO_TRASH_STORE, "readwrite");
-    tx.objectStore(STUDIO_TRASH_STORE).delete(id);
-    tx.oncomplete = resolve; tx.onerror = () => reject(tx.error);
-  });
-}
-async function emptyTrash() {
-  const db = await openStudioDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STUDIO_TRASH_STORE, "readwrite");
-    tx.objectStore(STUDIO_TRASH_STORE).clear();
-    tx.oncomplete = resolve; tx.onerror = () => reject(tx.error);
-  });
-}
+async function saveToTrash(item) { return _imageDB.save("trash", item); }
+async function loadAllTrash() { return _imageDB.loadAll("trash"); }
+async function deleteFromTrash(id) { return _imageDB.remove("trash", id); }
+async function emptyTrash() { return _imageDB.clear("trash"); }
 function _makeTrashId() {
   return "trash_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
 }
 
 // ── Favorites CRUD ──
-async function saveFavorite(record) {
-  const db = await openStudioDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STUDIO_FAV_STORE, "readwrite");
-    tx.objectStore(STUDIO_FAV_STORE).put(record);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-async function deleteFavorite(id) {
-  const db = await openStudioDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STUDIO_FAV_STORE, "readwrite");
-    tx.objectStore(STUDIO_FAV_STORE).delete(id);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-async function loadAllFavorites() {
-  const db = await openStudioDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STUDIO_FAV_STORE, "readonly");
-    const req = tx.objectStore(STUDIO_FAV_STORE).getAll();
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
+async function saveFavorite(record) { return _imageDB.save("favorites", record); }
+async function deleteFavorite(id) { return _imageDB.remove("favorites", id); }
+async function loadAllFavorites() { return _imageDB.loadAll("favorites"); }
 
 const studioFavPanel = document.getElementById("studio-fav-panel");
 const studioFavToggle = document.getElementById("studio-fav-toggle");

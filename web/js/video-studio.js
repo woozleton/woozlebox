@@ -16,164 +16,26 @@ const videoFavCountLabel = document.getElementById("video-fav-count-label");
 let _videoGenerating = false;
 let _videoStartingImage = null; // base64 for I2V
 
-// ── Video IndexedDB ──
-const VIDEO_DB_NAME = "diab_video";
-const VIDEO_DB_VER = 2;
-const VIDEO_FOLDER_STORE = "folders";
-function openVideoDB() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(VIDEO_DB_NAME, VIDEO_DB_VER);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains("videos")) db.createObjectStore("videos", { keyPath: "id" });
-      if (!db.objectStoreNames.contains("favorites")) db.createObjectStore("favorites", { keyPath: "id" });
-      if (!db.objectStoreNames.contains("trash")) db.createObjectStore("trash", { keyPath: "id" });
-      if (!db.objectStoreNames.contains(VIDEO_FOLDER_STORE)) db.createObjectStore(VIDEO_FOLDER_STORE, { keyPath: "id" });
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-async function saveVideoClip(record) {
-  const db = await openVideoDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction("videos", "readwrite");
-    tx.objectStore("videos").put(record);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-
-async function loadAllVideoClips() {
-  const db = await openVideoDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction("videos", "readonly");
-    const req = tx.objectStore("videos").getAll();
-    req.onsuccess = () => resolve(req.result || []);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-async function deleteVideoClip(id) {
-  const db = await openVideoDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction("videos", "readwrite");
-    tx.objectStore("videos").delete(id);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-
-async function saveVideoFavorite(record) {
-  const db = await openVideoDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction("favorites", "readwrite");
-    tx.objectStore("favorites").put(record);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-
-async function deleteVideoFavorite(id) {
-  const db = await openVideoDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction("favorites", "readwrite");
-    tx.objectStore("favorites").delete(id);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-
-async function loadAllVideoFavorites() {
-  const db = await openVideoDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction("favorites", "readonly");
-    const req = tx.objectStore("favorites").getAll();
-    req.onsuccess = () => resolve(req.result || []);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-async function isVideoFavorite(id) {
-  const db = await openVideoDB();
-  return new Promise((resolve) => {
-    const tx = db.transaction("favorites", "readonly");
-    const req = tx.objectStore("favorites").get(id);
-    req.onsuccess = () => resolve(!!req.result);
-    req.onerror = () => resolve(false);
-  });
-}
-
-async function saveVideoToTrash(record) {
-  const db = await openVideoDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction("trash", "readwrite");
-    tx.objectStore("trash").put({ ...record, deletedAt: Date.now() });
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-
-async function loadAllVideoTrash() {
-  const db = await openVideoDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction("trash", "readonly");
-    const req = tx.objectStore("trash").getAll();
-    req.onsuccess = () => resolve(req.result || []);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-async function deleteFromVideoTrash(id) {
-  const db = await openVideoDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction("trash", "readwrite");
-    tx.objectStore("trash").delete(id);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-
-async function emptyVideoTrash() {
-  const db = await openVideoDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction("trash", "readwrite");
-    tx.objectStore("trash").clear();
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-
-async function saveVideoFolder(col) {
-  const db = await openVideoDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(VIDEO_FOLDER_STORE, "readwrite");
-    tx.objectStore(VIDEO_FOLDER_STORE).put(col);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-
-async function deleteVideoFolder(id) {
-  const db = await openVideoDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(VIDEO_FOLDER_STORE, "readwrite");
-    tx.objectStore(VIDEO_FOLDER_STORE).delete(id);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-
-async function loadAllVideoFolders() {
-  const db = await openVideoDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(VIDEO_FOLDER_STORE, "readonly");
-    const req = tx.objectStore(VIDEO_FOLDER_STORE).getAll();
-    req.onsuccess = () => resolve(req.result || []);
-    req.onerror = () => reject(req.error);
-  });
-}
+// ── Video IndexedDB (via factory) ──
+const _videoDB = createStudioDB({
+  name: "diab_video", version: 2,
+  stores: ["videos", "favorites", "trash", "folders"],
+});
+function openVideoDB()                  { return _videoDB.open(); }
+async function saveVideoClip(record)    { return _videoDB.save("videos", record); }
+async function loadAllVideoClips()      { return _videoDB.loadAll("videos"); }
+async function deleteVideoClip(id)      { return _videoDB.remove("videos", id); }
+async function saveVideoFavorite(rec)   { return _videoDB.save("favorites", rec); }
+async function deleteVideoFavorite(id)  { return _videoDB.remove("favorites", id); }
+async function loadAllVideoFavorites()  { return _videoDB.loadAll("favorites"); }
+async function isVideoFavorite(id)      { return _videoDB.has("favorites", id); }
+async function saveVideoToTrash(record) { return _videoDB.save("trash", { ...record, deletedAt: Date.now() }); }
+async function loadAllVideoTrash()      { return _videoDB.loadAll("trash"); }
+async function deleteFromVideoTrash(id) { return _videoDB.remove("trash", id); }
+async function emptyVideoTrash()        { return _videoDB.clear("trash"); }
+async function saveVideoFolder(col)     { return _videoDB.save("folders", col); }
+async function deleteVideoFolder(id)    { return _videoDB.remove("folders", id); }
+async function loadAllVideoFolders()    { return _videoDB.loadAll("folders"); }
 
 // ── Video sessions & folders ──
 let videoFolders = [];
