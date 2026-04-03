@@ -780,7 +780,7 @@ function _createMusicFavCard(fav) {
     <div class="music-fav-cover">
       ${coverSrc}
       <button class="music-fav-play" title="Play/Pause">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        ${icon("play", 16)}
       </button>
     </div>
     <div class="music-fav-info">
@@ -788,9 +788,9 @@ function _createMusicFavCard(fav) {
       <div class="music-fav-duration">${durStr}</div>
     </div>
     <div class="music-fav-card-actions">
-      <button class="music-action-btn music-fav-dl" title="Download"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
-      <button class="music-action-btn music-fav-reuse" title="Reuse settings"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
-      <button class="music-action-btn music-fav-remove" title="Remove from favorites"><svg width="12" height="12" viewBox="0 0 24 24" fill="#f472b6" stroke="#f472b6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+      <button class="music-action-btn music-fav-dl" title="Download">${icon("download", 12)}</button>
+      <button class="music-action-btn music-fav-reuse" title="Reuse settings">${icon("refresh", 12)}</button>
+      <button class="music-action-btn music-fav-remove" title="Remove from favorites">${icon("heart", 12)}</button>
     </div>
   `;
 
@@ -800,17 +800,17 @@ function _createMusicFavCard(fav) {
   playBtn.addEventListener("click", () => {
     if (isPlaying) {
       audio.pause(); playBtn.classList.remove("playing");
-      playBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+      playBtn.innerHTML = '${icon("play", 16)}';
     } else {
       document.querySelectorAll(".music-fav-play.playing").forEach(b => b.click());
       audio.play(); playBtn.classList.add("playing");
-      playBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+      playBtn.innerHTML = '${icon("pause", 16)}';
     }
     isPlaying = !isPlaying;
   });
   audio.addEventListener("ended", () => {
     isPlaying = false; playBtn.classList.remove("playing");
-    playBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+    playBtn.innerHTML = '${icon("play", 16)}';
   });
 
   // Download
@@ -1087,7 +1087,7 @@ function createMusicResultCard(record) {
 
   const hasLyrics = record.lyrics && record.lyrics !== "[Instrumental]";
   const lyricsToggleHtml = hasLyrics
-    ? `<button class="music-lyrics-toggle"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg> Lyrics</button>` : "";
+    ? `<button class="music-lyrics-toggle">${icon("chevron-down", 8)} Lyrics</button>` : "";
   const lyricsBodyHtml = hasLyrics ? `<div class="music-meta-lyrics">${esc(record.lyrics)}</div>` : "";
   const pills = [];
   pills.push(record.model || "ACE-Step 1.5");
@@ -1104,11 +1104,11 @@ function createMusicResultCard(record) {
       : "";
 
   el.innerHTML = `
-    ${coverHtml ? `<div class="music-result-cover">${coverHtml}<button class="img-fav-solo music-fav-btn" title="Favorite"><svg width="18" height="18" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button></div>` : ""}
+    ${coverHtml ? `<div class="music-result-cover">${coverHtml}<button class="img-fav-solo music-fav-btn" title="Favorite">${icon("heart", 18)}</button></div>` : ""}
     <div class="music-result-body">
       <div class="music-result-player">
         <button class="music-play-btn" title="Play/Pause">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          ${icon("play", 16)}
         </button>
         <div class="music-waveform-wrap">
           <canvas></canvas>
@@ -1122,18 +1122,18 @@ function createMusicResultCard(record) {
         <div class="music-meta-bottom">
           <div class="music-meta-pills">
             ${pills.map(p => `<span class="meta-pill">${esc(p)}</span>`).join("")}
-            <button class="music-prompt-toggle"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg> Prompt</button>
+            <button class="music-prompt-toggle">${icon("chevron-down", 8)} Prompt</button>
             ${lyricsToggleHtml}
           </div>
           <div class="music-result-actions">
             <button class="music-action-btn music-reuse" title="Reuse settings">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+              ${icon("refresh", 12)}
             </button>
             <button class="music-action-btn music-dl" title="Download">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              ${icon("download", 12)}
             </button>
             <button class="music-action-btn music-del" title="Delete">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              ${icon("trash-simple", 12)}
             </button>
           </div>
         </div>
@@ -1192,7 +1192,7 @@ function createMusicResultCard(record) {
     if (isPlaying) {
       audio.pause();
       playBtn.classList.remove("playing");
-      playBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+      playBtn.innerHTML = '${icon("play", 16)}';
     } else {
       document.querySelectorAll(".music-play-btn.playing").forEach(btn => btn.click());
       audio.play();
@@ -1205,7 +1205,7 @@ function createMusicResultCard(record) {
   audio.addEventListener("ended", () => {
     isPlaying = false;
     playBtn.classList.remove("playing");
-    playBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+    playBtn.innerHTML = '${icon("play", 16)}';
     waveProgress.style.width = "0%";
   });
 
@@ -1636,15 +1636,15 @@ async function renderMusicTrashList() {
     const durStr = item.duration ? item.duration + "s" : "";
     card.innerHTML = `
       <button class="music-trash-play" title="Play/Pause">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        ${icon("play")}
       </button>
       <div class="studio-trash-card-info">
         <div class="studio-trash-card-prompt">${esc(item.title || item.rawPrompt || "Untitled")}</div>
         <div class="studio-trash-card-meta">${durStr}${durStr ? " · " : ""}Deleted ${age}</div>
       </div>
       <div class="studio-trash-card-actions">
-        <button class="studio-trash-restore" title="Restore"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
-        <button class="studio-trash-del" title="Delete permanently"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
+        <button class="studio-trash-restore" title="Restore">${icon("refresh")}</button>
+        <button class="studio-trash-del" title="Delete permanently">${icon("trash")}</button>
       </div>
     `;
     // Play/pause
@@ -1662,14 +1662,14 @@ async function renderMusicTrashList() {
         _trashAudio.addEventListener("ended", () => {
           _trashPlaying = false;
           playBtn.classList.remove("playing");
-          playBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+          playBtn.innerHTML = '${icon("play")}';
         });
       }
       if (!_trashAudio) return;
       if (_trashPlaying) {
         _trashAudio.pause();
         playBtn.classList.remove("playing");
-        playBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+        playBtn.innerHTML = '${icon("play")}';
       } else {
         // Stop any other playing trash audio
         document.querySelectorAll(".music-trash-play.playing").forEach(b => b.click());

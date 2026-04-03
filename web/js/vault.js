@@ -51,7 +51,7 @@ async function pollIndexStatus() {
       if (reindexBtn) { reindexBtn.disabled = true; reindexBtn.innerHTML = `<span class="step-spinner" style="display:inline-block;width:10px;height:10px;"></span> Indexing…`; }
     } else if (_lastIndexRunning) {
       // Just finished - refresh file list, show brief done message
-      if (reindexBtn) { reindexBtn.disabled = false; reindexBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Re-index`; }
+      if (reindexBtn) { reindexBtn.disabled = false; reindexBtn.innerHTML = `${icon("redo", 12)} Re-index`; }
       vaultBanner.innerHTML = `<div class="vault-banner-msg">Indexing complete.</div>`;
       setTimeout(() => { vaultBanner.innerHTML = ""; }, 4000);
       loadVaultFiles();

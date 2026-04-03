@@ -483,7 +483,7 @@ function memSpinSvg() {
 
 // esc() is defined in config.js
 function scrollBottom() { chatWindow.scrollTop = chatWindow.scrollHeight; }
-const SVG_SEND = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>`;
+const SVG_SEND = icon("send", 16);
 const SVG_STOP = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><rect x="9" y="9" width="6" height="6" rx="1" fill="currentColor" stroke="none"/></svg>`;
 
 let chatAbortController = null;
@@ -528,8 +528,8 @@ function appendUserBubble(text, images) {
         <span class="timestamp">${ts()}</span>
         <span class="bubble-actions">
           <button class="mem-btn bubble-action-btn" title="Save to memory">${memBrainSvg(false)}</button>
-          <button class="tts-btn bubble-action-btn" title="Read aloud"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></button>
-          <button class="copy-btn bubble-action-btn" title="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+          <button class="tts-btn bubble-action-btn" title="Read aloud">${icon("play", 13)}</button>
+          <button class="copy-btn bubble-action-btn" title="Copy">${icon("copy", 13)}</button>
         </span>
       </div>
     </div>
@@ -576,10 +576,10 @@ function appendUserBubble(text, images) {
 
   row.querySelector(".copy-btn").addEventListener("click", function() {
     navigator.clipboard.writeText(text).then(() => {
-      this.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 18 4 13"/></svg>';
+      this.innerHTML = icon("check", 13);
       this.classList.add("copied");
       setTimeout(() => {
-        this.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+        this.innerHTML = icon("copy", 13);
         this.classList.remove("copied");
       }, 2000);
     });
@@ -620,20 +620,20 @@ function appendAIBubble(text, sources, webSources, modelUsed, debugData, stepRow
     if (sources.length) parts.push(`${sources.length} vault source${sources.length>1?"s":""}`);
     if (webSources.length) parts.push(`${webSources.length} web result${webSources.length>1?"s":""}`);
     const label = parts.join(", ");
-    sourcesToggle = `<button class="sources-toggle" title="Show sources"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>${label}</button>`;
+    sourcesToggle = `<button class="sources-toggle" title="Show sources">${icon("chevron-right", 7)}${label}</button>`;
     let panelItems = "";
     if (sources.length) {
       panelItems += `<div class="sources-panel-label">Vault</div>`;
       sources.forEach(s => {
         const name = s.split("/").pop();
-        panelItems += `<button class="source-link" data-path="${esc(s)}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>${esc(name)}</button>`;
+        panelItems += `<button class="source-link" data-path="${esc(s)}">${icon("file", 11)}${esc(name)}</button>`;
       });
     }
     if (webSources.length) {
       const webLabel = webSearchQuery ? `Web: <em style="opacity:0.6;font-style:normal;">${esc(webSearchQuery)}</em>` : "Web";
       panelItems += `<div class="sources-panel-label" style="margin-top:4px;">${webLabel}</div>`;
       webSources.forEach(s => {
-        panelItems += `<a class="web-link" href="${esc(s.url)}" target="_blank" rel="noopener"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><span>${esc(s.title||s.url)}</span></a>`;
+        panelItems += `<a class="web-link" href="${esc(s.url)}" target="_blank" rel="noopener">${icon("globe", 11)}<span>${esc(s.title||s.url)}</span></a>`;
       });
     }
     sourcesPanelHtml = `<div class="sources-panel">${panelItems}</div>`;
@@ -667,8 +667,8 @@ function appendAIBubble(text, sources, webSources, modelUsed, debugData, stepRow
         ${sourcesToggle ? `<span class="meta-sep">·</span>${sourcesToggle}` : ""}
         <span class="bubble-actions" style="margin-left:auto;">
           <button class="mem-btn bubble-action-btn" title="Save to memory">${memBrainSvg(false)}</button>
-          <button class="tts-btn bubble-action-btn" title="Play"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></button>
-          <button class="copy-btn bubble-action-btn" title="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+          <button class="tts-btn bubble-action-btn" title="Play">${icon("play", 13)}</button>
+          <button class="copy-btn bubble-action-btn" title="Copy">${icon("copy", 13)}</button>
         </span>
       </div>
       ${sourcesPanelHtml}
@@ -722,10 +722,10 @@ function appendAIBubble(text, sources, webSources, modelUsed, debugData, stepRow
   // Copy button
   row.querySelector(".copy-btn").addEventListener("click", function() {
     navigator.clipboard.writeText(text).then(() => {
-      this.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 18 4 13"/></svg>';
+      this.innerHTML = icon("check", 13);
       this.classList.add("copied");
       setTimeout(() => {
-        this.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+        this.innerHTML = icon("copy", 13);
         this.classList.remove("copied");
       }, 2000);
     });
@@ -885,16 +885,16 @@ function createStreamingBubble() {
       const parts = [];
       if (sources.length) parts.push(`${sources.length} vault source${sources.length>1?"s":""}`);
       if (webSources.length) parts.push(`${webSources.length} web result${webSources.length>1?"s":""}`);
-      sourcesToggle = `<button class="sources-toggle" title="Show sources"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>${parts.join(", ")}</button>`;
+      sourcesToggle = `<button class="sources-toggle" title="Show sources">${icon("chevron-right", 7)}${parts.join(", ")}</button>`;
       let panelItems = "";
       if (sources.length) {
         panelItems += `<div class="sources-panel-label">Vault</div>`;
-        sources.forEach(s => { const name = s.split("/").pop(); panelItems += `<button class="source-link" data-path="${esc(s)}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>${esc(name)}</button>`; });
+        sources.forEach(s => { const name = s.split("/").pop(); panelItems += `<button class="source-link" data-path="${esc(s)}">${icon("file", 11)}${esc(name)}</button>`; });
       }
       if (webSources.length) {
         const webLabel = webSearchQuery ? `Web: <em style="opacity:0.6;font-style:normal;">${esc(webSearchQuery)}</em>` : "Web";
         panelItems += `<div class="sources-panel-label" style="margin-top:4px;">${webLabel}</div>`;
-        webSources.forEach(s => { panelItems += `<a class="web-link" href="${esc(s.url)}" target="_blank" rel="noopener"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><span>${esc(s.title||s.url)}</span></a>`; });
+        webSources.forEach(s => { panelItems += `<a class="web-link" href="${esc(s.url)}" target="_blank" rel="noopener">${icon("globe", 11)}<span>${esc(s.title||s.url)}</span></a>`; });
       }
       sourcesPanelHtml = `<div class="sources-panel">${panelItems}</div>`;
     }
@@ -912,16 +912,16 @@ function createStreamingBubble() {
 
     const meta = document.createElement("div");
     meta.className = "msg-meta";
-    meta.innerHTML = `<span class="timestamp">${ts()}</span>${modelUsed ? `<span class="meta-sep">·</span>${modelTag}` : ""}${debugHtml}${sourcesToggle ? `<span class="meta-sep">·</span>${sourcesToggle}` : ""}<span class="bubble-actions" style="margin-left:auto;"><button class="mem-btn bubble-action-btn" title="Save to memory">${memBrainSvg(false)}</button><button class="tts-btn bubble-action-btn" title="Play"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></button><button class="copy-btn bubble-action-btn" title="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></span>`;
+    meta.innerHTML = `<span class="timestamp">${ts()}</span>${modelUsed ? `<span class="meta-sep">·</span>${modelTag}` : ""}${debugHtml}${sourcesToggle ? `<span class="meta-sep">·</span>${sourcesToggle}` : ""}<span class="bubble-actions" style="margin-left:auto;"><button class="mem-btn bubble-action-btn" title="Save to memory">${memBrainSvg(false)}</button><button class="tts-btn bubble-action-btn" title="Play">${icon("play", 13)}</button><button class="copy-btn bubble-action-btn" title="Copy">${icon("copy", 13)}</button></span>`;
     wrap.appendChild(meta);
     if (sourcesPanelHtml) { const sp = document.createElement("div"); sp.innerHTML = sourcesPanelHtml; wrap.appendChild(sp.firstChild); }
 
     // Wire copy button
     meta.querySelector(".copy-btn").addEventListener("click", function() {
       navigator.clipboard.writeText(fullText).then(() => {
-        this.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 18 4 13"/></svg>';
+        this.innerHTML = icon("check", 13);
         this.classList.add("copied");
-        setTimeout(() => { this.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>'; this.classList.remove("copied"); }, 2000);
+        setTimeout(() => { this.innerHTML = icon("copy", 13); this.classList.remove("copied"); }, 2000);
       });
     });
     // Wire TTS button
@@ -1014,7 +1014,7 @@ function appendImageBubble(prompt, b64Image, elapsedS, modelName) {
         <img src="${src}" alt="${esc(prompt)}" onclick="window.open(this.src)" />
         <div class="generated-image-caption">${esc(prompt)}</div>
         <button class="image-download-btn">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          ${icon("upload", 12)}
           Save image
         </button>
       </div>
@@ -1097,7 +1097,7 @@ function renderQueueTray() {
       <span class="queue-item-pos">#${i + 1}</span>
       <span class="queue-item-text">${esc(item.text)}</span>
       <button class="queue-item-cancel" title="Remove from queue" data-idx="${i}">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        ${icon("x", 11)}
       </button>
     </div>
   `).join("");

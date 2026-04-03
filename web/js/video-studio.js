@@ -534,16 +534,16 @@ function createVideoResultCard(record) {
       <div class="video-result-pills">${pills.map(p => `<span>${esc(p)}</span>`).join("")}</div>
       <div class="video-result-actions">
         <button class="music-action-btn video-fav-btn" title="Favorite">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          ${icon("heart")}
         </button>
         <button class="music-action-btn video-reuse-btn" title="Reuse settings">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+          ${icon("refresh", 12)}
         </button>
         <button class="music-action-btn video-download-btn" title="Download">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          ${icon("download", 12)}
         </button>
         <button class="music-action-btn video-delete-btn" title="Delete">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          ${icon("trash-simple", 12)}
         </button>
       </div>
     </div>
@@ -784,7 +784,7 @@ async function refreshVideoFavoritesPanel() {
   if (!favs.length) {
     if (emptyEl) emptyEl.style.display = "";
     else videoFavContent.innerHTML = `<div class="fav-panel-empty">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.3"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      ${icon("heart", 32)}
       <p>Click the heart on any video to add it to your favorites.</p>
     </div>`;
     return;
@@ -805,16 +805,16 @@ function _createVideoFavCard(fav) {
 
   card.innerHTML = `
     <div class="music-fav-cover" style="width:56px;height:42px;border-radius:6px;">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" stroke-width="1.5"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+      ${icon("video", 18)}
     </div>
     <div class="music-fav-info">
       <div class="music-fav-title">${esc(title)}</div>
       <div class="music-fav-duration">${durStr}</div>
     </div>
     <div class="music-fav-card-actions">
-      <button class="music-action-btn video-fav-dl" title="Download"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
-      <button class="music-action-btn video-fav-reuse" title="Reuse settings"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
-      <button class="music-action-btn video-fav-remove" title="Remove from favorites"><svg width="12" height="12" viewBox="0 0 24 24" fill="#f472b6" stroke="#f472b6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+      <button class="music-action-btn video-fav-dl" title="Download">${icon("download", 12)}</button>
+      <button class="music-action-btn video-fav-reuse" title="Reuse settings">${icon("refresh", 12)}</button>
+      <button class="music-action-btn video-fav-remove" title="Remove from favorites">${icon("heart", 12)}</button>
     </div>
   `;
 
@@ -905,8 +905,8 @@ async function renderVideoTrashList() {
         <div class="studio-trash-card-meta">${durStr}${durStr ? " · " : ""}Deleted ${age}</div>
       </div>
       <div class="studio-trash-card-actions">
-        <button class="studio-trash-restore" title="Restore"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
-        <button class="studio-trash-del" title="Delete permanently"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
+        <button class="studio-trash-restore" title="Restore">${icon("refresh")}</button>
+        <button class="studio-trash-del" title="Delete permanently">${icon("trash")}</button>
       </div>
     `;
     card.querySelector(".studio-trash-restore").addEventListener("click", async () => {

@@ -392,7 +392,7 @@ function renderVaultMeta(data) {
   const fileCount = data.files?.length || data.files_processed || 0;
   const chunkCount = data.chunks_upserted || 0;
   const SVG_FOLDER_NEW = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>`;
-  const SVG_REINDEX    = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>`;
+  const SVG_REINDEX    = `${icon("redo", 12)}`;
   vaultMeta.innerHTML = `
     <div class="vault-meta-info"><span>${fileCount}</span> file${fileCount !== 1 ? "s" : ""} · <span>${chunkCount}</span> chunks</div>
     <div class="vault-meta-actions">
@@ -405,7 +405,7 @@ function renderVaultMeta(data) {
     const row = document.createElement("div");
     row.className = "vault-new-folder-row";
     row.innerHTML = `
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--text-faint)"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      ${icon("folder", 13)}
       <input type="text" placeholder="Folder name…" />
       <button class="vault-new-folder-confirm" title="Create">✓</button>
       <button class="vault-new-folder-cancel" title="Cancel">✕</button>
@@ -466,9 +466,9 @@ function makeFolderEl(folder, items) {
   folderEl.className = "vault-folder open";
   folderEl.dataset.folder = folder;
 
-  const SVG_FOLDER = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`;
+  const SVG_FOLDER = `${icon("folder", 13)}`;
   const SVG_RENAME = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
-  const SVG_TRASH  = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
+  const SVG_TRASH  = `${icon("trash", 12)}`;
 
   const header = document.createElement("div");
   header.className = "vault-folder-header";
@@ -589,7 +589,7 @@ function makeFileItem(f) {
     <span class="vault-file-name" title="${esc(f.path)}">${esc(f.name)}</span>
     <span class="vault-chunk-count">${chunkLabel}</span>
     <button class="vault-rename-btn" title="Rename"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-    <button class="vault-delete-btn" title="Delete ${esc(f.name)}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
+    <button class="vault-delete-btn" title="Delete ${esc(f.name)}">${icon("trash", 13)}</button>
   `;
   el.querySelector(".vault-file-name").addEventListener("click", () => previewVaultFile(f));
   el.querySelector(".vault-rename-btn").addEventListener("click", (e) => { e.stopPropagation(); startRename(el, f); });

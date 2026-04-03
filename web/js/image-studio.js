@@ -288,9 +288,9 @@ async function refreshFavoritesPanel() {
         <img src="data:image/png;base64,${fav.image}" alt="${esc(fav.prompt)}" draggable="false" />
         <span class="img-res-label"></span>
         <div class="fav-card-actions">
-          <button class="img-action-btn fav-dl" title="Download"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
-          <button class="img-action-btn fav-reuse" title="Reuse settings"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
-          <button class="img-action-btn fav-vary" title="Generate variation"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg></button>
+          <button class="img-action-btn fav-dl" title="Download">${icon("download", 12)}</button>
+          <button class="img-action-btn fav-reuse" title="Reuse settings">${icon("refresh", 12)}</button>
+          <button class="img-action-btn fav-vary" title="Generate variation">${icon("bolt", 12)}</button>
           <button class="img-action-btn fav-remove img-del" title="Remove from favorites"><svg width="12" height="12" viewBox="0 0 24 24" fill="#f472b6" stroke="#f472b6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
         </div>
       `;
@@ -1369,8 +1369,8 @@ async function renderTrashGrid() {
         <div class="trash-card-age">Deleted ${age}</div>
       </div>
       <div class="trash-card-actions">
-        <button class="trash-restore-btn" title="Restore"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
-        <button class="trash-del-btn" title="Delete permanently"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
+        <button class="trash-restore-btn" title="Restore">${icon("refresh")}</button>
+        <button class="trash-del-btn" title="Delete permanently">${icon("trash")}</button>
       </div>
     `;
     card.querySelector(".trash-restore-btn").addEventListener("click", async () => {
@@ -2060,7 +2060,7 @@ function renderStudioQueueTray() {
       <span class="queue-item-pos">#${i + 1}</span>
       <span class="queue-item-text">${esc(item.rawPrompt)}</span>
       <button class="queue-item-cancel" title="Remove from queue" data-idx="${i}">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        ${icon("x", 11)}
       </button>
     </div>
   `).join("");
@@ -2327,23 +2327,23 @@ function _appendImageToGrid(grid, result, data, idx, id, rawPrompt, body, allRes
     <img src="data:image/png;base64,${data.image}" alt="${esc(rawPrompt)}" />
     <span class="img-res-label"></span>
     <button class="img-fav-solo img-fav" title="Add to favorites">
-      <svg width="18" height="18" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      ${icon("heart", 18)}
     </button>
     <div class="studio-img-actions">
       <button class="img-action-btn img-vary" title="Generate variation">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>
+        ${icon("bolt", 12)}
       </button>
       <button class="img-action-btn img-enhance" title="Enhance (upscale)">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.5 3.5L17 8l-3.5 1.5L12 13l-1.5-3.5L7 8l3.5-1.5z"/><path d="M5 17l.75 1.75L7.5 19.5l-1.75.75L5 22l-.75-1.75L2.5 19.5l1.75-.75z"/><path d="M18 13l.75 1.75 1.75.75-1.75.75L18 18l-.75-1.75-1.75-.75 1.75-.75z"/></svg>
+        ${icon("sparkles", 12)}
       </button>
       <button class="img-action-btn img-edit" title="Edit (inpaint)">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        ${icon("edit", 12)}
       </button>
       <button class="img-action-btn img-dl" title="Download">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        ${icon("download", 12)}
       </button>
       <button class="img-action-btn img-del" title="Delete this image">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        ${icon("trash-simple", 12)}
       </button>
     </div>
   `;
@@ -2473,23 +2473,23 @@ function appendStudioResult(dataArr, rawPrompt, body, recordId) {
       <img src="data:image/png;base64,${d.image}" alt="${esc(rawPrompt)}" />
       <span class="img-res-label"></span>
       <button class="img-fav-solo img-fav" title="Add to favorites">
-        <svg width="18" height="18" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        ${icon("heart", 18)}
       </button>
       <div class="studio-img-actions">
         <button class="img-action-btn img-vary" title="Generate variation">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>
+          ${icon("bolt", 12)}
         </button>
         <button class="img-action-btn img-enhance" title="Enhance (upscale)">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.5 3.5L17 8l-3.5 1.5L12 13l-1.5-3.5L7 8l3.5-1.5z"/><path d="M5 17l.75 1.75L7.5 19.5l-1.75.75L5 22l-.75-1.75L2.5 19.5l1.75-.75z"/><path d="M18 13l.75 1.75 1.75.75-1.75.75L18 18l-.75-1.75-1.75-.75 1.75-.75z"/></svg>
+          ${icon("sparkles", 12)}
         </button>
         <button class="img-action-btn img-edit" title="Edit (inpaint)">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          ${icon("edit", 12)}
         </button>
         <button class="img-action-btn img-dl" title="Download">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          ${icon("download", 12)}
         </button>
         <button class="img-action-btn img-del" title="Delete this image">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          ${icon("trash-simple", 12)}
         </button>
       </div>
     </div>
@@ -2504,7 +2504,7 @@ function appendStudioResult(dataArr, rawPrompt, body, recordId) {
         ${body?.steps ? `<span class="meta-pill">${body.steps} steps</span>` : ""}
         ${body?.guidance_scale != null ? `<span class="meta-pill">cfg ${body.guidance_scale}</span>` : ""}
         ${totalElapsed > 0 ? `<span class="meta-pill">${totalElapsed.toFixed(1)}s</span>` : ""}
-        <button class="studio-prompt-toggle"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg> Prompt</button>
+        <button class="studio-prompt-toggle">${icon("chevron-down", 8)} Prompt</button>
       </span>
       <div class="studio-meta-prompt">${esc(rawPrompt)}${preset ? ` <span style="color:var(--accent);">[${preset}]</span>` : ""}</div>
     </div>

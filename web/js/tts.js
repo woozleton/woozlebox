@@ -70,7 +70,7 @@ async function speakText(fullText, voice, playBtn) {
   ttsAbortController = new AbortController();
   const signal = ttsAbortController.signal;
 
-  if (playBtn) { playBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>'; playBtn.classList.add("playing"); activeTtsBtn = playBtn; }
+  if (playBtn) { playBtn.innerHTML = icon("pause", 13); playBtn.classList.add("playing"); activeTtsBtn = playBtn; }
 
   try {
     const sentences = splitSentences(fullText);
@@ -84,7 +84,7 @@ async function speakText(fullText, voice, playBtn) {
   } catch (e) {
     if (e.name !== "AbortError") logger.warn?.("TTS error:", e);
   } finally {
-    if (playBtn && !signal.aborted) { playBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>'; playBtn.classList.remove("playing"); }
+    if (playBtn && !signal.aborted) { playBtn.innerHTML = icon("play", 13); playBtn.classList.remove("playing"); }
     if (activeTtsBtn === playBtn) activeTtsBtn = null;
     currentSource = null;
   }
@@ -94,7 +94,7 @@ function stopSpeaking() {
   ttsAbortController?.abort();
   try { currentSource?.stop(); } catch {}
   currentSource = null;
-  if (activeTtsBtn) { activeTtsBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>'; activeTtsBtn.classList.remove("playing"); activeTtsBtn = null; }
+  if (activeTtsBtn) { activeTtsBtn.innerHTML = icon("play", 13); activeTtsBtn.classList.remove("playing"); activeTtsBtn = null; }
 }
 
 
