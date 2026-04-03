@@ -1040,7 +1040,7 @@
     .music-fav-btn.is-fav { opacity: 1; }
     .music-fav-btn.is-fav svg { fill: #f472b6; }
 
-    /* Music generation placeholder — uses shared .gen-progress */
+    /* Music generation placeholder - uses shared .gen-progress */
 
     /* Music settings */
     .music-settings-section {
@@ -1198,7 +1198,7 @@
       opacity: 0; transition: opacity 0.2s;
     }
     .video-result:hover .video-result-actions { opacity: 1; }
-    /* Video generation placeholder — uses shared .gen-progress */
+    /* Video generation placeholder - uses shared .gen-progress */
     #video-fav-content { flex: 1; min-height: 0; overflow-y: auto; padding: 8px; }
     /* (video fav scrollbar consolidated into shared selector above) */
     #video-trash-list { flex: 1; overflow-y: auto; padding: 8px; }

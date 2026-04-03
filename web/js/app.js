@@ -286,7 +286,7 @@ async function prepareModelsForView(view) {
   // Cancel any in-flight preparation
   if (_prepareAbort) { _prepareAbort.abort(); _prepareAbort = null; }
 
-  // Chat — show loading dots while acquiring, then clear
+  // Chat - show loading dots while acquiring, then clear
   if (view === "chat") {
     _modelReady.chat = false;
     _setModelLoading("chat", true, "chat model");

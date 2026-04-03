@@ -1,19 +1,19 @@
 # Dave-in-a-Box
 
-A self-hosted AI toolbox that runs entirely on your own hardware. Chat with local LLMs, generate images, music, and video — all through a single web interface with no cloud dependencies.
+A self-hosted AI toolbox that runs entirely on your own hardware. Chat with local LLMs, generate images, music, and video - all through a single web interface with no cloud dependencies.
 
 ## What's Inside
 
-- **Chat** — Conversational AI powered by [Ollama](https://ollama.com) with RAG (retrieval-augmented generation) over your own documents
-- **Image Studio** — Text-to-image generation with Stable Diffusion 3.5, Playground v2.5, SDXL Turbo, inpainting, and Real-ESRGAN upscaling
-- **Music Studio** — Text-to-music generation with ACE-Step 1.5, automatic cover art, AI songwriting
-- **Video Studio** — Text-to-video and image-to-video generation with Wan 2.1
-- **File Vault** — Upload PDFs, markdown, and text files for semantic search during chat
-- **Web Search** — Optional web search integration via Tavily for current information
-- **Text-to-Speech** — 50+ voices via Kokoro TTS
-- **Speech-to-Text** — Browser-native voice input
-- **Memory** — Automatic and manual fact memory across conversations
-- **Multi-user** — User accounts with admin panel, per-user settings and conversations
+- **Chat** - Conversational AI powered by [Ollama](https://ollama.com) with RAG (retrieval-augmented generation) over your own documents
+- **Image Studio** - Text-to-image generation with Stable Diffusion 3.5, Playground v2.5, SDXL Turbo, inpainting, and Real-ESRGAN upscaling
+- **Music Studio** - Text-to-music generation with ACE-Step 1.5, automatic cover art, AI songwriting
+- **Video Studio** - Text-to-video and image-to-video generation with Wan 2.1
+- **File Vault** - Upload PDFs, markdown, and text files for semantic search during chat
+- **Web Search** - Optional web search integration via Tavily for current information
+- **Text-to-Speech** - 50+ voices via Kokoro TTS
+- **Speech-to-Text** - Browser-native voice input
+- **Memory** - Automatic and manual fact memory across conversations
+- **Multi-user** - User accounts with admin panel, per-user settings and conversations
 
 ## Requirements
 
@@ -84,7 +84,7 @@ Nine Docker containers on a single machine, sharing one GPU:
 └─────────────────────────────────────────────────────┘
 ```
 
-**GPU sharing** — Only one model occupies VRAM at a time. `gpu-manager` handles all loading/eviction automatically. When you switch from chat to image studio, it evicts the chat LLM and loads the diffusion model. No manual management needed.
+**GPU sharing** - Only one model occupies VRAM at a time. `gpu-manager` handles all loading/eviction automatically. When you switch from chat to image studio, it evicts the chat LLM and loads the diffusion model. No manual management needed.
 
 See `docs/` for detailed architecture diagrams and VRAM workflow documentation.
 
@@ -173,7 +173,7 @@ The `gpu-manager` automatically evicts models from VRAM when switching between m
 
 ## Development
 
-The frontend uses no build tools — edit JS/CSS files directly and refresh. Backend services auto-reload in development via uvicorn.
+The frontend uses no build tools - edit JS/CSS files directly and refresh. Backend services auto-reload in development via uvicorn.
 
 ```bash
 # Rebuild a single service after code changes

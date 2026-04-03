@@ -1879,7 +1879,7 @@ studioPrompt.addEventListener("input", () => {
   studioPrompt.style.height = Math.min(studioPrompt.scrollHeight, 140) + "px";
 });
 
-// createStudioPlaceholder — thin wrapper around shared _createGenProgress
+// createStudioPlaceholder - thin wrapper around shared _createGenProgress
 function createStudioPlaceholder() {
   return _createGenProgress();
 }
