@@ -4,7 +4,6 @@ const chatArea = document.getElementById("chat-area");
 const studioPrompt = document.getElementById("studio-prompt");
 const studioNegative = document.getElementById("studio-negative");
 const studioModelSelect = document.getElementById("studio-model-select");
-const studioModelLabel = document.getElementById("studio-model-label");
 const studioSteps = document.getElementById("studio-steps");
 const studioStepsVal = document.getElementById("studio-steps-val");
 const studioGuidance = document.getElementById("studio-guidance");
@@ -13,8 +12,6 @@ const studioSeed = document.getElementById("studio-seed");
 const studioGenerateBtn = document.getElementById("studio-generate-btn");
 const studioCanvas = document.getElementById("studio-canvas");
 const studioCanvasEmpty = document.getElementById("studio-canvas-empty");
-const studioSettingsCrumb = document.getElementById("studio-settings-crumb");
-const studioSettingsPanel = document.getElementById("studio-settings-panel");
 const studioSettingsSummary = document.getElementById("studio-settings-summary");
 
 // Settings panel toggle
@@ -1029,21 +1026,8 @@ async function restoreStudioImages(forceReload = false) {
   renderStudioSessionsList();
 }
 
-// Presets details toggle persistence
-const scPresetsDetails = document.getElementById("sc-presets-details");
-if (scPresetsDetails) {
-  scPresetsDetails.addEventListener("toggle", () => {
-    localStorage.setItem("diab_studio_presets_open", scPresetsDetails.open ? "1" : "0");
-    scheduleSettingsSync();
-  });
-}
 // Restore studio settings from localStorage (called on page load and after login sync)
 function restoreStudioSettings() {
-  // Presets details open state
-  try {
-    const presetsOpen = localStorage.getItem("diab_studio_presets_open");
-    if (presetsOpen === "1" && scPresetsDetails) scPresetsDetails.open = true;
-  } catch {}
   // Control values
   try {
     const c = JSON.parse(localStorage.getItem("diab_studio_controls") || "{}");
@@ -1843,13 +1827,12 @@ async function loadStudioModels() {
 
 function updateStudioModelLabel() {
   const m = _studioModelsCache.find(x => x.id === studioModelSelect.value);
-  if (m && studioModelLabel) studioModelLabel.textContent = m.name;
+  // model label display removed
 }
 
 function updateStudioModelDefaults() {
   const m = _studioModelsCache.find(x => x.id === studioModelSelect.value);
   if (!m) return;
-  if (studioModelLabel) studioModelLabel.textContent = m.name;
   studioSteps.value = m.default_steps;
   studioSteps.max = m.max_steps;
   studioStepsVal.textContent = m.default_steps;

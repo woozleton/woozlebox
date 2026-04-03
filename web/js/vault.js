@@ -1,7 +1,5 @@
 // ── Vault panel ──
 
-const vaultInputBtn = document.getElementById("vault-input-btn");
-
 let _indexPollTimer = null;
 let _lastIndexRunning = false;
 
@@ -9,7 +7,6 @@ function openVaultPanel() {
   closeSettings();
   vaultPanel.classList.add("open");
   vaultToggleBtn.classList.add("active");
-  if (vaultInputBtn) vaultInputBtn.classList.add("active");
   localStorage.setItem("diab_vault_open", "1");
   loadVaultFiles();
   startIndexPolling();
@@ -17,7 +14,6 @@ function openVaultPanel() {
 function closeVaultPanel() {
   vaultPanel.classList.remove("open");
   vaultToggleBtn.classList.remove("active");
-  if (vaultInputBtn) vaultInputBtn.classList.remove("active");
   localStorage.setItem("diab_vault_open", "0");
   stopIndexPolling();
 }
@@ -27,7 +23,6 @@ function toggleVaultPanel() {
 }
 
 vaultToggleBtn.addEventListener("click", toggleVaultPanel);
-if (vaultInputBtn) vaultInputBtn.addEventListener("click", toggleVaultPanel);
 vaultClose.addEventListener("click", closeVaultPanel);
 
 // Restore vault panel state

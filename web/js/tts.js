@@ -82,7 +82,7 @@ async function speakText(fullText, voice, playBtn) {
       await playSingleBuffer(decoded, signal);
     }
   } catch (e) {
-    if (e.name !== "AbortError") logger.warn?.("TTS error:", e);
+    if (e.name !== "AbortError") console.warn("TTS error:", e);
   } finally {
     if (playBtn && !signal.aborted) { playBtn.innerHTML = icon("play", 13); playBtn.classList.remove("playing"); }
     if (activeTtsBtn === playBtn) activeTtsBtn = null;

@@ -886,7 +886,6 @@ async function loadModels() {
     modelSelect.value = pick;
     selectedModel = pick;
     localStorage.setItem("diab_model", pick);
-    const _cml = document.getElementById("chat-model-label"); if (_cml) _cml.textContent = pick || "";
     if (typeof checkVisionSupport === "function") checkVisionSupport(pick);
 
     // Populate songwrite model dropdown from same list
@@ -924,7 +923,6 @@ async function loadModels() {
 modelSelect.addEventListener("change", async () => {
   selectedModel = modelSelect.value || null;
   if (selectedModel) { localStorage.setItem("diab_model", selectedModel); scheduleSettingsSync(); }
-  const _cml2 = document.getElementById("chat-model-label"); if (_cml2) _cml2.textContent = selectedModel || "";
   if (activeConvId) updateContextBar(activeConvId);
   // Preload the new model into VRAM (non-blocking)
   if (selectedModel) {
