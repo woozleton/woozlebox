@@ -723,3 +723,22 @@ input.addEventListener("focus", () => {
     setTimeout(() => chatWindow.scrollTo({ top: chatWindow.scrollHeight }), 300);
   }
 });
+
+// ── Shared Trash Modal (close behavior) ──
+(function() {
+  const m = document.getElementById("shared-trash-modal");
+  document.getElementById("shared-trash-close-btn").addEventListener("click", () => m.classList.remove("open"));
+  m.addEventListener("click", e => { if (e.target === m) m.classList.remove("open"); });
+})();
+
+// ── Shared Folder Modal (close behavior) ──
+(function() {
+  const m = document.getElementById("shared-folder-modal");
+  document.getElementById("shared-folder-close").addEventListener("click", () => m.classList.remove("open"));
+  document.getElementById("shared-folder-cancel").addEventListener("click", () => m.classList.remove("open"));
+  m.addEventListener("click", e => { if (e.target === m) m.classList.remove("open"); });
+  document.getElementById("shared-folder-name").addEventListener("keydown", e => {
+    if (e.key === "Enter") document.getElementById("shared-folder-save").click();
+    if (e.key === "Escape") m.classList.remove("open");
+  });
+})();

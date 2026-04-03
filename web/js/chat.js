@@ -216,57 +216,59 @@ document.addEventListener("click", e => {
 // New folder button
 document.getElementById("folder-new-btn").addEventListener("click", () => openFolderModal(null));
 
-// Folder modal
+// Folder modal (uses shared-folder-modal)
 let _folderModalResolve = null;
 function openFolderModal(folder, { required = false } = {}) {
   editingFolderId = folder ? folder.id : null;
-  document.getElementById("folder-modal-title").textContent = folder ? "Edit Folder" : "New Folder";
-  document.getElementById("folder-name").value = folder?.name || "";
-  document.getElementById("folder-desc").value = folder?.description || "";
-  document.getElementById("folder-prompt").value = folder?.system_prompt || "";
+  document.getElementById("shared-folder-title").textContent = folder ? "Edit Folder" : "New Folder";
+  document.getElementById("shared-folder-hint").textContent = "Folders organize your conversations and files into separate workspaces. Each folder can have its own AI behavior.";
+  document.getElementById("shared-folder-name").value = folder?.name || "";
+  document.getElementById("shared-folder-name").placeholder = "e.g. Research, Work, Personal";
+  document.getElementById("shared-folder-desc").value = folder?.description || "";
+  document.getElementById("shared-folder-prompt-wrap").style.display = "";
+  document.getElementById("shared-folder-prompt").value = folder?.system_prompt || "";
+  document.getElementById("shared-folder-save").textContent = folder ? "Save" : "Save Folder";
   // Hide close/cancel when a folder is required
-  document.getElementById("folder-modal-close").style.display = required ? "none" : "";
-  document.getElementById("folder-cancel").style.display = required ? "none" : "";
-  document.getElementById("folder-modal").classList.add("open");
-  document.getElementById("folder-name").focus();
+  document.getElementById("shared-folder-close").style.display = required ? "none" : "";
+  document.getElementById("shared-folder-cancel").style.display = required ? "none" : "";
+  document.getElementById("shared-folder-save").onclick = async () => {
+    const name = document.getElementById("shared-folder-name").value.trim();
+    if (!name) { document.getElementById("shared-folder-name").focus(); return; }
+    const body = {
+      name,
+      description: document.getElementById("shared-folder-desc").value.trim() || null,
+      system_prompt: document.getElementById("shared-folder-prompt").value.trim() || null,
+    };
+    if (editingFolderId) {
+      await apiFetch(`/folders/${editingFolderId}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+      });
+    } else {
+      const res = await apiFetch(`/folders`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (data.id) {
+        activeChatFolderId = data.id;
+        localStorage.setItem("diab_chat_folder", data.id);
+      }
+    }
+    closeFolderModal();
+    await loadConversations();
+  };
+  document.getElementById("shared-folder-modal").classList.add("open");
+  setTimeout(() => document.getElementById("shared-folder-name").focus(), 50);
   if (required) {
     return new Promise(resolve => { _folderModalResolve = resolve; });
   }
 }
 function closeFolderModal() {
-  document.getElementById("folder-modal").classList.remove("open");
-  document.getElementById("folder-modal-close").style.display = "";
-  document.getElementById("folder-cancel").style.display = "";
+  document.getElementById("shared-folder-modal").classList.remove("open");
+  document.getElementById("shared-folder-close").style.display = "";
+  document.getElementById("shared-folder-cancel").style.display = "";
   editingFolderId = null;
   if (_folderModalResolve) { _folderModalResolve(); _folderModalResolve = null; }
 }
-document.getElementById("folder-modal-close").addEventListener("click", closeFolderModal);
-document.getElementById("folder-cancel").addEventListener("click", closeFolderModal);
-document.getElementById("folder-save").addEventListener("click", async () => {
-  const name = document.getElementById("folder-name").value.trim();
-  if (!name) { document.getElementById("folder-name").focus(); return; }
-  const body = {
-    name,
-    description: document.getElementById("folder-desc").value.trim() || null,
-    system_prompt: document.getElementById("folder-prompt").value.trim() || null,
-  };
-  if (editingFolderId) {
-    await apiFetch(`/folders/${editingFolderId}`, {
-      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
-    });
-  } else {
-    const res = await apiFetch(`/folders`, {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
-    });
-    const data = await res.json();
-    if (data.id) {
-      activeChatFolderId = data.id;
-      localStorage.setItem("diab_chat_folder", data.id);
-    }
-  }
-  closeFolderModal();
-  await loadConversations();
-});
 
 
 // ── Conversation sidebar ──

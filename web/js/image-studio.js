@@ -1213,23 +1213,28 @@ document.getElementById("studio-suggest-btn").addEventListener("click", pickStud
 
 
 // ── Image Studio Trash ──
-const studioTrashModal = document.getElementById("studio-trash-modal");
 document.getElementById("studio-trash-btn").addEventListener("click", () => openTrashModal());
-document.getElementById("studio-trash-close-btn").addEventListener("click", () => studioTrashModal.classList.remove("open"));
-studioTrashModal.addEventListener("click", e => { if (e.target === studioTrashModal) studioTrashModal.classList.remove("open"); });
 
 async function openTrashModal() {
-  // Auto-purge items older than 30 days
   const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
   const all = await loadAllTrash();
   for (const item of all) { if (item.deletedAt < cutoff) await deleteFromTrash(item.id); }
-  studioTrashModal.classList.add("open");
+  document.getElementById("shared-trash-modal").classList.add("open");
   await renderTrashGrid();
+  // Wire empty button for this studio
+  document.getElementById("shared-trash-empty-btn").onclick = async () => {
+    const count = document.querySelectorAll("#shared-trash-content .trash-card").length;
+    if (!count) return;
+    if (!confirm(`Permanently delete ${count} item${count !== 1 ? "s" : ""} from trash?`)) return;
+    await emptyTrash();
+    updateTrashBadge(0);
+    document.getElementById("shared-trash-modal").classList.remove("open");
+  };
 }
 
 async function renderTrashGrid() {
-  const grid = document.getElementById("studio-trash-grid");
-  const countLabel = document.getElementById("studio-trash-count-label");
+  const grid = document.getElementById("shared-trash-content");
+  const countLabel = document.getElementById("shared-trash-count");
   const items = (await loadAllTrash()).sort((a, b) => b.deletedAt - a.deletedAt);
   grid.innerHTML = "";
   countLabel.textContent = items.length ? `${items.length} item${items.length !== 1 ? "s" : ""}` : "";
@@ -1253,14 +1258,14 @@ async function renderTrashGrid() {
       await _restoreFromTrash(item);
       await deleteFromTrash(item.id);
       card.remove();
-      const remaining = document.querySelectorAll(".trash-card").length;
+      const remaining = grid.querySelectorAll(".trash-card").length;
       countLabel.textContent = remaining ? `${remaining} item${remaining !== 1 ? "s" : ""}` : "";
       updateTrashBadge(remaining);
     });
     card.querySelector(".trash-del-btn").addEventListener("click", async () => {
       await deleteFromTrash(item.id);
       card.remove();
-      const remaining = document.querySelectorAll(".trash-card").length;
+      const remaining = grid.querySelectorAll(".trash-card").length;
       countLabel.textContent = remaining ? `${remaining} item${remaining !== 1 ? "s" : ""}` : "";
       updateTrashBadge(remaining);
     });
@@ -1308,15 +1313,6 @@ async function _refreshTrashBadge() {
   const items = await loadAllTrash();
   updateTrashBadge(items.length);
 }
-
-document.getElementById("studio-trash-empty-btn").addEventListener("click", async () => {
-  const count = document.querySelectorAll(".trash-card").length;
-  if (!count) return;
-  if (!confirm(`Permanently delete ${count} item${count !== 1 ? "s" : ""} from trash?`)) return;
-  await emptyTrash();
-  updateTrashBadge(0);
-  studioTrashModal.classList.remove("open");
-});
 
 // ── Image Folders ──
 async function loadImageFolders() {
@@ -1688,45 +1684,39 @@ function showImageFolderCtxMenu(pg, e) {
 let _editingImageFolderId = null;
 function openImageFolderModal(pg) {
   _editingImageFolderId = pg ? pg.id : null;
-  document.getElementById("image-folder-modal-title").textContent = pg ? "Edit Folder" : "New Folder";
-  document.getElementById("image-folder-name").value = pg?.name || "";
-  document.getElementById("image-folder-desc").value = pg?.description || "";
-  document.getElementById("image-folder-save").textContent = pg ? "Save" : "Create Folder";
-  document.getElementById("image-folder-modal").classList.add("open");
-  document.getElementById("image-folder-name").focus();
+  document.getElementById("shared-folder-title").textContent = pg ? "Edit Folder" : "New Folder";
+  document.getElementById("shared-folder-hint").textContent = "Folders organize your generated images into separate groups.";
+  document.getElementById("shared-folder-name").value = pg?.name || "";
+  document.getElementById("shared-folder-name").placeholder = "e.g. Landscapes, Portraits, Logos";
+  document.getElementById("shared-folder-desc").value = pg?.description || "";
+  document.getElementById("shared-folder-prompt-wrap").style.display = "none";
+  document.getElementById("shared-folder-save").textContent = pg ? "Save" : "Create Folder";
+  document.getElementById("shared-folder-save").onclick = async () => {
+    const name = document.getElementById("shared-folder-name").value.trim();
+    const description = document.getElementById("shared-folder-desc").value.trim() || "";
+    if (!name) { document.getElementById("shared-folder-name").focus(); return; }
+    if (_editingImageFolderId) {
+      const pg = imageFolders.find(p => p.id === _editingImageFolderId);
+      if (pg) { pg.name = name; pg.description = description; await saveImageFolder(pg); }
+    } else {
+      const pg = { id: "pg_" + Date.now(), name, description, timestamp: Date.now() };
+      await saveImageFolder(pg);
+      imageFolders.push(pg);
+      activeImageFolderId = pg.id;
+      localStorage.setItem("diab_image_folder", pg.id);
+      _studioRestored = false;
+      restoreStudioImages(true);
+    }
+    closeImageFolderModal();
+    renderImageFoldersSidebar();
+  };
+  document.getElementById("shared-folder-modal").classList.add("open");
+  setTimeout(() => document.getElementById("shared-folder-name").focus(), 50);
 }
 function closeImageFolderModal() {
-  document.getElementById("image-folder-modal").classList.remove("open");
+  document.getElementById("shared-folder-modal").classList.remove("open");
   _editingImageFolderId = null;
 }
-document.getElementById("image-folder-modal-close").addEventListener("click", closeImageFolderModal);
-document.getElementById("image-folder-cancel").addEventListener("click", closeImageFolderModal);
-document.getElementById("image-folder-modal").addEventListener("click", (e) => {
-  if (e.target === e.currentTarget) closeImageFolderModal();
-});
-document.getElementById("image-folder-name").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") document.getElementById("image-folder-save").click();
-  if (e.key === "Escape") closeImageFolderModal();
-});
-document.getElementById("image-folder-save").addEventListener("click", async () => {
-  const name = document.getElementById("image-folder-name").value.trim();
-  const description = document.getElementById("image-folder-desc").value.trim() || "";
-  if (!name) { document.getElementById("image-folder-name").focus(); return; }
-  if (_editingImageFolderId) {
-    const pg = imageFolders.find(p => p.id === _editingImageFolderId);
-    if (pg) { pg.name = name; pg.description = description; await saveImageFolder(pg); }
-  } else {
-    const pg = { id: "pg_" + Date.now(), name, description, timestamp: Date.now() };
-    await saveImageFolder(pg);
-    imageFolders.push(pg);
-    activeImageFolderId = pg.id;
-    localStorage.setItem("diab_image_folder", pg.id);
-    _studioRestored = false;
-    restoreStudioImages(true);
-  }
-  closeImageFolderModal();
-  renderImageFoldersSidebar();
-});
 document.getElementById("image-folder-new-btn").addEventListener("click", () => openImageFolderModal(null));
 
 // Make sidebar row highlighting work

@@ -572,47 +572,41 @@ function showMusicColCtxMenu(col, e) {
 let _editingMusicFolderId = null;
 function openMusicFolderModal(col) {
   _editingMusicFolderId = col ? col.id : null;
-  document.getElementById("music-folder-modal-title").textContent = col ? "Edit Folder" : "New Folder";
-  document.getElementById("music-folder-name").value = col?.name || "";
-  document.getElementById("music-folder-desc").value = col?.description || "";
-  document.getElementById("music-folder-save").textContent = col ? "Save" : "Create Folder";
-  document.getElementById("music-folder-modal").classList.add("open");
-  document.getElementById("music-folder-name").focus();
+  document.getElementById("shared-folder-title").textContent = col ? "Edit Folder" : "New Folder";
+  document.getElementById("shared-folder-hint").textContent = "Folders organize your generated music into separate groups.";
+  document.getElementById("shared-folder-name").value = col?.name || "";
+  document.getElementById("shared-folder-name").placeholder = "e.g. Ambient, Pop, Soundtracks";
+  document.getElementById("shared-folder-desc").value = col?.description || "";
+  document.getElementById("shared-folder-prompt-wrap").style.display = "none";
+  document.getElementById("shared-folder-save").textContent = col ? "Save" : "Create Folder";
+  document.getElementById("shared-folder-save").onclick = async () => {
+    const name = document.getElementById("shared-folder-name").value.trim();
+    const description = document.getElementById("shared-folder-desc").value.trim() || "";
+    if (!name) { document.getElementById("shared-folder-name").focus(); return; }
+    if (_editingMusicFolderId) {
+      const col = musicFolders.find(c => c.id === _editingMusicFolderId);
+      if (col) { col.name = name; col.description = description; await saveMusicFolder(col); }
+    } else {
+      const col = { id: "mfolder_" + Date.now(), name, description, timestamp: Date.now() };
+      await saveMusicFolder(col);
+      musicFolders.push(col);
+      activeMusicFolderId = col.id;
+      localStorage.setItem("diab_music_folder", col.id);
+      activeMusicSessionId = null;
+      localStorage.removeItem("diab_music_session");
+      restoreMusicTracks();
+      renderMusicSessionsList();
+    }
+    closeMusicFolderModal();
+    renderMusicFoldersSidebar();
+  };
+  document.getElementById("shared-folder-modal").classList.add("open");
+  setTimeout(() => document.getElementById("shared-folder-name").focus(), 50);
 }
 function closeMusicFolderModal() {
-  document.getElementById("music-folder-modal").classList.remove("open");
+  document.getElementById("shared-folder-modal").classList.remove("open");
   _editingMusicFolderId = null;
 }
-document.getElementById("music-folder-modal-close").addEventListener("click", closeMusicFolderModal);
-document.getElementById("music-folder-cancel").addEventListener("click", closeMusicFolderModal);
-document.getElementById("music-folder-modal").addEventListener("click", (e) => {
-  if (e.target === e.currentTarget) closeMusicFolderModal();
-});
-document.getElementById("music-folder-name").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") document.getElementById("music-folder-save").click();
-  if (e.key === "Escape") closeMusicFolderModal();
-});
-document.getElementById("music-folder-save").addEventListener("click", async () => {
-  const name = document.getElementById("music-folder-name").value.trim();
-  const description = document.getElementById("music-folder-desc").value.trim() || "";
-  if (!name) { document.getElementById("music-folder-name").focus(); return; }
-  if (_editingMusicFolderId) {
-    const col = musicFolders.find(c => c.id === _editingMusicFolderId);
-    if (col) { col.name = name; col.description = description; await saveMusicFolder(col); }
-  } else {
-    const col = { id: "mfolder_" + Date.now(), name, description, timestamp: Date.now() };
-    await saveMusicFolder(col);
-    musicFolders.push(col);
-    activeMusicFolderId = col.id;
-    localStorage.setItem("diab_music_folder", col.id);
-    activeMusicSessionId = null;
-    localStorage.removeItem("diab_music_session");
-    restoreMusicTracks();
-    renderMusicSessionsList();
-  }
-  closeMusicFolderModal();
-  renderMusicFoldersSidebar();
-});
 document.getElementById("music-folder-new-btn").addEventListener("click", () => openMusicFolderModal(null));
 
 // ── Music favorites panel ──
@@ -1490,22 +1484,27 @@ musicPrompt.addEventListener("keydown", (e) => {
 });
 
 // ── Music Trash ──
-const musicTrashModal = document.getElementById("music-trash-modal");
 document.getElementById("music-trash-btn").addEventListener("click", () => openMusicTrashModal());
-document.getElementById("music-trash-close-btn").addEventListener("click", () => musicTrashModal.classList.remove("open"));
-musicTrashModal.addEventListener("click", e => { if (e.target === musicTrashModal) musicTrashModal.classList.remove("open"); });
 
 async function openMusicTrashModal() {
   const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
   const all = await loadAllMusicTrash();
   for (const item of all) { if (item.deletedAt < cutoff) await deleteFromMusicTrash(item.id); }
-  musicTrashModal.classList.add("open");
+  document.getElementById("shared-trash-modal").classList.add("open");
   await renderMusicTrashList();
+  document.getElementById("shared-trash-empty-btn").onclick = async () => {
+    const count = document.querySelectorAll("#shared-trash-content .studio-trash-card").length;
+    if (!count) return;
+    if (!confirm(`Permanently delete ${count} track${count !== 1 ? "s" : ""} from trash?`)) return;
+    await emptyMusicTrash();
+    updateMusicTrashBadge(0);
+    document.getElementById("shared-trash-modal").classList.remove("open");
+  };
 }
 
 async function renderMusicTrashList() {
-  const list = document.getElementById("music-trash-list");
-  const countLabel = document.getElementById("music-trash-count-label");
+  const list = document.getElementById("shared-trash-content");
+  const countLabel = document.getElementById("shared-trash-count");
   const items = (await loadAllMusicTrash()).sort((a, b) => b.deletedAt - a.deletedAt);
   list.innerHTML = "";
   countLabel.textContent = items.length ? `${items.length} track${items.length !== 1 ? "s" : ""}` : "";
@@ -1619,12 +1618,4 @@ async function _refreshMusicTrashBadge() {
   updateMusicTrashBadge(items.length);
 }
 
-document.getElementById("music-trash-empty-btn").addEventListener("click", async () => {
-  const count = document.querySelectorAll("#music-trash-list .studio-trash-card").length;
-  if (!count) return;
-  if (!confirm(`Permanently delete ${count} track${count !== 1 ? "s" : ""} from trash?`)) return;
-  await emptyMusicTrash();
-  updateMusicTrashBadge(0);
-  musicTrashModal.classList.remove("open");
-});
 

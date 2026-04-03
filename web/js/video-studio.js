@@ -736,22 +736,27 @@ async function _updateVideoFavBadge() {
 }
 
 // ── Video Trash ──
-const videoTrashModal = document.getElementById("video-trash-modal");
 document.getElementById("video-trash-btn").addEventListener("click", () => openVideoTrashModal());
-document.getElementById("video-trash-close-btn").addEventListener("click", () => videoTrashModal.classList.remove("open"));
-videoTrashModal.addEventListener("click", e => { if (e.target === videoTrashModal) videoTrashModal.classList.remove("open"); });
 
 async function openVideoTrashModal() {
   const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
   const all = await loadAllVideoTrash();
   for (const item of all) { if (item.deletedAt < cutoff) await deleteFromVideoTrash(item.id); }
-  videoTrashModal.classList.add("open");
+  document.getElementById("shared-trash-modal").classList.add("open");
   await renderVideoTrashList();
+  document.getElementById("shared-trash-empty-btn").onclick = async () => {
+    const count = document.querySelectorAll("#shared-trash-content .studio-trash-card").length;
+    if (!count) return;
+    if (!confirm(`Permanently delete ${count} clip${count !== 1 ? "s" : ""} from trash?`)) return;
+    await emptyVideoTrash();
+    updateVideoTrashBadge(0);
+    document.getElementById("shared-trash-modal").classList.remove("open");
+  };
 }
 
 async function renderVideoTrashList() {
-  const list = document.getElementById("video-trash-list");
-  const countLabel = document.getElementById("video-trash-count-label");
+  const list = document.getElementById("shared-trash-content");
+  const countLabel = document.getElementById("shared-trash-count");
   const items = (await loadAllVideoTrash()).sort((a, b) => b.deletedAt - a.deletedAt);
   list.innerHTML = "";
   countLabel.textContent = items.length ? `${items.length} clip${items.length !== 1 ? "s" : ""}` : "";
@@ -802,12 +807,4 @@ async function _refreshVideoTrashBadge() {
   updateVideoTrashBadge(items.length);
 }
 
-document.getElementById("video-trash-empty-btn").addEventListener("click", async () => {
-  const count = document.querySelectorAll("#video-trash-list .studio-trash-card").length;
-  if (!count) return;
-  if (!confirm(`Permanently delete ${count} clip${count !== 1 ? "s" : ""} from trash?`)) return;
-  await emptyVideoTrash();
-  updateVideoTrashBadge(0);
-  videoTrashModal.classList.remove("open");
-});
 

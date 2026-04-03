@@ -817,29 +817,16 @@
     </div>
   </div>
 
-  <!-- Video Trash modal -->
-  <div id="video-trash-modal" class="trash-modal">
-    <div id="video-trash-inner" class="trash-modal-inner">
-      <div id="video-trash-header" class="trash-modal-header">
+  <!-- Shared Trash Modal (image / music / video) -->
+  <div id="shared-trash-modal" class="trash-modal">
+    <div class="trash-modal-inner">
+      <div class="trash-modal-header">
         <h3>Trash</h3>
-        <span id="video-trash-count-label" class="studio-trash-count-label"></span>
-        <button id="video-trash-empty-btn" class="studio-trash-empty-btn" title="Empty trash"><svg width="15" height="15"><use href="#i-trash"/></svg></button>
-        <button id="video-trash-close-btn" class="studio-trash-close-btn">&times;</button>
+        <span id="shared-trash-count" class="studio-trash-count-label"></span>
+        <button id="shared-trash-empty-btn" class="studio-trash-empty-btn" title="Empty trash"><svg width="15" height="15"><use href="#i-trash"/></svg></button>
+        <button id="shared-trash-close-btn" class="studio-trash-close-btn">&times;</button>
       </div>
-      <div id="video-trash-list"></div>
-    </div>
-  </div>
-
-  <!-- Trash modal -->
-  <div id="studio-trash-modal" class="trash-modal">
-    <div id="studio-trash-inner" class="trash-modal-inner">
-      <div id="studio-trash-header" class="trash-modal-header">
-        <h3>Trash</h3>
-        <span id="studio-trash-count-label" class="studio-trash-count-label"></span>
-        <button id="studio-trash-empty-btn" class="studio-trash-empty-btn" title="Empty trash"><svg width="15" height="15"><use href="#i-trash"/></svg></button>
-        <button id="studio-trash-close-btn" class="studio-trash-close-btn">&times;</button>
-      </div>
-      <div id="studio-trash-grid"></div>
+      <div id="shared-trash-content"></div>
     </div>
   </div>
 
@@ -1588,98 +1575,41 @@
   </div>
 </div>
 
-<!-- FOLDER EDIT MODAL -->
-<div id="folder-modal">
-  <div id="folder-modal-inner">
-    <div id="folder-modal-header">
-      <h3 id="folder-modal-title">New Folder</h3>
-      <button id="folder-modal-close">✕</button>
+<!-- SHARED FOLDER MODAL (chat / image / music) -->
+<div id="shared-folder-modal" class="folder-modal">
+  <div class="folder-modal-inner">
+    <div class="folder-modal-header">
+      <h3 id="shared-folder-title">New Folder</h3>
+      <button id="shared-folder-close">✕</button>
     </div>
-    <div id="folder-modal-body">
-      <div class="pm-hint" style="margin-bottom:4px;">Folders organize your conversations and files into separate workspaces. Each folder can have its own AI behavior.</div>
+    <div class="folder-modal-body">
+      <div class="pm-hint" id="shared-folder-hint" style="margin-bottom:4px;"></div>
       <div class="pm-field">
-        <label class="pm-label" for="folder-name">Name</label>
-        <input type="text" id="folder-name" class="setting-input" placeholder="e.g. Research, Work, Personal" />
+        <label class="pm-label" for="shared-folder-name">Name</label>
+        <input type="text" id="shared-folder-name" class="setting-input" />
       </div>
       <div class="pm-field">
-        <label class="pm-label" for="folder-desc">Description <span style="font-weight:400;color:var(--text-faint);">(optional)</span></label>
-        <textarea id="folder-desc" class="setting-input" rows="2" placeholder="What this folder is for…"></textarea>
+        <label class="pm-label" for="shared-folder-desc">Description <span style="font-weight:400;color:var(--text-faint);">(optional)</span></label>
+        <input type="text" id="shared-folder-desc" class="setting-input" placeholder="What this folder is for…" />
       </div>
-      <div class="pm-field">
-        <label class="pm-label" for="folder-prompt">System Prompt <span style="font-weight:400;color:var(--text-faint);">(optional)</span></label>
-        <textarea id="folder-prompt" class="setting-input" rows="5" placeholder="Instructions for the AI when working in this folder...&#10;&#10;e.g. Always cite sources. Be precise and concise."></textarea>
+      <div class="pm-field" id="shared-folder-prompt-wrap" style="display:none;">
+        <label class="pm-label" for="shared-folder-prompt">System Prompt <span style="font-weight:400;color:var(--text-faint);">(optional)</span></label>
+        <textarea id="shared-folder-prompt" class="setting-input" rows="5" placeholder="Instructions for the AI when working in this folder...&#10;&#10;e.g. Always cite sources. Be precise and concise."></textarea>
         <div class="pm-hint">Custom AI instructions for every chat in this folder. Leave blank to use the default.</div>
       </div>
     </div>
-    <div id="folder-modal-footer">
-      <button class="folder-cancel" id="folder-cancel">Cancel</button>
-      <button class="folder-save" id="folder-save">Save Folder</button>
+    <div class="folder-modal-footer">
+      <button class="folder-cancel" id="shared-folder-cancel">Cancel</button>
+      <button class="folder-save" id="shared-folder-save">Save Folder</button>
     </div>
   </div>
 </div>
 
-<!-- IMAGE FOLDER MODAL -->
-<div id="image-folder-modal">
-  <div id="image-folder-modal-inner">
-    <div id="image-folder-modal-header">
-      <h3 id="image-folder-modal-title">New Folder</h3>
-      <button id="image-folder-modal-close">✕</button>
-    </div>
-    <div id="image-folder-modal-body">
-      <div class="pm-hint" style="margin-bottom:4px;">Folders organize your generated images into separate groups.</div>
-      <div class="pm-field">
-        <label class="pm-label" for="image-folder-name">Name</label>
-        <input type="text" id="image-folder-name" class="setting-input" placeholder="e.g. Landscapes, Portraits, Logos" />
-      </div>
-      <div class="pm-field">
-        <label class="pm-label" for="image-folder-desc">Description <span style="font-weight:400;color:var(--text-faint);">(optional)</span></label>
-        <input type="text" id="image-folder-desc" class="setting-input" placeholder="What this folder is for…" />
-      </div>
-    </div>
-    <div id="image-folder-modal-footer">
-      <button class="folder-cancel" id="image-folder-cancel">Cancel</button>
-      <button class="folder-save" id="image-folder-save">Create Folder</button>
-    </div>
-  </div>
-</div>
+<!-- (image folder modal merged into shared-folder-modal) -->
 
-<!-- MUSIC FOLDER MODAL -->
-<div id="music-folder-modal">
-  <div id="music-folder-modal-inner">
-    <div id="music-folder-modal-header">
-      <h3 id="music-folder-modal-title">New Folder</h3>
-      <button id="music-folder-modal-close">✕</button>
-    </div>
-    <div id="music-folder-modal-body">
-      <div class="pm-hint" style="margin-bottom:4px;">Folders organize your generated music into separate groups.</div>
-      <div class="pm-field">
-        <label class="pm-label" for="music-folder-name">Name</label>
-        <input type="text" id="music-folder-name" class="setting-input" placeholder="e.g. Ambient, Pop, Soundtracks" />
-      </div>
-      <div class="pm-field">
-        <label class="pm-label" for="music-folder-desc">Description <span style="font-weight:400;color:var(--text-faint);">(optional)</span></label>
-        <input type="text" id="music-folder-desc" class="setting-input" placeholder="What this folder is for…" />
-      </div>
-    </div>
-    <div id="music-folder-modal-footer">
-      <button class="folder-cancel" id="music-folder-cancel">Cancel</button>
-      <button class="folder-save" id="music-folder-save">Create Folder</button>
-    </div>
-  </div>
-</div>
+<!-- (music folder modal merged into shared-folder-modal) -->
 
-<!-- MUSIC TRASH MODAL -->
-<div id="music-trash-modal" class="trash-modal">
-  <div id="music-trash-inner" class="trash-modal-inner">
-    <div id="music-trash-header" class="trash-modal-header">
-      <h3>Trash</h3>
-      <span id="music-trash-count-label" class="studio-trash-count-label"></span>
-      <button id="music-trash-empty-btn" class="studio-trash-empty-btn" title="Empty trash"><svg width="15" height="15"><use href="#i-trash"/></svg></button>
-      <button id="music-trash-close-btn" class="studio-trash-close-btn">&times;</button>
-    </div>
-    <div id="music-trash-list"></div>
-  </div>
-</div>
+<!-- (music trash modal merged into shared-trash-modal) -->
 
 <!-- FILE PREVIEW MODAL -->
 <!-- SEARCH MODAL -->

@@ -1810,28 +1810,7 @@
     body.sidebar-collapsed #music-folders-section { display: none !important; }
 
     /* Music Folder modal */
-    #music-folder-modal {
-      display: none; position: fixed; inset: 0; z-index: 400;
-      background: rgba(0,0,0,0.55); align-items: center; justify-content: center;
-    }
-    #music-folder-modal.open { display: flex; }
-    #music-folder-modal-inner {
-      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-      width: 420px; max-width: 94vw; display: flex; flex-direction: column;
-      overflow: hidden;
-    }
-    #music-folder-modal-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 16px 20px 12px; border-bottom: 1px solid var(--border);
-    }
-    #music-folder-modal-header h3 { margin: 0; font-size: 0.95rem; font-weight: 600; color: var(--text); }
-    #music-folder-modal-header button { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1.1rem; }
-    #music-folder-modal-header button:hover { color: var(--text); }
-    #music-folder-modal-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
-    #music-folder-modal-footer {
-      display: flex; justify-content: flex-end; gap: 8px;
-      padding: 12px 20px; border-top: 1px solid var(--border);
-    }
+    /* (music-folder-modal styles merged into shared .folder-modal) */
 
 /* ══════════════════════════════════════════════════════════════
    7. VIDEO STUDIO
@@ -2618,25 +2597,25 @@
     #confirm-ok-btn:hover { opacity: 0.88; }
 
     /* Folder edit modal */
-    #folder-modal {
+    .folder-modal {
       display: none; position: fixed; inset: 0; z-index: 400;
       background: rgba(0,0,0,0.55); align-items: center; justify-content: center;
     }
-    #folder-modal.open { display: flex; }
-    #folder-modal-inner {
+    .folder-modal.open { display: flex; }
+    .folder-modal-inner {
       background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-      width: 520px; max-width: 94vw; display: flex; flex-direction: column;
+      width: 420px; max-width: 94vw; display: flex; flex-direction: column;
       overflow: hidden;
     }
-    #folder-modal-header {
+    .folder-modal-header {
       display: flex; align-items: center; justify-content: space-between;
       padding: 16px 20px 12px; border-bottom: 1px solid var(--border);
     }
-    #folder-modal-header h3 { margin: 0; font-size: 0.95rem; font-weight: 600; color: var(--text); }
-    #folder-modal-header button { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1.1rem; }
-    #folder-modal-header button:hover { color: var(--text); }
-    #folder-modal-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
-    #folder-modal-footer {
+    .folder-modal-header h3 { margin: 0; font-size: 0.95rem; font-weight: 600; color: var(--text); }
+    .folder-modal-header button { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1.1rem; }
+    .folder-modal-header button:hover { color: var(--text); }
+    .folder-modal-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+    .folder-modal-footer {
       display: flex; justify-content: flex-end; gap: 8px;
       padding: 12px 20px; border-top: 1px solid var(--border);
     }
@@ -2654,29 +2633,7 @@
     }
     .folder-save:hover { opacity: 0.9; }
 
-    /* Image Folder modal */
-    #image-folder-modal {
-      display: none; position: fixed; inset: 0; z-index: 400;
-      background: rgba(0,0,0,0.55); align-items: center; justify-content: center;
-    }
-    #image-folder-modal.open { display: flex; }
-    #image-folder-modal-inner {
-      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-      width: 420px; max-width: 94vw; display: flex; flex-direction: column;
-      overflow: hidden;
-    }
-    #image-folder-modal-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 16px 20px 12px; border-bottom: 1px solid var(--border);
-    }
-    #image-folder-modal-header h3 { margin: 0; font-size: 0.95rem; font-weight: 600; color: var(--text); }
-    #image-folder-modal-header button { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1.1rem; }
-    #image-folder-modal-header button:hover { color: var(--text); }
-    #image-folder-modal-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
-    #image-folder-modal-footer {
-      display: flex; justify-content: flex-end; gap: 8px;
-      padding: 12px 20px; border-top: 1px solid var(--border);
-    }
+    /* (image-folder-modal styles merged into shared .folder-modal) */
 
     /* Add user modal */
     #add-user-modal {
@@ -3257,7 +3214,7 @@
       /* Modals: wider on mobile */
       #confirm-modal-inner,
       #add-user-modal-inner,
-      #folder-modal-inner { max-width: 96vw; }
+      .folder-modal-inner { max-width: 96vw; }
       #file-modal-inner { width: 100vw !important; height: 100vh !important; max-width: 100vw !important; border-radius: 0; }
       #search-modal > div { max-width: 96vw; }
 
