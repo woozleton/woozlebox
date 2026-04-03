@@ -892,6 +892,7 @@
     .trash-modal-inner {
       background: var(--surface); border: 1px solid var(--border);
       border-radius: 16px; max-height: 80vh;
+      width: fit-content; min-width: 220px; max-width: min(720px, 94vw);
       display: flex; flex-direction: column;
       box-shadow: 0 12px 48px rgba(0,0,0,0.4); overflow: hidden;
     }
@@ -921,10 +922,6 @@
     .trash-restore-btn:hover { background: var(--accent-glow); }
     .trash-del-btn { color: var(--danger); }
     .trash-del-btn:hover { background: rgba(239,68,68,0.1); }
-    /* Per-studio trash-modal-inner width overrides */
-    #studio-trash-inner { width: fit-content; min-width: 220px; max-width: min(720px, 94vw); }
-    #music-trash-inner { width: fit-content; max-width: min(700px, 94vw); }
-    #video-trash-inner { width: fit-content; max-width: min(480px, 90vw); border-radius: 12px; }
 
     /* Shared trash button (header) */
     .studio-trash-btn {
