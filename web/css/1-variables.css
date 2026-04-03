@@ -1,0 +1,78 @@
+/* ══════════════════════════════════════════════════════════════
+   1. CSS VARIABLES / THEME
+   ══════════════════════════════════════════════════════════════ */
+
+    :root {
+      --bg: #0f0f13;
+      --surface: #1a1a24;
+      --surface2: #22222f;
+      --surface3: #2a2a3a;
+      --border: #2e2e3e;
+      --accent: #7c6af7;
+      --accent-dim: #4a3fa8;
+      --accent-glow: rgba(124,106,247,0.15);
+      --text: #e8e8f0;
+      --text-dim: #8888aa;
+      --text-faint: #55556a;
+      --user-bubble: #1e1a40;
+      --ai-bubble: #1a1a24;
+      --danger: #f97316;
+      --success: #22c55e;
+      --warning: #eab308;
+      --radius: 12px;
+      --sidebar-w: 260px;
+      --header-h: 52px;
+    }
+
+    html.text-small  { font-size: 12px; }
+    html.text-medium { font-size: 15px; }
+    html.text-large  { font-size: 17px; }
+    html.text-xlarge { font-size: 19px; }
+
+    /* Theme presets */
+    .theme-presets { display:flex; gap:8px; flex-wrap:wrap; }
+    .theme-preset {
+      display:flex; flex-direction:column; align-items:center; gap:4px;
+      cursor:pointer; padding:4px; border-radius:8px;
+      border:2px solid transparent; transition:border-color 0.15s;
+    }
+    .theme-preset:hover, .theme-preset.active { border-color: var(--accent); }
+    .theme-preset-swatch {
+      width:44px; height:28px; border-radius:6px; border:1px solid rgba(255,255,255,0.1);
+      display:flex; overflow:hidden;
+    }
+    .theme-preset-swatch span { flex:1; }
+    .theme-preset-label { font-size:0.68rem; color:var(--text-dim); }
+
+    /* Wild theme special effects */
+    body[data-wild-theme="cyber"] { text-shadow: 0 0 1px rgba(0,255,242,0.3); }
+    body[data-wild-theme="cyber"] .bubble { border: 1px solid rgba(255,0,255,0.15); box-shadow: 0 0 12px rgba(255,0,255,0.08), inset 0 0 12px rgba(0,255,242,0.03); }
+    body[data-wild-theme="cyber"] #sidebar { border-right: 1px solid rgba(0,255,242,0.15); box-shadow: 2px 0 20px rgba(0,255,242,0.05); }
+    body[data-wild-theme="cyber"] .logo { box-shadow: 0 0 10px rgba(255,0,255,0.4); }
+    body[data-wild-theme="cyber"] #input-box { border-color: rgba(0,255,242,0.2); box-shadow: 0 0 15px rgba(255,0,255,0.06); }
+    body[data-wild-theme="cyber"] #header { border-bottom: 1px solid rgba(0,255,242,0.12); }
+    body[data-wild-theme="cyber"] .message-row.user .bubble { border-color: rgba(255,0,255,0.25); }
+
+    body[data-wild-theme="matrix"] { font-family: "Courier New", monospace !important; }
+    body[data-wild-theme="matrix"] .bubble { border: 1px solid rgba(0,255,0,0.12); text-shadow: 0 0 2px rgba(0,255,0,0.5); }
+    body[data-wild-theme="matrix"] #sidebar { border-right: 1px solid rgba(0,255,0,0.1); }
+    body[data-wild-theme="matrix"] .logo { box-shadow: 0 0 8px rgba(0,255,0,0.4); }
+    body[data-wild-theme="matrix"] #input-box { border-color: rgba(0,255,0,0.15); }
+
+    body[data-wild-theme="underwater"] .bubble { border: 1px solid rgba(0,212,255,0.1); box-shadow: 0 2px 15px rgba(0,100,180,0.1); }
+    body[data-wild-theme="underwater"] #sidebar { border-right: 1px solid rgba(0,212,255,0.1); }
+    body[data-wild-theme="underwater"] .logo { box-shadow: 0 0 10px rgba(0,212,255,0.3); }
+
+    body[data-wild-theme="neon"] .bubble { border: 1px solid rgba(255,0,255,0.12); box-shadow: 0 0 10px rgba(255,255,0,0.04); }
+    body[data-wild-theme="neon"] .logo { box-shadow: 0 0 12px rgba(255,255,0,0.4); }
+    body[data-wild-theme="neon"] #input-box { border-color: rgba(255,0,255,0.2); }
+    body[data-wild-theme="neon"] .message-row.user .bubble { border-color: rgba(255,255,0,0.15); }
+
+    body[data-wild-theme="aurora"] .bubble { border: 1px solid rgba(80,255,128,0.08); }
+    body[data-wild-theme="aurora"] .logo { box-shadow: 0 0 10px rgba(80,255,128,0.3); }
+
+    body[data-wild-theme="volcano"] .bubble { border: 1px solid rgba(255,60,0,0.1); box-shadow: 0 2px 10px rgba(255,60,0,0.05); }
+    body[data-wild-theme="volcano"] .logo { box-shadow: 0 0 10px rgba(255,60,0,0.4); }
+
+    body[data-wild-theme="sunset"] .bubble { border: 1px solid rgba(255,69,0,0.08); }
+    body[data-wild-theme="sunset"] .logo { box-shadow: 0 0 10px rgba(255,69,0,0.3); }
