@@ -40,6 +40,7 @@ _progress = {
     "elapsed_s": 0.0,
     "started_at": 0.0,
 }
+_cancel_requested = False
 
 app = FastAPI(title="music-api")
 app.add_middleware(
@@ -116,6 +117,15 @@ def progress():
     if p["running"] and p["started_at"]:
         p["elapsed_s"] = round(time.time() - p["started_at"], 1)
     return p
+
+
+@app.post("/cancel")
+def cancel():
+    global _cancel_requested
+    if _progress["running"]:
+        _cancel_requested = True
+        return {"ok": True, "message": "Cancel requested"}
+    return {"ok": True, "message": "Nothing running"}
 
 
 @app.post("/models/load")
@@ -202,6 +212,8 @@ async def generate(req: MusicGenerateRequest):
     if req.instrumental:
         lyrics_text = "[Instrumental]"
 
+    global _cancel_requested
+    _cancel_requested = False
     _progress.update({
         "running": True,
         "step": 0,
@@ -221,6 +233,8 @@ async def generate(req: MusicGenerateRequest):
             def _progress_cb(ratio, desc=""):
                 _progress["step"] = int(ratio * _progress["total_steps"])
                 _progress["ratio"] = round(ratio, 3)
+                if _cancel_requested:
+                    raise RuntimeError("Music generation cancelled by user")
 
             kwargs = dict(
                 captions=req.prompt,
@@ -272,10 +286,14 @@ async def generate(req: MusicGenerateRequest):
     except HTTPException:
         raise
     except Exception as e:
+        if _cancel_requested:
+            logger.info("Music generation cancelled by user")
+            raise HTTPException(status_code=499, detail="Generation cancelled")
         logger.error(f"Music generation failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Generation failed: {e}")
     finally:
         _progress["running"] = False
+        _cancel_requested = False
 
     elapsed = round(time.time() - t0, 2)
     logger.info(f"Generated track in {elapsed}s -{req.prompt[:60]}")

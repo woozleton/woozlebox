@@ -678,7 +678,7 @@
           <div id="video-settings-crumb" class="settings-crumb">
             <span id="video-settings-trigger" class="settings-trigger">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
-              <span id="video-settings-summary">1280x704 · 81 frames · ~3.4s</span>
+              <span id="video-settings-summary">832x480 · 81 frames · ~3.4s</span>
               <svg class="chevron-icon" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.5;"><polyline points="6 9 12 15 18 9"/></svg>
             </span>
           </div>
@@ -695,8 +695,8 @@
               <div class="ss-group" title="Output video resolution">
                 <div class="ss-group-label">Resolution</div>
                 <select id="video-resolution" class="setting-input" style="padding:4px 8px;font-size:0.78rem;border-radius:6px;background:var(--surface2);color:var(--text);border:1px solid var(--border);width:100%;">
-                  <option value="1280x704" selected>1280 x 704 (720p)</option>
-                  <option value="832x480">832 x 480 (480p)</option>
+                  <option value="1280x704">1280 x 704 (720p)</option>
+                  <option value="832x480" selected>832 x 480 (480p)</option>
                   <option value="704x1280">704 x 1280 (Portrait)</option>
                   <option value="512x512">512 x 512</option>
                 </select>
@@ -704,7 +704,7 @@
               <div class="ss-group" title="Number of frames to generate">
                 <div class="ss-group-label">Frames</div>
                 <div class="sc-slider">
-                  <input type="range" id="video-frames" min="5" max="121" value="81" step="4">
+                  <input type="range" id="video-frames" min="5" max="257" value="81" step="4">
                   <span class="field-val" id="video-frames-val">81 (~3.4s)</span>
                 </div>
               </div>
@@ -720,15 +720,15 @@
                   <div class="ss-group" title="Number of diffusion inference steps">
                     <div class="ss-group-label">Steps</div>
                     <div class="sc-slider">
-                      <input type="range" id="video-steps" min="10" max="50" value="50" step="1">
-                      <span class="field-val" id="video-steps-val">50</span>
+                      <input type="range" id="video-steps" min="10" max="50" value="30" step="1">
+                      <span class="field-val" id="video-steps-val">30</span>
                     </div>
                   </div>
                   <div class="ss-group" title="How closely the output follows the prompt">
                     <div class="ss-group-label">Guidance</div>
                     <div class="sc-slider">
-                      <input type="range" id="video-guidance" min="1" max="15" value="5" step="0.5">
-                      <span class="field-val" id="video-guidance-val">5.0</span>
+                      <input type="range" id="video-guidance" min="1" max="15" value="6" step="0.5">
+                      <span class="field-val" id="video-guidance-val">6.0</span>
                     </div>
                   </div>
                   <div class="ss-group" title="Frames per second">
@@ -1685,6 +1685,10 @@ const GPU_API = window.location.hostname === "localhost" || window.location.host
   ? "http://localhost:8400"
   : `http://${window.location.hostname}:8400`;
 
+const MEDIA_API = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+  ? "http://localhost:8500"
+  : `http://${window.location.hostname}:8500`;
+
 // ── Auth state ──
 let currentUser = null;
 
@@ -1703,6 +1707,23 @@ async function apiFetch(path, options = {}) {
   }
   if (token) options.headers["Authorization"] = `Bearer ${token}`;
   const res = await fetch(API + path, options);
+  if (res.status === 401) {
+    clearSession();
+    showLoginScreen();
+    throw new Error("Session expired");
+  }
+  return res;
+}
+
+async function mediaFetch(path, options = {}) {
+  const token = getToken();
+  if (!(options.body instanceof FormData)) {
+    options.headers = { "Content-Type": "application/json", ...options.headers };
+  } else {
+    options.headers = { ...options.headers };
+  }
+  if (token) options.headers["Authorization"] = `Bearer ${token}`;
+  const res = await fetch(MEDIA_API + path, options);
   if (res.status === 401) {
     clearSession();
     showLoginScreen();
@@ -4396,7 +4417,7 @@ _inpaint.submitBtn.addEventListener("click", async () => {
 
   try {
     const mask = _exportInpaintMask();
-    const res = await apiFetch("/image/inpaint", {
+    const res = await mediaFetch("/image/inpaint", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -4478,7 +4499,7 @@ async function _upscaleImage(base64, recordId, imgIdx, wrap, imgEl, onDone) {
   }
 
   try {
-    const res = await apiFetch("/image/upscale", {
+    const res = await mediaFetch("/image/upscale", {
       method: "POST",
       body: JSON.stringify({ image: base64, scale: 2 }),
     });
@@ -4751,7 +4772,7 @@ async function pickStudioSuggestion() {
   studioPrompt.value = "Thinking of something...";
   studioPrompt.classList.add("prompt-locked");
   try {
-    const res = await apiFetch("/image/inspire");
+    const res = await mediaFetch("/image/inspire");
     if (!res.ok) throw new Error();
     const data = await res.json();
     if (data.prompt) {
@@ -4848,7 +4869,7 @@ async function pickMusicSuggestion() {
   musicPrompt.classList.add("songwriting", "prompt-locked");
   musicPrompt.value = "Thinking of something...";
   try {
-    const res = await apiFetch("/music/inspire");
+    const res = await mediaFetch("/music/inspire");
     if (!res.ok) throw new Error();
     const data = await res.json();
     if (data.prompt) {
@@ -4912,7 +4933,7 @@ document.getElementById("music-write-song-btn").addEventListener("click", async 
   const lang = langSel.value || "en";
 
   try {
-    const res = await apiFetch("/music/write-song", {
+    const res = await mediaFetch("/music/write-song", {
       method: "POST",
       body: JSON.stringify({ description: desc, language: lang, model: localStorage.getItem("diab_songwrite_model") || selectedModel || null }),
     });
@@ -5160,7 +5181,17 @@ async function prepareModelsForView(view) {
 }
 
 // View switching wrappers
+function _isGenerating() {
+  return studioGenerating || _musicGenerating || _videoGenerating;
+}
+
+function _confirmViewSwitch() {
+  if (!_isGenerating()) return true;
+  return confirm("A generation is in progress. Switching views will stop it. Continue?");
+}
+
 function showStudio() {
+  if (!_confirmViewSwitch()) return;
   setView("studio");
   loadStudioModels();
   loadImageFolders();
@@ -5171,11 +5202,13 @@ function showStudio() {
 }
 
 function hideStudio() {
+  if (!_confirmViewSwitch()) return;
   setView("chat");
   prepareModelsForView("chat");
 }
 
 function showMusicStudio() {
+  if (!_confirmViewSwitch()) return;
   setView("music");
   loadMusicFolders();
   renderMusicSessionsList();
@@ -5191,11 +5224,13 @@ function showMusicStudio() {
 }
 
 function hideMusicStudio() {
+  if (!_confirmViewSwitch()) return;
   setView("chat");
   prepareModelsForView("chat");
 }
 
 function showVideoStudio() {
+  if (!_confirmViewSwitch()) return;
   setView("video");
   loadVideoFolders();
   renderVideoSessionsList();
@@ -5213,6 +5248,7 @@ function showVideoStudio() {
 }
 
 function hideVideoStudio() {
+  if (!_confirmViewSwitch()) return;
   setView("chat");
   prepareModelsForView("chat");
 }
@@ -6464,7 +6500,7 @@ async function musicGenerate() {
   let _currentIdx = 0;
   _musicProgressTimer = setInterval(async () => {
     try {
-      const res = await apiFetch("/music/progress");
+      const res = await mediaFetch("/music/progress");
       const data = await res.json();
       if (data.running && data.total_steps > 0) {
         // Scale progress across all count iterations
@@ -6511,7 +6547,7 @@ async function musicGenerate() {
 
       statusEl.textContent = count > 1 ? `Generating track ${i + 1} of ${count}...` : "Generating...";
 
-      const res = await apiFetch("/music/generate", {
+      const res = await mediaFetch("/music/generate", {
         method: "POST",
         body: JSON.stringify(body),
       });
@@ -6527,7 +6563,7 @@ async function musicGenerate() {
       // Ask LLM to name the song
       let songTitle = "";
       try {
-        const nameResp = await apiFetch("/music/name-song", {
+        const nameResp = await mediaFetch("/music/name-song", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ prompt: rawPrompt, lyrics: lyrics || null }),
@@ -6575,7 +6611,7 @@ async function musicGenerate() {
     // Generate cover art in background (one per batch, shared across all tracks)
     (async () => {
       try {
-        const artResp = await apiFetch("/music/cover-art", {
+        const artResp = await mediaFetch("/music/cover-art", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ prompt: rawPrompt, title: cards[0]?._musicRecord?.title || null, lyrics: lyrics || null }),
@@ -7208,7 +7244,18 @@ document.getElementById("video-fps").addEventListener("change", function() {
   document.getElementById("video-frames-val").textContent = `${frames} (~${dur}s)`;
   _updateVideoSettingsSummary();
 });
-document.getElementById("video-resolution").addEventListener("change", _updateVideoSettingsSummary);
+document.getElementById("video-resolution").addEventListener("change", function() {
+  const slider = document.getElementById("video-frames");
+  const res = this.value;
+  if (res === "1280x704") {
+    slider.max = 161;
+    if (parseInt(slider.value) > 161) slider.value = 161;
+  } else {
+    slider.max = 257;
+  }
+  slider.dispatchEvent(new Event("input"));
+  _updateVideoSettingsSummary();
+});
 
 function _updateVideoSettingsSummary() {
   const res = document.getElementById("video-resolution").value;
@@ -7268,7 +7315,7 @@ videoI2VRemove.addEventListener("click", (e) => {
 // ── Inspire button ──
 document.getElementById("video-suggest-btn").addEventListener("click", async () => {
   try {
-    const res = await apiFetch("/video/inspire");
+    const res = await mediaFetch("/video/inspire");
     const data = await res.json();
     if (data.prompt) videoPrompt.value = data.prompt;
   } catch (e) {
@@ -7465,24 +7512,28 @@ async function videoGenerate() {
 
   let aborted = false;
   const abortCtrl = new AbortController();
-  stopBtn.addEventListener("click", () => { aborted = true; apiFetch("/video/cancel", { method: "POST" }).catch(() => {}); abortCtrl.abort(); });
+  stopBtn.addEventListener("click", () => { aborted = true; mediaFetch("/video/cancel", { method: "POST" }).catch(() => {}); abortCtrl.abort(); });
 
   // Progress polling
   const progressInterval = setInterval(async () => {
     try {
-      const res = await apiFetch("/video/progress");
+      const res = await mediaFetch("/video/progress");
       const p = await res.json();
       if (p.running && p.total_steps > 0) {
         const pct = Math.round((p.step / p.total_steps) * 100);
         ring.style.strokeDashoffset = 125.66 - (125.66 * pct / 100);
         barFill.style.width = pct + "%";
-        statusText.textContent = `Step ${p.step}/${p.total_steps} · ${p.elapsed_s || 0}s`;
+        if (p.step >= p.total_steps) {
+          statusText.textContent = `Finalizing video... · ${p.elapsed_s || 0}s`;
+        } else {
+          statusText.textContent = `Step ${p.step}/${p.total_steps} · ${p.elapsed_s || 0}s`;
+        }
       }
     } catch {}
   }, 500);
 
   try {
-    const res = await apiFetch("/video/generate", {
+    const res = await mediaFetch("/video/generate", {
       method: "POST",
       body: JSON.stringify(body),
       signal: abortCtrl.signal,
@@ -7524,7 +7575,7 @@ async function videoGenerate() {
     // Name session in background
     (async () => {
       try {
-        const nameRes = await apiFetch("/video/name-session", {
+        const nameRes = await mediaFetch("/video/name-session", {
           method: "POST",
           body: JSON.stringify({ prompt: rawPrompt }),
         });
@@ -8379,7 +8430,7 @@ document.getElementById("studio-random-seed").addEventListener("click", () => {
 let _studioModelsLoaded = false;
 async function loadStudioModels() {
   try {
-    const res = await apiFetch("/image/models");
+    const res = await mediaFetch("/image/models");
     const data = await res.json();
     _studioModelsCache = data.models || [];
     studioModelSelect.innerHTML = "";
@@ -8431,7 +8482,7 @@ studioModelSelect.addEventListener("change", async () => {
   _setModelLoading("studio", true, modelName);
   studioModelSelect.disabled = true;
   try {
-    const res = await apiFetch("/image/models/load", {
+    const res = await mediaFetch("/image/models/load", {
       method: "POST",
       body: JSON.stringify({ model: newModel }),
     });
@@ -8500,7 +8551,11 @@ function createStudioPlaceholder(imgW, imgH, totalSteps) {
       ringFill.style.strokeDashoffset = offset;
       ringText.textContent = pct + "%";
       barFill.style.width = pct + "%";
-      statusText.textContent = `Step ${step}/${total} · ${elapsedS}s`;
+      if (step >= total) {
+        statusText.textContent = `Finalizing image... · ${elapsedS}s`;
+      } else {
+        statusText.textContent = `Step ${step}/${total} · ${elapsedS}s`;
+      }
     },
     setStatus(msg) {
       statusText.textContent = msg;
@@ -8607,7 +8662,7 @@ async function studioGenerate() {
 
   let pollTimer = setInterval(async () => {
     try {
-      const pr = await apiFetch("/image/progress");
+      const pr = await mediaFetch("/image/progress");
       if (!pr.ok) return;
       const p = await pr.json();
       if (p.running && p.total_steps > 0) {
@@ -8635,7 +8690,7 @@ async function studioGenerate() {
       if (count > 1 && !seed) {
         iterBody.seed = Math.floor(Math.random() * 2147483647);
       }
-      const res = await apiFetch("/image/generate", {
+      const res = await mediaFetch("/image/generate", {
         method: "POST",
         body: JSON.stringify(iterBody),
         signal: studioAbortController?.signal,
@@ -8718,7 +8773,7 @@ async function studioGenerate() {
           const sessionRecs = allRecs.filter(r => r.session_id === _nameSessionId);
 
           if (sessionRecs.length <= 1) {
-            const nameResp = await apiFetch("/image/name-session", {
+            const nameResp = await mediaFetch("/image/name-session", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ prompt: rawPrompt }),
@@ -11020,7 +11075,7 @@ async function sendImageRequest(prompt) {
   // Poll /image/progress every second and update the step label with live step count
   let pollTimer = setInterval(async () => {
     try {
-      const pr = await apiFetch("/image/progress");
+      const pr = await mediaFetch("/image/progress");
       if (!pr.ok) return;
       const p = await pr.json();
       if (p.running && p.total_steps > 0) {
@@ -11032,7 +11087,7 @@ async function sendImageRequest(prompt) {
   }, 1000);
 
   try {
-    const res = await apiFetch("/image/generate", {
+    const res = await mediaFetch("/image/generate", {
       method: "POST",
       body: JSON.stringify({ prompt, aspect: "square", model: localStorage.getItem("diab_image_model") || null }),
     });
@@ -11434,6 +11489,9 @@ function _renderVramDisplay(loaded) {
   // Debug: show VRAM activity log
   if (debugMode && _vramLogBuffer.length) {
     const entries = _vramLogBuffer.map(e => {
+      if (e.action === "switch") {
+        return `<div class="vram-log-separator"><span class="vram-log-time">${e.time}</span> Switching to <strong>${e.model}</strong></div>`;
+      }
       const icon = e.action === "load" ? "▲" : e.action === "unload" ? "▼" : e.action === "evict" ? "✕" : "●";
       const cls = e.action === "load" || e.action === "unload" || e.action === "evict" || e.action === "call" ? e.action : "call";
       const detail = e.detail ? ` · ${e.detail}` : "";
@@ -11470,6 +11528,13 @@ function _connectVramSSE() {
         _vramPendingAcquire = data.service;
         _vramPendingModel = data.model || data.service;
         _vramAcquirePhase = data.phase || "loading";
+        if (data.phase === "unloading") {
+          const now = new Date();
+          const time = now.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
+          _vramLogBuffer.push({ service: "switch", action: "switch", model: data.model || data.service, detail: "", time });
+          while (_vramLogBuffer.length > VRAM_LOG_MAX) _vramLogBuffer.shift();
+          if (debugMode) _renderVramDisplay(_lastVramLoaded || []);
+        }
       } catch {}
     });
     _vramEventSource.addEventListener("vram_log", (e) => {
@@ -11494,18 +11559,11 @@ function _connectVramSSE() {
 async function pollVramStatus() {
   if (!currentUser || currentUser.role !== "admin") return;
   try {
-    if (_vramSSEConnected) {
-      // SSE handles model state; just refresh GPU memory stats
-      const res = await fetch(GPU_API + "/gpu");
-      const gpu = await res.json();
-      if (gpu.total_mb) { _gpuStats = gpu; _renderVramDisplay(_lastVramLoaded || []); }
-    } else {
-      // SSE down — full status poll
-      const res = await fetch(GPU_API + "/status");
-      const data = await res.json();
-      if (data.gpu) _gpuStats = data.gpu;
-      _renderVramDisplay(data.loaded || []);
-    }
+    // Always fetch full status (models + GPU stats) to catch on-demand model loads
+    const res = await fetch(GPU_API + "/status");
+    const data = await res.json();
+    if (data.gpu) _gpuStats = data.gpu;
+    _renderVramDisplay(data.loaded || []);
   } catch {}
 }
 
@@ -11515,7 +11573,7 @@ function startVramPolling() {
   vramStatusEl.style.display = "";
   _connectVramSSE();
   pollVramStatus();
-  _vramStatusTimer = setInterval(pollVramStatus, 2000);
+  _vramStatusTimer = setInterval(pollVramStatus, 1000);
 }
 
 // ── iOS / Mobile fixes ──

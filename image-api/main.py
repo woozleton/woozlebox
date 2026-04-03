@@ -94,6 +94,7 @@ _current_model = None
 
 # Live progress state -updated by the pipeline callback during inference
 _progress = {"running": False, "step": 0, "total_steps": 0, "elapsed_s": 0.0, "started_at": 0.0}
+_cancel_requested = False
 
 app = FastAPI(title="image-api")
 app.add_middleware(
@@ -272,6 +273,15 @@ def progress():
     return p
 
 
+@app.post("/cancel")
+def cancel():
+    global _cancel_requested
+    if _progress["running"]:
+        _cancel_requested = True
+        return {"ok": True, "message": "Cancel requested"}
+    return {"ok": True, "message": "Nothing running"}
+
+
 @app.get("/models")
 def list_models():
     """Returns available image models and current selection."""
@@ -370,11 +380,14 @@ async def generate(req: GenerateRequest):
     generator = torch.Generator("cuda").manual_seed(req.seed) if req.seed is not None else None
 
     # Reset progress state before starting
+    global _cancel_requested
+    _cancel_requested = False
     _progress.update({"running": True, "step": 0, "total_steps": steps, "elapsed_s": 0.0, "started_at": time.time()})
 
     def _step_callback(pipe, step_index, timestep, callback_kwargs):
-        """Called by diffusers after each denoising step -updates live progress."""
         _progress["step"] = step_index + 1
+        if _cancel_requested:
+            raise RuntimeError("Generation cancelled by user")
         return callback_kwargs
 
     t0 = time.time()
@@ -399,10 +412,14 @@ async def generate(req: GenerateRequest):
 
         result = await loop.run_in_executor(None, _run_inference)
     except Exception as e:
+        if _cancel_requested:
+            logger.info("Image generation cancelled by user")
+            raise HTTPException(status_code=499, detail="Generation cancelled")
         logger.error(f"Generation failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Generation failed: {e}")
     finally:
         _progress["running"] = False
+        _cancel_requested = False
 
     img: Image.Image = result.images[0]
     buf = io.BytesIO()
@@ -520,10 +537,13 @@ async def inpaint(req: InpaintRequest):
     seed = req.seed if req.seed is not None else int(torch.randint(0, 2**32, (1,)).item())
     generator = torch.Generator("cuda").manual_seed(seed)
 
+    _cancel_requested = False
     _progress.update({"running": True, "step": 0, "total_steps": steps, "elapsed_s": 0.0, "started_at": time.time()})
 
     def _step_callback(pipe, step_index, timestep, callback_kwargs):
         _progress["step"] = step_index + 1
+        if _cancel_requested:
+            raise RuntimeError("Inpaint cancelled by user")
         return callback_kwargs
 
     t0 = time.time()
@@ -551,6 +571,9 @@ async def inpaint(req: InpaintRequest):
 
         result = await loop.run_in_executor(None, _run_inpaint)
     except Exception as e:
+        if _cancel_requested:
+            logger.info("Inpaint cancelled by user")
+            raise HTTPException(status_code=499, detail="Inpaint cancelled")
         logger.error(f"Inpaint failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Inpaint failed: {e}")
     finally:

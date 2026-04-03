@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WoozBox - VRAM Workflows</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0F1117; color: #E4E4E7; font-family: 'Segoe UI', Calibri, sans-serif; padding: 40px; min-height: 100vh; }
+  h1 { font-size: 34px; font-weight: 700; margin-bottom: 6px; }
+  h2 { font-size: 24px; font-weight: 700; margin: 48px 0 8px; }
+  .subtitle { font-size: 18px; color: #9CA3AF; margin-bottom: 36px; }
+  .h2-desc { font-size: 14px; color: #9CA3AF; margin-bottom: 20px; }
+
+  .workflow { max-width: 900px; margin-bottom: 40px; }
+
+  .step { display: flex; align-items: stretch; gap: 0; margin: 0; }
+  .step-left { width: 140px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; }
+  .step-trigger { font-size: 13px; font-weight: 600; color: #9CA3AF; text-align: center; padding-top: 18px; }
+  .step-line { flex: 1; width: 2px; background: #2A2D3A; margin: 6px 0; }
+  .step-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; border: 2px solid #2A2D3A; }
+  .step-right { flex: 1; padding: 10px 0 10px 20px; }
+
+  .step-card { background: #1A1D27; border: 1px solid #2A2D3A; border-radius: 8px; padding: 16px 20px; position: relative; }
+  .step-card::before {
+    content: '';
+    position: absolute; left: -12px; top: 20px;
+    width: 0; height: 0;
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    border-right: 12px solid #2A2D3A;
+  }
+  .step-card::after {
+    content: '';
+    position: absolute; left: -10px; top: 21px;
+    width: 0; height: 0;
+    border-top: 7px solid transparent;
+    border-bottom: 7px solid transparent;
+    border-right: 11px solid #1A1D27;
+  }
+  .step-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  .step-actions { display: flex; flex-direction: column; gap: 5px; }
+  .action { display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 1.4; }
+  .action-icon { font-size: 14px; flex-shrink: 0; width: 20px; text-align: center; }
+
+  .vram-state { margin-top: 12px; padding-top: 10px; border-top: 1px dotted #2A2D3A; }
+  .vram-state-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #6B7280; margin-bottom: 6px; }
+  .vram-bar { display: flex; gap: 4px; flex-wrap: wrap; }
+  .vram-chip { font-size: 12px; padding: 3px 10px; border-radius: 4px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+  .vram-chip .vram-size { font-weight: 400; opacity: 0.6; font-size: 11px; }
+  .chip-green { background: #34D39922; color: #34D399; }
+  .chip-blue { background: #60A5FA22; color: #60A5FA; }
+  .chip-amber { background: #F59E0B22; color: #F59E0B; }
+  .chip-red { background: #EF444422; color: #EF4444; }
+  .chip-purple { background: #818CF822; color: #818CF8; }
+  .chip-dim { background: #6B728022; color: #9CA3AF; }
+  .chip-gone { background: transparent; color: #4B5563; border: 1px dashed #4B5563; }
+
+  .dot-blue { background: #60A5FA; border-color: #60A5FA; }
+  .dot-green { background: #34D399; border-color: #34D399; }
+  .dot-amber { background: #F59E0B; border-color: #F59E0B; }
+  .dot-red { background: #EF4444; border-color: #EF4444; }
+  .dot-purple { background: #818CF8; border-color: #818CF8; }
+
+  .c-red { color: #EF4444; }
+  .c-amber { color: #F59E0B; }
+  .c-green { color: #34D399; }
+  .c-blue { color: #60A5FA; }
+  .c-purple { color: #818CF8; }
+  .c-dim { color: #6B7280; }
+
+  .arrow-down { text-align: center; font-size: 20px; color: #4B5563; padding: 4px 0; }
+
+  .footnote { margin-top: 32px; font-size: 14px; color: #6B7280; font-style: italic; max-width: 900px; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<h1>VRAM Workflows</h1>
+<p class="subtitle">Step-by-step GPU orchestration for each studio mode</p>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 class="c-blue">Chat</h2>
+<p class="h2-desc">Simple - evict everything, load the chat LLM</p>
+
+<div class="workflow">
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Switch to Chat</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-blue"></div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">gpu-manager /acquire (chat)</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-red">&#10005;</span> Evict ALL Ollama models</div>
+          <div class="action"><span class="action-icon c-amber">&#9660;</span> Unload image-api, music-api, video-api</div>
+          <div class="action"><span class="action-icon c-green">&#9650;</span> Warm up chat LLM (e.g. qwen2.5:14b)</div>
+        </div>
+        <div class="vram-state">
+          <div class="vram-state-label">VRAM Before (example: coming from Image Studio)</div>
+          <div class="vram-bar">
+            <span class="vram-chip chip-gone">qwen3:0.6b <span class="vram-size">0.4G</span></span>
+            <span class="vram-chip chip-gone">stable-diffusion-3.5 <span class="vram-size">13.1G</span></span>
+          </div>
+        </div>
+        <div class="vram-state" style="border-top:none; padding-top:4px;">
+          <div class="vram-state-label">VRAM After</div>
+          <div class="vram-bar">
+            <span class="vram-chip chip-blue">qwen2.5:14b <span class="vram-size">16.5G</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Send Message</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-blue"></div>
+      <div class="step-line" style="background:transparent;"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">rag-api /chat</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-blue">&#9679;</span> Embed query (nomic-embed-text)</div>
+          <div class="action"><span class="action-icon c-blue">&#9679;</span> Search vault via ChromaDB</div>
+          <div class="action"><span class="action-icon c-blue">&#9679;</span> Stream LLM response</div>
+        </div>
+        <div class="vram-state">
+          <div class="vram-state-label">VRAM During</div>
+          <div class="vram-bar">
+            <span class="vram-chip chip-blue">qwen2.5:14b <span class="vram-size">16.5G</span></span>
+            <span class="vram-chip chip-dim">nomic-embed-text <span class="vram-size">0.3G</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 class="c-green">Image Studio</h2>
+<p class="h2-desc">Utility model loads on-demand for inspire/naming, evicted before generation</p>
+
+<div class="workflow">
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Switch to Image</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-green"></div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">gpu-manager /acquire (image)</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-red">&#10005;</span> Evict non-utility LLMs (e.g. qwen2.5:14b)</div>
+          <div class="action"><span class="action-icon c-amber">&#9660;</span> Unload music-api, video-api</div>
+          <div class="action"><span class="action-icon c-green">&#9650;</span> Load selected image model (e.g. SD 3.5)</div>
+        </div>
+        <div class="vram-state">
+          <div class="vram-state-label">VRAM Before (example: coming from Chat)</div>
+          <div class="vram-bar">
+            <span class="vram-chip chip-gone">qwen2.5:14b <span class="vram-size">16.5G</span></span>
+            <span class="vram-chip chip-gone">nomic-embed-text <span class="vram-size">0.3G</span></span>
+          </div>
+        </div>
+        <div class="vram-state" style="border-top:none; padding-top:4px;">
+          <div class="vram-state-label">VRAM After</div>
+          <div class="vram-bar">
+            <span class="vram-chip chip-green">stable-diffusion-3.5 <span class="vram-size">13.1G</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Inspire Button</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-purple"></div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">media-api /image/inspire</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-purple">&#9679;</span> Calls Ollama with qwen3:0.6b (loads on-demand)</div>
+          <div class="action"><span class="action-icon c-purple">&#9679;</span> Returns creative image prompt</div>
+        </div>
+        <div class="vram-state">
+          <div class="vram-state-label">VRAM After</div>
+          <div class="vram-bar">
+            <span class="vram-chip chip-purple">qwen3:0.6b <span class="vram-size">0.4G</span></span>
+            <span class="vram-chip chip-green">stable-diffusion-3.5 <span class="vram-size">13.1G</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Generate</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-green"></div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">gpu-manager /acquire (image, pre_inference)</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-red">&#10005;</span> Evict ALL Ollama models (including qwen3:0.6b)</div>
+          <div class="action"><span class="action-icon c-dim">&#10003;</span> SD 3.5 already loaded - no change</div>
+        </div>
+        <div class="vram-state">
+          <div class="vram-state-label">VRAM After</div>
+          <div class="vram-bar">
+            <span class="vram-chip chip-gone">qwen3:0.6b evicted <span class="vram-size">-0.4G</span></span>
+            <span class="vram-chip chip-green">stable-diffusion-3.5 <span class="vram-size">13.1G</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Inference</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-green"></div>
+      <div class="step-line" style="background:transparent;"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">image-api /generate</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-green">&#9679;</span> SD 3.5 runs diffusion (~13GB)</div>
+          <div class="action"><span class="action-icon c-green">&#9679;</span> VRAM spikes during inference, returns to baseline</div>
+        </div>
+        <div class="vram-state">
+          <div class="vram-state-label">VRAM During Peak</div>
+          <div class="vram-bar">
+            <span class="vram-chip chip-green">stable-diffusion-3.5 <span class="vram-size">13.1G base, ~23G peak</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 class="c-amber">Music Studio</h2>
+<p class="h2-desc">Two models coexist - ACE-Step for music + SDXL Turbo for cover art</p>
+
+<div class="workflow">
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Switch to Music</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-amber"></div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">gpu-manager /acquire (music)</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-red">&#10005;</span> Evict non-utility LLMs (e.g. qwen2.5:14b)</div>
+          <div class="action"><span class="action-icon c-amber">&#9660;</span> Unload video-api</div>
+          <div class="action"><span class="action-icon c-dim">&#10003;</span> Keep image-api (for cover art)</div>
+          <div class="action"><span class="action-icon c-amber">&#9650;</span> Load ACE-Step 1.5</div>
+          <div class="action"><span class="action-icon c-green">&#9650;</span> Load SDXL Turbo (cover art)</div>
+        </div>
+        <div class="vram-state">
+          <div class="vram-state-label">VRAM Before (example: coming from Chat)</div>
+          <div class="vram-bar">
+            <span class="vram-chip chip-gone">qwen2.5:14b <span class="vram-size">16.5G</span></span>
+            <span class="vram-chip chip-gone">nomic-embed-text <span class="vram-size">0.3G</span></span>
+          </div>
+        </div>
+        <div class="vram-state" style="border-top:none; padding-top:4px;">
+          <div class="vram-state-label">VRAM After (~13GB)</div>
+          <div class="vram-bar">
+            <span class="vram-chip chip-amber">ace-step-1.5 <span class="vram-size">6.1G</span></span>
+            <span class="vram-chip chip-green">sdxl-turbo <span class="vram-size">6.6G</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Inspire / Name / Write Song</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-purple"></div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">media-api /music/inspire, /name-song</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-purple">&#9679;</span> Calls Ollama with qwen3:0.6b (loads on-demand)</div>
+          <div class="action"><span class="action-icon c-purple">&#9679;</span> Returns prompt idea / song title</div>
+        </div>
+        <div class="vram-state">
+          <div class="vram-state-label">VRAM After</div>
+          <div class="vram-bar">
+            <span class="vram-chip chip-purple">qwen3:0.6b <span class="vram-size">0.4G</span></span>
+            <span class="vram-chip chip-amber">ace-step-1.5 <span class="vram-size">6.1G</span></span>
+            <span class="vram-chip chip-green">sdxl-turbo <span class="vram-size">6.6G</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Write Song</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-blue"></div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">media-api /music/write-song</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-amber">&#9660;</span> Unloads image-api to free VRAM</div>
+          <div class="action"><span class="action-icon c-blue">&#9679;</span> Calls Ollama with qwen2.5:14b (full LLM for quality lyrics)</div>
+          <div class="action"><span class="action-icon c-blue">&#9679;</span> Returns style prompt + structured lyrics</div>
+        </div>
+        <div class="vram-state">
+          <div class="vram-state-label">VRAM During</div>
+          <div class="vram-bar">
+            <span class="vram-chip chip-blue">qwen2.5:14b <span class="vram-size">16.5G</span></span>
+            <span class="vram-chip chip-amber">ace-step-1.5 <span class="vram-size">6.1G</span></span>
+            <span class="vram-chip chip-gone">sdxl-turbo <span class="vram-size">unloaded</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Generate</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-amber"></div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">gpu-manager /acquire (music, pre_inference)</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-red">&#10005;</span> Evict ALL Ollama models (qwen2.5:14b, qwen3:0.6b, etc.)</div>
+          <div class="action"><span class="action-icon c-green">&#9650;</span> Reload SDXL Turbo if unloaded by write-song</div>
+          <div class="action"><span class="action-icon c-dim">&#10003;</span> ACE-Step already loaded</div>
+        </div>
+        <div class="vram-state">
+          <div class="vram-state-label">VRAM After</div>
+          <div class="vram-bar">
+            <span class="vram-chip chip-gone">qwen2.5:14b evicted <span class="vram-size">-16.5G</span></span>
+            <span class="vram-chip chip-amber">ace-step-1.5 <span class="vram-size">6.1G</span></span>
+            <span class="vram-chip chip-green">sdxl-turbo <span class="vram-size">6.6G</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Inference</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-amber"></div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">music-api /generate</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-amber">&#9679;</span> ACE-Step runs audio generation</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Cover Art</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-green"></div>
+      <div class="step-line" style="background:transparent;"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">media-api /music/cover-art</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-purple">&#9679;</span> Utility LLM generates image prompt</div>
+          <div class="action"><span class="action-icon c-green">&#9679;</span> SDXL Turbo renders 512x512 cover (4 steps)</div>
+        </div>
+        <div class="vram-state">
+          <div class="vram-state-label">VRAM During</div>
+          <div class="vram-bar">
+            <span class="vram-chip chip-purple">qwen3:0.6b <span class="vram-size">0.4G</span></span>
+            <span class="vram-chip chip-amber">ace-step-1.5 <span class="vram-size">6.1G</span></span>
+            <span class="vram-chip chip-green">sdxl-turbo <span class="vram-size">6.6G - needed for cover art</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 class="c-red">Video Studio</h2>
+<p class="h2-desc">Wan 2.2 needs all VRAM - everything else is evicted</p>
+
+<div class="workflow">
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Switch to Video</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-red"></div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">gpu-manager /acquire (video)</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-red">&#10005;</span> Evict ALL Ollama models (including utility)</div>
+          <div class="action"><span class="action-icon c-amber">&#9660;</span> Unload image-api, music-api</div>
+          <div class="action"><span class="action-icon c-red">&#9650;</span> Load Wan 2.2 TI2V 5B (~18GB)</div>
+        </div>
+        <div class="vram-state">
+          <div class="vram-state-label">VRAM Before (example: coming from Music Studio)</div>
+          <div class="vram-bar">
+            <span class="vram-chip chip-gone">qwen3:0.6b <span class="vram-size">0.4G</span></span>
+            <span class="vram-chip chip-gone">ace-step-1.5 <span class="vram-size">6.1G</span></span>
+            <span class="vram-chip chip-gone">sdxl-turbo <span class="vram-size">6.6G</span></span>
+          </div>
+        </div>
+        <div class="vram-state" style="border-top:none; padding-top:4px;">
+          <div class="vram-state-label">VRAM After (~18GB)</div>
+          <div class="vram-bar">
+            <span class="vram-chip chip-red">wan-2.2-ti2v-5b <span class="vram-size">18.4G</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Inspire</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-purple"></div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">media-api /video/inspire</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-purple">&#9679;</span> qwen3:0.6b loads on-demand</div>
+          <div class="action"><span class="action-icon c-dim">&#9888;</span> <span class="c-dim">Tight VRAM - Wan + utility = ~22GB of 24GB</span></div>
+        </div>
+        <div class="vram-state">
+          <div class="vram-state-label">VRAM After</div>
+          <div class="vram-bar">
+            <span class="vram-chip chip-purple">qwen3:0.6b <span class="vram-size">0.4G</span></span>
+            <span class="vram-chip chip-red">wan-2.2-ti2v-5b <span class="vram-size">18.4G</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Generate</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-red"></div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">gpu-manager /acquire (video, pre_inference)</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-red">&#10005;</span> Evict ALL Ollama models (including qwen3:0.6b)</div>
+          <div class="action"><span class="action-icon c-dim">&#10003;</span> Wan 2.2 already loaded</div>
+        </div>
+        <div class="vram-state">
+          <div class="vram-state-label">VRAM After</div>
+          <div class="vram-bar">
+            <span class="vram-chip chip-gone">qwen3:0.6b evicted <span class="vram-size">-0.4G</span></span>
+            <span class="vram-chip chip-red">wan-2.2-ti2v-5b <span class="vram-size">18.4G</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Inference</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-red"></div>
+      <div class="step-line" style="background:transparent;"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">video-api /generate</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-red">&#9679;</span> Wan 2.2 generates video frames</div>
+          <div class="action"><span class="action-icon c-red">&#9679;</span> Full VRAM available - no contention</div>
+        </div>
+        <div class="vram-state">
+          <div class="vram-state-label">VRAM During Peak</div>
+          <div class="vram-bar">
+            <span class="vram-chip chip-red">wan-2.2-ti2v-5b <span class="vram-size">18.4G base, ~23G peak</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="footnote">
+  The utility model (qwen3:0.6b) loads on-demand in ~1s when inspire/naming is called.
+  It's always evicted before actual inference via the pre_inference flag on /acquire.
+  Cover art for video uses a separate /video/cover-art endpoint that loads SDXL Turbo after video generation completes.
+</p>
+
+</body>
+</html>

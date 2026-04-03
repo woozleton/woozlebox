@@ -32,7 +32,7 @@ MUSIC_GEN_URL = os.environ.get("MUSIC_GEN_URL", "http://music-api:8200")
 VIDEO_GEN_URL = os.environ.get("VIDEO_GEN_URL", "http://video-api:8300")
 OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://ollama:11434")
 UTILITY_MODEL = os.environ.get("UTILITY_MODEL", "qwen3:0.6b")
-DEFAULT_LLM = DEFAULT_LLM
+DEFAULT_LLM = os.environ.get("LLM_MODEL", "qwen3:30b-a3b")
 
 
 _GPU_FALLBACK = {"used_mb": 0, "free_mb": 0, "total_mb": 24576, "gpu_name": "Unknown"}
@@ -329,6 +329,7 @@ async def _warmup_llm(model: str = None):
 class AcquireRequest(BaseModel):
     service: str
     model: Optional[str] = None
+    pre_inference: bool = False
 
 
 class ReleaseRequest(BaseModel):
@@ -401,46 +402,46 @@ async def acquire(req: AcquireRequest):
         t0 = time.time()
         model_label = req.model or req.service
 
-        # ── Fast path: if VRAM already matches the target profile, return immediately ──
-        try:
-            if req.service == "chat":
-                target_llm = req.model or DEFAULT_LLM
-                ps = await _http.get(f"{OLLAMA_BASE_URL}/api/ps", timeout=5.0)
-                loaded_llms = [m.get("name", "") for m in ps.json().get("models", []) if m.get("name")]
-                if target_llm in loaded_llms:
-                    svc_healths = await asyncio.gather(*[_get_service_health(url) for url in SERVICES.values()])
-                    if not any(h.get("model_loaded") for h in svc_healths):
-                        elapsed = round(time.time() - t0, 3)
-                        logger.info(f"[VRAM] ACQUIRE fast-path: {req.service} already in correct state ({elapsed}s)")
-                        return {"ok": True, "service": req.service, "model": target_llm, "vram_mb": 0, "elapsed_s": elapsed, "fast_path": True}
-            else:
-                target_health = await _get_service_health(SERVICES[req.service])
-                model_ok = target_health.get("model_loaded") and (not req.model or target_health.get("current_model") == req.model)
-                if model_ok:
-                    stale = [svc for svc in SERVICES if svc != req.service and svc not in profile["keep_services"]]
-                    stale_healths = await asyncio.gather(*[_get_service_health(SERVICES[s]) for s in stale]) if stale else []
-                    no_stale = not any(h.get("model_loaded") for h in stale_healths)
-                    # Verify Ollama matches profile (no unwanted LLMs hogging VRAM)
-                    ollama_ok = True
+        # ── Fast path: skip if pre_inference (need to evict Ollama regardless) ──
+        if not req.pre_inference:
+            try:
+                if req.service == "chat":
+                    target_llm = req.model or DEFAULT_LLM
                     ps = await _http.get(f"{OLLAMA_BASE_URL}/api/ps", timeout=5.0)
                     loaded_llms = [m.get("name", "") for m in ps.json().get("models", []) if m.get("name")]
-                    if profile["evict_all_llms"] and loaded_llms:
-                        ollama_ok = False
-                    elif not profile["evict_all_llms"] and loaded_llms:
-                        unwanted = [m for m in loaded_llms if not _is_utility_model(m)]
-                        if unwanted:
+                    if target_llm in loaded_llms:
+                        svc_healths = await asyncio.gather(*[_get_service_health(url) for url in SERVICES.values()])
+                        if not any(h.get("model_loaded") for h in svc_healths):
+                            elapsed = round(time.time() - t0, 3)
+                            logger.info(f"[VRAM] ACQUIRE fast-path: {req.service} already in correct state ({elapsed}s)")
+                            return {"ok": True, "service": req.service, "model": target_llm, "vram_mb": 0, "elapsed_s": elapsed, "fast_path": True}
+                else:
+                    target_health = await _get_service_health(SERVICES[req.service])
+                    model_ok = target_health.get("model_loaded") and (not req.model or target_health.get("current_model") == req.model)
+                    if model_ok:
+                        stale = [svc for svc in SERVICES if svc != req.service and svc not in profile["keep_services"]]
+                        stale_healths = await asyncio.gather(*[_get_service_health(SERVICES[s]) for s in stale]) if stale else []
+                        no_stale = not any(h.get("model_loaded") for h in stale_healths)
+                        ollama_ok = True
+                        ps = await _http.get(f"{OLLAMA_BASE_URL}/api/ps", timeout=5.0)
+                        loaded_llms = [m.get("name", "") for m in ps.json().get("models", []) if m.get("name")]
+                        if profile["evict_all_llms"] and loaded_llms:
                             ollama_ok = False
-                    if no_stale and ollama_ok:
-                        elapsed = round(time.time() - t0, 3)
-                        logger.info(f"[VRAM] ACQUIRE fast-path: {req.service} already in correct state ({elapsed}s)")
-                        return {
-                            "ok": True, "service": req.service,
-                            "model": target_health.get("current_model"),
-                            "vram_mb": target_health.get("vram_mb", 0),
-                            "elapsed_s": elapsed, "fast_path": True,
-                        }
-        except Exception as e:
-            logger.debug(f"[VRAM] Fast-path check failed, using full path: {e}")
+                        elif not profile["evict_all_llms"] and loaded_llms:
+                            unwanted = [m for m in loaded_llms if not _is_utility_model(m)]
+                            if unwanted:
+                                ollama_ok = False
+                        if no_stale and ollama_ok:
+                            elapsed = round(time.time() - t0, 3)
+                            logger.info(f"[VRAM] ACQUIRE fast-path: {req.service} already in correct state ({elapsed}s)")
+                            return {
+                                "ok": True, "service": req.service,
+                                "model": target_health.get("current_model"),
+                                "vram_mb": target_health.get("vram_mb", 0),
+                                "elapsed_s": elapsed, "fast_path": True,
+                            }
+            except Exception as e:
+                logger.debug(f"[VRAM] Fast-path check failed, using full path: {e}")
 
         # ── Full acquire path ──
         logger.info(f"[VRAM] ={'='*60}")
@@ -534,6 +535,22 @@ async def acquire(req: AcquireRequest):
                     await _load_service("image", COVER_ART_MODEL)
                 except Exception as e:
                     logger.warning(f"[VRAM] Failed to load cover art model: {e}")
+
+        # Pre-inference: evict ALL Ollama models to maximize VRAM for generation
+        if req.pre_inference:
+            logger.info("[VRAM] Pre-inference: evicting all Ollama models")
+            evicted_pre = await _evict_ollama(keep_utility=False)
+            if evicted_pre:
+                for _ in range(30):
+                    try:
+                        ps = await _http.get(f"{OLLAMA_BASE_URL}/api/ps", timeout=5.0)
+                        remaining = [m.get("name", "") for m in ps.json().get("models", []) if m.get("name")]
+                        if not remaining:
+                            break
+                    except Exception:
+                        break
+                    await asyncio.sleep(1)
+                logger.info("[VRAM] Pre-inference: Ollama VRAM cleared")
 
         elapsed = round(time.time() - t0, 2)
         await _log_vram_state("after acquire complete")

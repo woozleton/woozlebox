@@ -1,5 +1,5 @@
 """
-video-api - Text-to-video and image-to-video service using Wan 2.2 TI2V 5B.
+video-api - Text-to-video service using Wan 2.1 T2V 1.3B.
 
 POST /generate   {prompt, image, negative_prompt, num_frames, height, width, fps, num_inference_steps, guidance_scale, seed}
 GET  /health
@@ -30,7 +30,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 HF_CACHE = os.environ.get("HF_HOME", "/root/.cache/huggingface")
-MODEL_ID = os.environ.get("VIDEO_MODEL_ID", "Wan-AI/Wan2.2-TI2V-5B-Diffusers")
+MODEL_ID = os.environ.get("VIDEO_MODEL_ID", "Wan-AI/Wan2.1-T2V-1.3B-Diffusers")
 
 
 # -- Global state --
@@ -56,46 +56,25 @@ app.add_middleware(
 
 
 def _load_model():
-    """Load Wan 2.2 TI2V 5B with FP8 quantization, entirely on GPU."""
+    """Load Wan 2.1 T2V 1.3B with FP8 quantization, entirely on GPU."""
     global _pipe, _model_loaded
 
-    logger.info("Loading Wan 2.2 TI2V 5B...")
+    logger.info("Loading Wan 2.1 T2V 1.3B...")
     t0 = time.time()
 
-    from diffusers import WanPipeline, AutoencoderKLWan, AutoModel
+    from diffusers import WanPipeline, AutoencoderKLWan
 
-    # Load transformer with FP8 layerwise casting to halve VRAM
-    transformer = AutoModel.from_pretrained(
-        MODEL_ID, subfolder="transformer", torch_dtype=torch.bfloat16,
-    )
-    try:
-        transformer.enable_layerwise_casting(
-            storage_dtype=torch.float8_e4m3fn,
-            compute_dtype=torch.bfloat16,
-        )
-        logger.info("Transformer loaded with FP8 layerwise casting")
-    except Exception as e:
-        logger.warning(f"FP8 layerwise casting failed ({e}), using bfloat16")
-
-    # VAE must be float32 for quality
     vae = AutoencoderKLWan.from_pretrained(MODEL_ID, subfolder="vae", torch_dtype=torch.float32)
-
-    # Load pipeline with pre-loaded components
-    _pipe = WanPipeline.from_pretrained(
-        MODEL_ID,
-        transformer=transformer,
-        vae=vae,
-        torch_dtype=torch.bfloat16,
-    )
+    _pipe = WanPipeline.from_pretrained(MODEL_ID, vae=vae, torch_dtype=torch.bfloat16)
     _pipe.to("cuda")
     gc.collect()
-    logger.info("Pipeline moved to CUDA - no CPU offloading")
+    logger.info("Pipeline moved to CUDA")
 
     _model_loaded = True
     gc.collect()
 
     vram = torch.cuda.memory_allocated() // 1024 // 1024
-    logger.info(f"Wan 2.2 ready in {time.time()-t0:.1f}s - VRAM: {vram}MB")
+    logger.info(f"Wan 2.1 ready in {time.time()-t0:.1f}s - VRAM: {vram}MB")
 
 
 @app.on_event("startup")
@@ -116,7 +95,7 @@ class VideoGenerateRequest(BaseModel):
     height: Optional[int] = 704
     width: Optional[int] = 1280
     fps: Optional[int] = 24
-    num_inference_steps: Optional[int] = 50
+    num_inference_steps: Optional[int] = 30
     guidance_scale: Optional[float] = 5.0
     seed: Optional[int] = None
 
@@ -127,8 +106,7 @@ def health():
     return {
         "ok": True,
         "model_loaded": _model_loaded,
-        "current_model": "wan-2.2-ti2v-5b" if _model_loaded else None,
-        "i2v_available": _model_loaded,
+        "current_model": "wan-2.1-t2v-1.3b" if _model_loaded else None,
         "vram_mb": vram_mb,
     }
 
@@ -155,11 +133,11 @@ async def load_model():
     global _model_loaded
     if _model_loaded:
         vram = torch.cuda.memory_allocated() // 1024 // 1024
-        return {"ok": True, "already_loaded": True, "model": "wan-2.2-ti2v-5b", "vram_mb": vram}
+        return {"ok": True, "already_loaded": True, "model": "wan-2.1-t2v-1.3b", "vram_mb": vram}
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, _load_model)
     vram = torch.cuda.memory_allocated() // 1024 // 1024
-    return {"ok": True, "already_loaded": False, "model": "wan-2.2-ti2v-5b", "vram_mb": vram}
+    return {"ok": True, "already_loaded": False, "model": "wan-2.1-t2v-1.3b", "vram_mb": vram}
 
 
 @app.post("/models/unload")
@@ -168,14 +146,14 @@ async def unload_model():
     if not _model_loaded:
         return {"ok": True, "was_loaded": False}
 
-    logger.info("Unloading Wan 2.2 to free VRAM")
+    logger.info("Unloading Wan 2.1 to free VRAM")
     _pipe = None
     _model_loaded = False
     gc.collect()
     torch.cuda.empty_cache()
     vram = torch.cuda.memory_allocated() // 1024 // 1024
-    logger.info(f"Unloaded Wan 2.2 - VRAM after: {vram}MB")
-    return {"ok": True, "was_loaded": True, "freed_model": "wan-2.2-ti2v-5b", "vram_mb": vram}
+    logger.info(f"Unloaded Wan 2.1 - VRAM after: {vram}MB")
+    return {"ok": True, "was_loaded": True, "freed_model": "wan-2.1-t2v-1.3b", "vram_mb": vram}
 
 
 WAN_NEGATIVE_PROMPT = (
@@ -205,7 +183,7 @@ async def generate(req: VideoGenerateRequest):
     height = (height // 16) * 16
     width = (width // 16) * 16
     fps = max(8, min(30, req.fps or 24))
-    steps = max(1, min(50, req.num_inference_steps or 50))
+    steps = max(1, min(50, req.num_inference_steps or 30))
     guidance = max(1.0, min(15.0, req.guidance_scale or 5.0))
     seed = req.seed if req.seed is not None and req.seed >= 0 else -1
 
@@ -308,5 +286,5 @@ async def generate(req: VideoGenerateRequest):
         "duration": actual_duration,
         "has_audio": False,
         "seed": seed,
-        "model": "Wan 2.2",
+        "model": "Wan 2.1",
     }

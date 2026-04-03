@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WoozBox Architecture</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0F1117; color: #E4E4E7; font-family: 'Segoe UI', Calibri, sans-serif; padding: 40px; min-height: 100vh; }
+  h1 { font-size: 34px; font-weight: 700; margin-bottom: 6px; }
+  h2 { font-size: 26px; font-weight: 700; margin: 44px 0 20px; color: #E4E4E7; }
+  .subtitle { font-size: 18px; color: #9CA3AF; margin-bottom: 32px; }
+  .section-desc { font-size: 16px; color: #9CA3AF; margin-bottom: 20px; line-height: 1.5; }
+
+  /* Service Architecture */
+  .arch-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; max-width: 1100px; margin-bottom: 14px; }
+  .arch-card { background: #1A1D27; border: 1px solid #2A2D3A; border-radius: 8px; padding: 16px 18px; text-align: center; }
+  .arch-card .name { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .arch-card .port { font-size: 14px; font-family: monospace; color: #6B7280; }
+  .arch-card .desc { font-size: 13px; color: #9CA3AF; margin-top: 8px; line-height: 1.4; }
+  .arch-accent { height: 3px; border-radius: 3px 3px 0 0; margin: -16px -18px 12px; }
+  .arch-row-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #6B7280; margin: 16px 0 10px; }
+
+  /* VRAM Profiles */
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; max-width: 1100px; }
+  .card { background: #1A1D27; border: 1px solid #2A2D3A; border-radius: 10px; overflow: hidden; }
+  .card-accent { height: 4px; }
+  .card-header { padding: 16px 18px 12px; text-align: center; font-size: 22px; font-weight: 700; border-bottom: 1px solid #2A2D3A; }
+  .card-header span { margin-right: 6px; }
+  .row { padding: 12px 18px; border-bottom: 1px dotted #2A2D3A; }
+  .row:last-child { border-bottom: none; }
+  .row-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #6B7280; margin-bottom: 6px; }
+  .row-value { font-size: 16px; line-height: 1.5; }
+
+  /* Data Flow */
+  .flow { max-width: 1100px; background: #1A1D27; border: 1px solid #2A2D3A; border-radius: 10px; padding: 24px 28px; margin-bottom: 14px; }
+  .flow-row { display: flex; align-items: center; gap: 10px; margin: 8px 0; font-size: 16px; font-family: monospace; }
+  .flow-label { min-width: 120px; font-weight: 700; text-align: right; }
+  .flow-arrow { color: #6B7280; }
+  .flow-svc { padding: 4px 10px; border-radius: 4px; font-size: 15px; }
+
+  /* Colors */
+  .c-red { color: #EF4444; }
+  .c-amber { color: #F59E0B; }
+  .c-green { color: #34D399; }
+  .c-blue { color: #60A5FA; }
+  .c-purple { color: #818CF8; }
+  .c-dim { color: #6B7280; }
+  .c-text { color: #E4E4E7; }
+  .accent-chat { background: #60A5FA; }
+  .accent-image { background: #34D399; }
+  .accent-music { background: #F59E0B; }
+  .accent-video { background: #EF4444; }
+  .accent-media { background: #818CF8; }
+  .accent-gpu { background: #F97316; }
+  .accent-infra { background: #6B7280; }
+  .bg-blue { background: #60A5FA22; color: #60A5FA; }
+  .bg-purple { background: #818CF822; color: #818CF8; }
+  .bg-green { background: #34D39922; color: #34D399; }
+  .bg-amber { background: #F59E0B22; color: #F59E0B; }
+  .bg-red { background: #EF444422; color: #EF4444; }
+  .bg-orange { background: #F9731622; color: #F97316; }
+  .bg-dim { background: #6B728022; color: #9CA3AF; }
+
+  .footnote { margin-top: 24px; font-size: 14px; color: #6B7280; font-style: italic; max-width: 1100px; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h1>WoozBox Architecture</h1>
+<p class="subtitle">Service layout, data flow, and VRAM orchestration</p>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Service Map</h2>
+
+<div class="arch-row-label">Frontend</div>
+<div class="arch-grid" style="grid-template-columns: 1fr;">
+  <div class="arch-card">
+    <div class="arch-accent" style="background: #E4E4E7;"></div>
+    <div class="name">web</div>
+    <div class="port">:8080 (nginx)</div>
+    <div class="desc">Static SPA frontend - vanilla HTML/CSS/JS</div>
+  </div>
+</div>
+
+<div class="arch-row-label">API Layer</div>
+<div class="arch-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+  <div class="arch-card">
+    <div class="arch-accent accent-chat"></div>
+    <div class="name c-blue">rag-api</div>
+    <div class="port">:8000</div>
+    <div class="desc">Chat/RAG, auth, vault, conversations, memory, TTS, diagnostics</div>
+  </div>
+  <div class="arch-card">
+    <div class="arch-accent accent-media"></div>
+    <div class="name c-purple">media-api</div>
+    <div class="port">:8500</div>
+    <div class="desc">Media orchestration proxy - image, music, video workflows, utility LLM</div>
+  </div>
+  <div class="arch-card">
+    <div class="arch-accent accent-gpu"></div>
+    <div class="name" style="color:#F97316;">gpu-manager</div>
+    <div class="port">:8400</div>
+    <div class="desc">VRAM orchestration, nvidia-smi, SSE status, centralized logging</div>
+  </div>
+</div>
+
+<div class="arch-row-label">Generation Services (GPU)</div>
+<div class="arch-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+  <div class="arch-card">
+    <div class="arch-accent accent-image"></div>
+    <div class="name c-green">image-api</div>
+    <div class="port">:8100</div>
+    <div class="desc">Diffusion models - Playground v2.5, SD 3.5, SDXL Turbo, Real-ESRGAN</div>
+  </div>
+  <div class="arch-card">
+    <div class="arch-accent accent-music"></div>
+    <div class="name c-amber">music-api</div>
+    <div class="port">:8200</div>
+    <div class="desc">ACE-Step 1.5 - text-to-music generation</div>
+  </div>
+  <div class="arch-card">
+    <div class="arch-accent accent-video"></div>
+    <div class="name c-red">video-api</div>
+    <div class="port">:8300</div>
+    <div class="desc">Wan 2.2 TI2V 5B - text/image-to-video</div>
+  </div>
+</div>
+
+<div class="arch-row-label">Infrastructure</div>
+<div class="arch-grid">
+  <div class="arch-card">
+    <div class="arch-accent accent-infra"></div>
+    <div class="name c-dim">Ollama</div>
+    <div class="port">:11434</div>
+    <div class="desc">LLM inference - chat, embeddings, utility</div>
+  </div>
+  <div class="arch-card">
+    <div class="arch-accent accent-infra"></div>
+    <div class="name c-dim">ChromaDB</div>
+    <div class="port">:8001</div>
+    <div class="desc">Vector store for vault semantic search</div>
+  </div>
+  <div class="arch-card">
+    <div class="arch-accent accent-infra"></div>
+    <div class="name c-dim">Kokoro</div>
+    <div class="port">:8880</div>
+    <div class="desc">Text-to-speech (50+ voices)</div>
+  </div>
+  <div class="arch-card">
+    <div class="arch-accent accent-infra"></div>
+    <div class="name c-dim">SQLite</div>
+    <div class="port">volume</div>
+    <div class="desc">Users, sessions, conversations, memory</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Data Flow</h2>
+
+<div class="flow">
+  <div class="flow-row">
+    <div class="flow-label c-text">Chat</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-svc bg-blue">rag-api</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-svc bg-dim">Ollama</div>
+    <div class="flow-arrow">+</div>
+    <div class="flow-svc bg-dim">ChromaDB</div>
+    <div class="flow-arrow">+</div>
+    <div class="flow-svc bg-dim">Tavily</div>
+  </div>
+  <div class="flow-row">
+    <div class="flow-label c-text">Image Gen</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-svc bg-purple">media-api</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-svc bg-orange">gpu-manager</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-svc bg-green">image-api</div>
+  </div>
+  <div class="flow-row">
+    <div class="flow-label c-text">Music Gen</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-svc bg-purple">media-api</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-svc bg-orange">gpu-manager</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-svc bg-amber">music-api</div>
+    <div class="flow-arrow">+</div>
+    <div class="flow-svc bg-green">image-api</div>
+    <div class="c-dim" style="font-size:10px;">(cover art)</div>
+  </div>
+  <div class="flow-row">
+    <div class="flow-label c-text">Video Gen</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-svc bg-purple">media-api</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-svc bg-orange">gpu-manager</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-svc bg-red">video-api</div>
+  </div>
+  <div class="flow-row">
+    <div class="flow-label c-text">Inspire / Name</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-svc bg-purple">media-api</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-svc bg-dim">Ollama</div>
+    <div class="c-dim" style="font-size:10px;">(utility model)</div>
+  </div>
+  <div class="flow-row">
+    <div class="flow-label c-text">TTS</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-svc bg-blue">rag-api</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-svc bg-dim">Kokoro</div>
+  </div>
+  <div class="flow-row">
+    <div class="flow-label c-text">Auth</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-svc bg-blue">rag-api</div>
+    <div class="flow-arrow">&larr;</div>
+    <div class="flow-svc bg-purple">media-api</div>
+    <div class="c-dim" style="font-size:10px;">(token validation, 60s cache)</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>VRAM Profiles</h2>
+<p class="section-desc">What gpu-manager loads/evicts when switching views. All gen services evict ALL Ollama models before inference.</p>
+
+<div class="grid">
+
+  <div class="card">
+    <div class="card-accent accent-chat"></div>
+    <div class="card-header"><span>&#128172;</span> Chat</div>
+    <div class="row">
+      <div class="row-label">Evict from Ollama</div>
+      <div class="row-value c-red">All LLMs<br>(including utility)</div>
+    </div>
+    <div class="row">
+      <div class="row-label">Unload Services</div>
+      <div class="row-value c-amber">image-api<br>music-api<br>video-api</div>
+    </div>
+    <div class="row">
+      <div class="row-label">Load into VRAM</div>
+      <div class="row-value c-green">User's chat LLM<br>(e.g. qwen2.5:14b)</div>
+    </div>
+    <div class="row">
+      <div class="row-label">Utility LLM</div>
+      <div class="row-value c-dim">No</div>
+    </div>
+    <div class="row">
+      <div class="row-label">Typical VRAM</div>
+      <div class="row-value c-blue">~3 - 17 GB</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-accent accent-image"></div>
+    <div class="card-header"><span>&#127912;</span> Image Studio</div>
+    <div class="row">
+      <div class="row-label">Evict from Ollama</div>
+      <div class="row-value c-red">Non-utility LLMs</div>
+    </div>
+    <div class="row">
+      <div class="row-label">Unload Services</div>
+      <div class="row-value c-amber">music-api<br>video-api</div>
+    </div>
+    <div class="row">
+      <div class="row-label">Load into VRAM</div>
+      <div class="row-value c-green">Selected image model<br>(e.g. SD 3.5, SDXL Turbo)</div>
+    </div>
+    <div class="row">
+      <div class="row-label">Utility LLM</div>
+      <div class="row-value c-purple">Yes &rarr; evicted<br>before inference</div>
+    </div>
+    <div class="row">
+      <div class="row-label">Typical VRAM</div>
+      <div class="row-value c-blue">~7 - 13 GB</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-accent accent-music"></div>
+    <div class="card-header"><span>&#127925;</span> Music Studio</div>
+    <div class="row">
+      <div class="row-label">Evict from Ollama</div>
+      <div class="row-value c-red">Non-utility LLMs</div>
+    </div>
+    <div class="row">
+      <div class="row-label">Unload Services</div>
+      <div class="row-value c-amber">video-api<br><span style="color:#34D399;font-size:11px;">(keeps image-api for cover art)</span></div>
+    </div>
+    <div class="row">
+      <div class="row-label">Load into VRAM</div>
+      <div class="row-value c-green">ACE-Step 1.5<br>+ SDXL Turbo (cover art)</div>
+    </div>
+    <div class="row">
+      <div class="row-label">Utility LLM</div>
+      <div class="row-value c-purple">Yes &rarr; evicted<br>before inference</div>
+    </div>
+    <div class="row">
+      <div class="row-label">Typical VRAM</div>
+      <div class="row-value c-blue">~13 GB</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-accent accent-video"></div>
+    <div class="card-header"><span>&#127916;</span> Video Studio</div>
+    <div class="row">
+      <div class="row-label">Evict from Ollama</div>
+      <div class="row-value c-red">All LLMs<br>(including utility)</div>
+    </div>
+    <div class="row">
+      <div class="row-label">Unload Services</div>
+      <div class="row-value c-amber">image-api<br>music-api</div>
+    </div>
+    <div class="row">
+      <div class="row-label">Load into VRAM</div>
+      <div class="row-value c-green">Wan 2.2 TI2V 5B</div>
+    </div>
+    <div class="row">
+      <div class="row-label">Utility LLM</div>
+      <div class="row-value c-dim">No</div>
+    </div>
+    <div class="row">
+      <div class="row-label">Typical VRAM</div>
+      <div class="row-value c-blue">~18 GB</div>
+    </div>
+  </div>
+
+</div>
+
+<p class="footnote">
+  gpu-manager is the sole VRAM authority. media-api calls /acquire before every generation.
+  rag-api checks gpu-manager /status to detect GPU-busy state and defer chat.
+  Gen services (image/music/video-api) are pure generators with no Ollama access.
+</p>
+
+</body>
+</html>
