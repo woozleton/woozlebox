@@ -17,6 +17,10 @@ function esc(str) {
     .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+function icon(name, size = 14) {
+  return `<svg width="${size}" height="${size}"><use href="#i-${name}"/></svg>`;
+}
+
 // ── Auth state ──
 let currentUser = null;
 
