@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Dave-in-a-Box</title>
   <link rel="stylesheet" href="styles.css?v=2">
@@ -114,6 +114,9 @@
       <div class="logo" id="logo-letter">D</div>
       <img id="logo-img" style="display:none;max-width:280px;max-height:32px;width:auto;height:auto;object-fit:contain;border-radius:4px;" />
       <span id="sidebar-title">Dave-in-a-Box</span>
+      <button id="search-open-btn" class="sidebar-search-btn" title="Search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
     </div>
 
     <!-- Expanded sidebar top -->
@@ -133,10 +136,6 @@
       <button class="sidebar-row sidebar-studio-btn" id="video-sidebar-btn">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
         Video Studio
-      </button>
-      <button class="sidebar-row" id="search-open-btn">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        Search
       </button>
     </div>
     <button id="sidebar-toggle" title="Collapse sidebar">
@@ -244,10 +243,8 @@
 
   <!-- CHAT AREA -->
   <div id="chat-area">
+    <div id="chat-col">
     <div id="chat-header">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      <h2>Chat</h2>
-      <span class="chat-header-sub" id="chat-model-label"></span>
       <button id="vault-toggle-btn" title="File Vault">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0,-1.5)"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></g></svg>
         File Vault
@@ -298,8 +295,10 @@
       </div>
     </div>
     </div><!-- /chat-content -->
+    </div><!-- /chat-body -->
+    </div><!-- /chat-col -->
 
-    <!-- VAULT PANEL (inline slide panel inside chat-area) -->
+    <!-- VAULT PANEL (full-height side panel) -->
     <div id="vault-panel">
       <div class="panel-resize-handle" id="vault-resize-handle"></div>
       <div class="vault-header">
@@ -321,22 +320,19 @@
       </div>
       <div id="vault-banner"></div>
     </div>
-    </div><!-- /chat-body -->
   </div>
 
   <!-- IMAGE STUDIO (lives in #main, toggles with chat-area) -->
   <div id="image-studio">
+    <div class="studio-col">
     <div id="image-studio-header" class="studio-header">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-      <h2>Image Studio</h2>
-      <span class="studio-subtitle" id="studio-model-label">Playground v2.5</span>
       <button id="studio-trash-btn" class="studio-trash-btn" title="Trash">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
         <span id="studio-trash-badge" class="studio-trash-badge"></span>
       </button>
       <button id="studio-fav-toggle" class="fav-toggle-btn" title="Favorites">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-        Favorites <span id="studio-fav-badge" style="display:none">0</span>
+        <span id="studio-fav-badge" style="display:none">0</span>
       </button>
     </div>
     <div id="studio-body" class="studio-body-layout">
@@ -447,31 +443,32 @@
         </div>
       </div>
       </div><!-- /studio-main -->
+    </div><!-- /studio-body -->
+    </div><!-- /studio-col -->
 
-      <!-- Favorites panel (full height) -->
-      <div id="studio-fav-panel" class="fav-panel">
-        <div class="panel-resize-handle" id="fav-resize-handle"></div>
-        <div id="studio-fav-header" class="fav-panel-header">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="#f472b6" stroke="#f472b6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-          <h3>Favorites</h3>
-          <span class="fav-count" id="studio-fav-count-label">0</span>
-          <div class="fav-zoom-controls">
-            <button id="fav-zoom-out" title="Smaller thumbnails">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-            </button>
-            <button id="fav-zoom-in" title="Larger thumbnails">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-            </button>
-          </div>
-          <button id="studio-fav-close" title="Close favorites">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    <!-- Favorites panel (full height) -->
+    <div id="studio-fav-panel" class="fav-panel">
+      <div class="panel-resize-handle" id="fav-resize-handle"></div>
+      <div id="studio-fav-header" class="fav-panel-header">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="#f472b6" stroke="#f472b6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        <h3>Favorites</h3>
+        <span class="fav-count" id="studio-fav-count-label">0</span>
+        <div class="fav-zoom-controls">
+          <button id="fav-zoom-out" title="Smaller thumbnails">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+          </button>
+          <button id="fav-zoom-in" title="Larger thumbnails">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
           </button>
         </div>
-        <div id="studio-fav-content">
-          <div id="studio-fav-empty" class="fav-panel-empty">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.3"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-            <p>Click the heart on any image to add it to your favorites.</p>
-          </div>
+        <button id="studio-fav-close" title="Close favorites">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div id="studio-fav-content">
+        <div id="studio-fav-empty" class="fav-panel-empty">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.3"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          <p>Click the heart on any image to add it to your favorites.</p>
         </div>
       </div>
     </div>
@@ -479,17 +476,15 @@
 
   <!-- ═══ Music Studio ═══ -->
   <div id="music-studio">
+    <div class="studio-col">
     <div id="music-studio-header" class="studio-header">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-      <h2>Music Studio</h2>
-      <span class="studio-subtitle" id="music-model-label">ACE-Step 1.5</span>
       <button id="music-trash-btn" class="studio-trash-btn" title="Trash">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
         <span id="music-trash-badge" class="studio-trash-badge"></span>
       </button>
       <button id="music-fav-toggle" class="fav-toggle-btn" title="Favorites">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-        Favorites <span id="music-fav-badge" style="display:none">0</span>
+        <span id="music-fav-badge" style="display:none">0</span>
       </button>
     </div>
     <div id="music-body" class="studio-body-layout">
@@ -506,7 +501,7 @@
           <div id="music-settings-crumb" class="settings-crumb">
             <span id="music-settings-trigger" class="settings-trigger">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
-              <span id="music-settings-summary">30s · 120 bpm</span>
+              <span id="music-settings-summary">1m30s · 120 bpm</span>
               <svg class="chevron-icon" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.5;"><polyline points="6 9 12 15 18 9"/></svg>
             </span>
           </div>
@@ -533,8 +528,8 @@
                 <div class="ss-group" title="Length of the generated audio, from 10 seconds up to 10 minutes">
                   <div class="ss-group-label">Duration</div>
                   <div class="sc-slider">
-                    <input type="range" id="music-duration" min="10" max="600" value="30" step="5">
-                    <span class="field-val" id="music-duration-val">30s</span>
+                    <input type="range" id="music-duration" min="10" max="600" value="90" step="5">
+                    <span class="field-val" id="music-duration-val">1m30s</span>
                   </div>
                 </div>
                 <div class="ss-group" title="Tempo in beats per minute -common tempos for popular music genres">
@@ -629,22 +624,24 @@
         </div>
       </div>
 
-      <!-- Favorites panel -->
-      <div id="music-fav-panel" class="fav-panel">
-        <div class="panel-resize-handle" id="music-fav-resize-handle"></div>
-        <div id="music-fav-header" class="fav-panel-header">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="#f472b6" stroke="#f472b6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-          <h3>Favorites</h3>
-          <span class="fav-count" id="music-fav-count-label">0</span>
-          <button id="music-fav-close" title="Close favorites" style="background:none;border:none;color:var(--text-dim);cursor:pointer;padding:4px;display:flex;align-items:center;margin-left:auto;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>
-        <div id="music-fav-content">
-          <div id="music-fav-empty" class="fav-panel-empty">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.3"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-            <p>Click the heart on any track to add it to your favorites.</p>
-          </div>
+    </div><!-- /music-body -->
+    </div><!-- /studio-col -->
+
+    <!-- Favorites panel (full height) -->
+    <div id="music-fav-panel" class="fav-panel">
+      <div class="panel-resize-handle" id="music-fav-resize-handle"></div>
+      <div id="music-fav-header" class="fav-panel-header">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="#f472b6" stroke="#f472b6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        <h3>Favorites</h3>
+        <span class="fav-count" id="music-fav-count-label">0</span>
+        <button id="music-fav-close" title="Close favorites" style="background:none;border:none;color:var(--text-dim);cursor:pointer;padding:4px;display:flex;align-items:center;margin-left:auto;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div id="music-fav-content">
+        <div id="music-fav-empty" class="fav-panel-empty">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.3"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          <p>Click the heart on any track to add it to your favorites.</p>
         </div>
       </div>
     </div>
@@ -652,17 +649,15 @@
 
   <!-- ═══ Video Studio ═══ -->
   <div id="video-studio">
+    <div class="studio-col">
     <div id="video-studio-header" class="studio-header">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-      <h2>Video Studio</h2>
-      <span class="studio-subtitle" id="video-model-label">Wan 2.2</span>
       <button id="video-trash-btn" class="studio-trash-btn" title="Trash">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
         <span id="video-trash-badge" class="studio-trash-badge"></span>
       </button>
       <button id="video-fav-toggle" class="fav-toggle-btn" title="Favorites">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-        Favorites <span id="video-fav-badge" style="display:none">0</span>
+        <span id="video-fav-badge" style="display:none">0</span>
       </button>
     </div>
     <div id="video-body" class="studio-body-layout">
@@ -763,21 +758,24 @@
         </div>
       </div>
 
-      <!-- Favorites panel -->
-      <div id="video-fav-panel" class="fav-panel">
-        <div id="video-fav-header" class="fav-panel-header">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="#f472b6" stroke="#f472b6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-          <h3>Favorites</h3>
-          <span class="fav-count" id="video-fav-count-label">0</span>
-          <button id="video-fav-close" title="Close favorites" style="background:none;border:none;color:var(--text-dim);cursor:pointer;padding:4px;display:flex;align-items:center;margin-left:auto;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>
-        <div id="video-fav-content">
-          <div id="video-fav-empty" class="fav-panel-empty">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.3"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-            <p>Click the heart on any video to add it to your favorites.</p>
-          </div>
+    </div><!-- /video-body -->
+    </div><!-- /studio-col -->
+
+    <!-- Favorites panel (full height) -->
+    <div id="video-fav-panel" class="fav-panel">
+      <div class="panel-resize-handle" id="video-fav-resize-handle"></div>
+      <div id="video-fav-header" class="fav-panel-header">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="#f472b6" stroke="#f472b6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        <h3>Favorites</h3>
+        <span class="fav-count" id="video-fav-count-label">0</span>
+        <button id="video-fav-close" title="Close favorites" style="background:none;border:none;color:var(--text-dim);cursor:pointer;padding:4px;display:flex;align-items:center;margin-left:auto;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div id="video-fav-content">
+        <div id="video-fav-empty" class="fav-panel-empty">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.3"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          <p>Click the heart on any video to add it to your favorites.</p>
         </div>
       </div>
     </div>
@@ -2434,7 +2432,7 @@ async function ensureDefaultFolder() {
       const res = await apiFetch("/folders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: "General" }),
+        body: JSON.stringify({ name: "General", description: "Default folder for all conversations" }),
       });
       if (res.ok) {
         const created = await res.json();
@@ -3401,7 +3399,7 @@ async function loadModels() {
     modelSelect.value = pick;
     selectedModel = pick;
     localStorage.setItem("diab_model", pick);
-    document.getElementById("chat-model-label").textContent = pick || "";
+    const _cml = document.getElementById("chat-model-label"); if (_cml) _cml.textContent = pick || "";
     if (typeof checkVisionSupport === "function") checkVisionSupport(pick);
 
     // Populate songwrite model dropdown from same list
@@ -3439,7 +3437,7 @@ async function loadModels() {
 modelSelect.addEventListener("change", async () => {
   selectedModel = modelSelect.value || null;
   if (selectedModel) { localStorage.setItem("diab_model", selectedModel); scheduleSettingsSync(); }
-  document.getElementById("chat-model-label").textContent = selectedModel || "";
+  const _cml2 = document.getElementById("chat-model-label"); if (_cml2) _cml2.textContent = selectedModel || "";
   if (activeConvId) updateContextBar(activeConvId);
   // Preload the new model into VRAM (non-blocking)
   if (selectedModel) {
@@ -3842,12 +3840,16 @@ function updateFavCount(count) {
   studioFavBadge.style.display = count > 0 ? "" : "none";
 }
 
-// Restore favorites panel state
+// Restore favorites panel state (suppress slide animation on load)
+document.querySelectorAll(".fav-panel, #vault-panel").forEach(p => p.classList.add("no-transition"));
 if (localStorage.getItem("diab_fav_open") === "1") {
   studioFavPanel.classList.add("open");
   studioFavToggle.classList.add("active");
   refreshFavoritesPanel();
 }
+requestAnimationFrame(() => {
+  document.querySelectorAll(".fav-panel, #vault-panel").forEach(p => p.classList.remove("no-transition"));
+});
 
 // Initialize favorites count on studio open
 async function initFavCount() {
@@ -5028,32 +5030,36 @@ function setView(view) {
 }
 
 const _defaultPlaceholders = {
+  chat: "Ask something\u2026",
   studio: "Describe the image you want to create...",
   music: "Describe a song idea, or use the pen to have AI write it for you...",
   video: "Describe the video you want to create...",
 };
 
 function _setModelLoading(view, loading, modelName) {
-  const prompt = view === "studio" ? studioPrompt : view === "music" ? musicPrompt : view === "video" ? document.getElementById("video-prompt") : null;
-  const btn = view === "studio" ? studioGenerateBtn : view === "music" ? musicGenerateBtn : view === "video" ? document.getElementById("video-generate-btn") : null;
-  const box = prompt?.closest("#studio-prompt-box, #music-prompt-box, #video-prompt-box");
+  const prompt = view === "studio" ? studioPrompt : view === "music" ? musicPrompt : view === "video" ? document.getElementById("video-prompt") : view === "chat" ? input : null;
+  const btn = view === "studio" ? studioGenerateBtn : view === "music" ? musicGenerateBtn : view === "video" ? document.getElementById("video-generate-btn") : view === "chat" ? sendBtn : null;
+  const box = prompt?.closest("#studio-prompt-box, #music-prompt-box, #video-prompt-box, #input-box");
   if (prompt) {
     if (loading) {
-      prompt.placeholder = `Loading ${modelName || "model"}… please wait`;
-      prompt.classList.add("model-loading", "prompt-locked");
-      if (box && !box.querySelector(".prompt-load-spinner")) {
-        const sp = document.createElement("span");
-        sp.className = "step-spinner prompt-load-spinner";
-        box.prepend(sp);
+      prompt.dataset.prevPlaceholder = prompt.placeholder;
+      prompt.placeholder = "";
+      prompt.classList.add("prompt-locked");
+      if (box && !box.querySelector(".prompt-load-dots")) {
+        const dots = document.createElement("span");
+        dots.className = "prompt-load-dots";
+        dots.innerHTML = `<span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>`;
+        box.prepend(dots);
       }
     } else {
-      prompt.placeholder = _defaultPlaceholders[view] || "";
-      prompt.classList.remove("model-loading", "prompt-locked");
-      if (box) { const sp = box.querySelector(".prompt-load-spinner"); if (sp) sp.remove(); }
+      prompt.placeholder = prompt.dataset.prevPlaceholder || _defaultPlaceholders[view] || "";
+      delete prompt.dataset.prevPlaceholder;
+      prompt.classList.remove("prompt-locked");
+      if (box) { const d = box.querySelector(".prompt-load-dots"); if (d) d.remove(); }
     }
   }
-  if (btn) {
-    btn.disabled = !!loading;
+  if (box) {
+    box.querySelectorAll("button").forEach(b => b.disabled = !!loading);
   }
 }
 
@@ -5061,15 +5067,20 @@ async function prepareModelsForView(view) {
   // Cancel any in-flight preparation
   if (_prepareAbort) { _prepareAbort.abort(); _prepareAbort = null; }
 
-  // Chat doesn't need model prep on switch - it happens lazily on first message
+  // Chat — show loading dots while acquiring, then clear
   if (view === "chat") {
-    _modelReady.chat = true;
+    _modelReady.chat = false;
+    _setModelLoading("chat", true, "chat model");
     const _chatModel = selectedModel || localStorage.getItem("diab_model") || null;
-    fetch(GPU_API + "/acquire", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ service: "chat", model: _chatModel }),
-    }).catch(() => {});
+    try {
+      await fetch(GPU_API + "/acquire", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ service: "chat", model: _chatModel }),
+      });
+    } catch {}
+    _modelReady.chat = true;
+    _setModelLoading("chat", false);
     return;
   }
 
@@ -5185,13 +5196,18 @@ function _isGenerating() {
   return studioGenerating || _musicGenerating || _videoGenerating;
 }
 
-function _confirmViewSwitch() {
+async function _confirmViewSwitch() {
   if (!_isGenerating()) return true;
-  return confirm("A generation is in progress. Switching views will stop it. Continue?");
+  return showConfirm({
+    title: "Switch View",
+    message: "A generation is in progress. Switching views will stop it. Continue?",
+    okLabel: "Continue",
+    okClass: "primary",
+  });
 }
 
-function showStudio() {
-  if (!_confirmViewSwitch()) return;
+async function showStudio() {
+  if (!await _confirmViewSwitch()) return;
   setView("studio");
   loadStudioModels();
   loadImageFolders();
@@ -5201,14 +5217,14 @@ function showStudio() {
   prepareModelsForView("studio");
 }
 
-function hideStudio() {
-  if (!_confirmViewSwitch()) return;
+async function hideStudio() {
+  if (!await _confirmViewSwitch()) return;
   setView("chat");
   prepareModelsForView("chat");
 }
 
-function showMusicStudio() {
-  if (!_confirmViewSwitch()) return;
+async function showMusicStudio() {
+  if (!await _confirmViewSwitch()) return;
   setView("music");
   loadMusicFolders();
   renderMusicSessionsList();
@@ -5223,14 +5239,14 @@ function showMusicStudio() {
   prepareModelsForView("music");
 }
 
-function hideMusicStudio() {
-  if (!_confirmViewSwitch()) return;
+async function hideMusicStudio() {
+  if (!await _confirmViewSwitch()) return;
   setView("chat");
   prepareModelsForView("chat");
 }
 
-function showVideoStudio() {
-  if (!_confirmViewSwitch()) return;
+async function showVideoStudio() {
+  if (!await _confirmViewSwitch()) return;
   setView("video");
   loadVideoFolders();
   renderVideoSessionsList();
@@ -5247,8 +5263,8 @@ function showVideoStudio() {
   prepareModelsForView("video");
 }
 
-function hideVideoStudio() {
-  if (!_confirmViewSwitch()) return;
+async function hideVideoStudio() {
+  if (!await _confirmViewSwitch()) return;
   setView("chat");
   prepareModelsForView("chat");
 }
@@ -5507,7 +5523,7 @@ function _makeMusicSessionItem(sess) {
     item.className = "sb-item music-session-item" + (sess.session_id === activeMusicSessionId ? " active" : "");
     item.dataset.sessionId = sess.session_id;
     item.draggable = true;
-    const badge = sess.trackCount > 1 ? `<span class="sb-item-badge music-session-badge">${sess.trackCount}</span>` : "";
+    const badge = `<span class="sb-item-badge music-session-badge">${sess.trackCount}</span>`;
     item.innerHTML = `
       <span class="sb-item-title music-session-prompt">${esc(sess.firstPrompt || "Untitled")}</span>
       ${badge}
@@ -5663,7 +5679,7 @@ async function loadMusicFolders() {
   try {
     musicFolders = await loadAllMusicFolders();
     if (musicFolders.length === 0) {
-      const defaultCol = { id: "mfolder_" + Date.now(), name: "My Music", timestamp: Date.now() };
+      const defaultCol = { id: "mfolder_" + Date.now(), name: "My Music", description: "Default folder for generated music", timestamp: Date.now() };
       await saveMusicFolder(defaultCol);
       musicFolders = [defaultCol];
     }
@@ -6213,7 +6229,7 @@ function createMusicResultCard(record) {
       : "";
 
   el.innerHTML = `
-    ${coverHtml ? `<div class="music-result-cover">${coverHtml}</div>` : ""}
+    ${coverHtml ? `<div class="music-result-cover">${coverHtml}<button class="img-fav-solo music-fav-btn" title="Favorite"><svg width="18" height="18" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button></div>` : ""}
     <div class="music-result-body">
       <div class="music-result-player">
         <button class="music-play-btn" title="Play/Pause">
@@ -6226,26 +6242,27 @@ function createMusicResultCard(record) {
         <span class="music-time">0:00 / ${_formatMusicTime(record.duration || 0)}</span>
       </div>
       <div class="music-meta-details">
-        <div class="music-meta-text">
-          ${record.title ? `<div class="music-meta-title">${esc(record.title)}</div>` : ""}
-          <div class="music-meta-prompt">${esc(record.rawPrompt)}</div>
-          <div class="music-meta-pills">${pills.map(p => `<span class="meta-pill">${esc(p)}</span>`).join("")}${lyricsToggleHtml}</div>
-          ${lyricsBodyHtml}
+        ${record.title ? `<div class="music-meta-title">${esc(record.title)}</div>` : ""}
+        <div class="music-meta-prompt">${esc(record.rawPrompt)}</div>
+        <div class="music-meta-bottom">
+          <div class="music-meta-pills">
+            ${pills.map(p => `<span class="meta-pill">${esc(p)}</span>`).join("")}
+            <button class="music-prompt-toggle"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg> Prompt</button>
+            ${lyricsToggleHtml}
+          </div>
+          <div class="music-result-actions">
+            <button class="music-action-btn music-reuse" title="Reuse settings">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+            </button>
+            <button class="music-action-btn music-dl" title="Download">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </button>
+            <button class="music-action-btn music-del" title="Delete">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+          </div>
         </div>
-        <div class="music-result-actions">
-          <button class="music-action-btn music-fav-btn" title="Favorite">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-          </button>
-          <button class="music-action-btn music-reuse" title="Reuse settings">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-          </button>
-          <button class="music-action-btn music-dl" title="Download">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          </button>
-          <button class="music-action-btn music-del" title="Delete">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-          </button>
-        </div>
+        ${lyricsBodyHtml}
       </div>
     </div>
   `;
@@ -6263,6 +6280,15 @@ function createMusicResultCard(record) {
     lyricsToggle.addEventListener("click", () => {
       lyricsToggle.classList.toggle("open");
       el.querySelector(".music-meta-lyrics").classList.toggle("open");
+    });
+  }
+
+  // Prompt toggle
+  const promptToggle = el.querySelector(".music-prompt-toggle");
+  if (promptToggle) {
+    promptToggle.addEventListener("click", () => {
+      promptToggle.classList.toggle("open");
+      el.querySelector(".music-meta-prompt").classList.toggle("open");
     });
   }
 
@@ -6418,7 +6444,7 @@ async function restoreMusicTracks() {
     const sessionTracks = filtered;
     sessionTracks.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
     // Remove existing cards
-    musicCanvas.querySelectorAll(".music-result, .music-gen-placeholder").forEach(el => el.remove());
+    musicCanvas.querySelectorAll(".music-result, .gen-progress").forEach(el => el.remove());
     if (sessionTracks.length === 0) {
       musicCanvasEmpty.style.display = "";
       return;
@@ -6433,26 +6459,53 @@ async function restoreMusicTracks() {
   }
 }
 
+// ── Shared generation progress component ──
+function _createGenProgress() {
+  const el = document.createElement("div");
+  el.className = "gen-progress";
+  el.innerHTML = `
+    <div class="gen-cube-scene">
+      <div class="gen-cube">
+        <div class="gen-cube-face front visible"></div>
+        <div class="gen-cube-face right"></div>
+        <div class="gen-cube-face back"></div>
+        <div class="gen-cube-face left"></div>
+        <div class="gen-cube-face top"></div>
+        <div class="gen-cube-face bottom"></div>
+      </div>
+    </div>
+    <div class="gen-progress-status">Preparing...</div>
+    <div class="gen-progress-bar"><div class="gen-progress-bar-fill"></div></div>
+    <button class="gen-progress-stop">Stop</button>`;
+  const cube = el.querySelector(".gen-cube");
+  const faces = el.querySelectorAll(".gen-cube-face");
+  const statusEl = el.querySelector(".gen-progress-status");
+  const barFill = el.querySelector(".gen-progress-bar-fill");
+  const stopBtn = el.querySelector(".gen-progress-stop");
+  const thresholds = [0, 17, 33, 50, 67, 83];
+  return {
+    el, stopBtn,
+    update(step, total, elapsed) {
+      const pct = total > 0 ? Math.round(step / total * 100) : 0;
+      barFill.style.width = pct + "%";
+      faces.forEach((face, i) => {
+        face.classList.toggle("visible", pct >= thresholds[i]);
+      });
+      cube.classList.toggle("complete", pct >= 100);
+      if (step >= total && total > 0) {
+        statusEl.textContent = `Finalizing... · ${elapsed}s`;
+      } else {
+        statusEl.textContent = `Step ${step}/${total} · ${elapsed}s`;
+      }
+    },
+    setStatus(msg) { statusEl.textContent = msg; },
+    destroy() { el.remove(); },
+  };
+}
+
 // ── Music generation ──
 let _musicGenerating = false;
 let _musicProgressTimer = null;
-
-function createMusicPlaceholder() {
-  const el = document.createElement("div");
-  el.className = "music-gen-placeholder";
-  el.innerHTML = `
-    <div class="music-gen-ring-wrap">
-      <svg viewBox="0 0 36 36">
-        <circle class="ring-bg" cx="18" cy="18" r="16"/>
-        <circle class="ring-fill" cx="18" cy="18" r="16" stroke-dasharray="100.5" stroke-dashoffset="100.5"/>
-      </svg>
-    </div>
-    <div class="music-gen-status">Preparing...</div>
-    <div class="music-gen-bar"><div class="music-gen-bar-fill"></div></div>
-    <button class="music-gen-stop">Stop</button>
-  `;
-  return el;
-}
 
 async function musicGenerate() {
   if (_musicGenerating) return;
@@ -6486,14 +6539,9 @@ async function musicGenerate() {
   const vocal_language = !instrumental ? document.getElementById("music-vocal-language").value || null : null;
   const bpm = _bpmSteps[document.getElementById("music-bpm").value] || 120;
 
-  const placeholder = createMusicPlaceholder();
-  musicCanvas.appendChild(placeholder);
+  const progress = _createGenProgress();
+  musicCanvas.appendChild(progress.el);
   musicCanvas.scrollTop = musicCanvas.scrollHeight;
-
-  const statusEl = placeholder.querySelector(".music-gen-status");
-  const ringFill = placeholder.querySelector(".ring-fill");
-  const barFill = placeholder.querySelector(".music-gen-bar-fill");
-  const circumference = 2 * Math.PI * 16;
 
   // Poll progress
   const t0 = Date.now();
@@ -6503,26 +6551,26 @@ async function musicGenerate() {
       const res = await mediaFetch("/music/progress");
       const data = await res.json();
       if (data.running && data.total_steps > 0) {
-        // Scale progress across all count iterations
         const iterPct = (data.step / data.total_steps);
         const overallPct = Math.min(100, ((_currentIdx + iterPct) / count) * 100);
         const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
-        statusEl.textContent = count > 1
-          ? `Track ${_currentIdx + 1}/${count} · Step ${data.step}/${data.total_steps} · ${elapsed}s`
-          : `Step ${data.step}/${data.total_steps} · ${elapsed}s`;
-        const offset = circumference - (overallPct / 100) * circumference;
-        ringFill.style.strokeDashoffset = offset;
-        barFill.style.width = overallPct + "%";
+        const overallStep = Math.round(overallPct / 100 * data.total_steps * count);
+        const overallTotal = data.total_steps * count;
+        progress.update(overallStep, overallTotal, elapsed);
+        if (count > 1) {
+          progress.setStatus(`Track ${_currentIdx + 1}/${count} · Step ${data.step}/${data.total_steps} · ${elapsed}s`);
+        }
       }
     } catch {}
   }, 500);
 
   // Stop button
   let _aborted = false;
-  placeholder.querySelector(".music-gen-stop").addEventListener("click", () => {
+  progress.stopBtn.addEventListener("click", () => {
     _aborted = true;
+    mediaFetch("/music/cancel", { method: "POST" }).catch(() => {});
     clearInterval(_musicProgressTimer);
-    placeholder.remove();
+    progress.destroy();
     _musicGenerating = false;
     musicGenerateBtn.disabled = false;
     if (!musicCanvas.querySelector(".music-result")) musicCanvasEmpty.style.display = "";
@@ -6545,7 +6593,7 @@ async function musicGenerate() {
       if (vocal_language) body.vocal_language = vocal_language;
       if (bpm) body.bpm = bpm;
 
-      statusEl.textContent = count > 1 ? `Generating track ${i + 1} of ${count}...` : "Generating...";
+      progress.setStatus(count > 1 ? `Generating track ${i + 1} of ${count}...` : "Generating...");
 
       const res = await mediaFetch("/music/generate", {
         method: "POST",
@@ -6600,8 +6648,8 @@ async function musicGenerate() {
 
     clearInterval(_musicProgressTimer);
 
-    // Replace placeholder with first card, append the rest
-    placeholder.replaceWith(cards[0]);
+    // Replace progress with first card, append the rest
+    progress.el.replaceWith(cards[0]);
     for (let i = 1; i < cards.length; i++) {
       musicCanvas.appendChild(cards[i]);
     }
@@ -6657,16 +6705,16 @@ async function musicGenerate() {
       clearInterval(_musicProgressTimer);
       // If some tracks succeeded, show them before the error
       if (cards.length > 0) {
-        placeholder.replaceWith(cards[0]);
+        progress.el.replaceWith(cards[0]);
         for (let i = 1; i < cards.length; i++) {
           musicCanvas.appendChild(cards[i]);
         }
         renderMusicSessionsList();
       } else {
-        statusEl.textContent = "Error: " + (e.message || "Generation failed");
-        placeholder.querySelector(".music-gen-stop").textContent = "Dismiss";
-        placeholder.querySelector(".music-gen-stop").addEventListener("click", () => {
-          placeholder.remove();
+        progress.setStatus("Error: " + (e.message || "Generation failed"));
+        progress.stopBtn.textContent = "Dismiss";
+        progress.stopBtn.addEventListener("click", () => {
+          progress.destroy();
           if (!musicCanvas.querySelector(".music-result")) musicCanvasEmpty.style.display = "";
         }, { once: true });
       }
@@ -7069,7 +7117,7 @@ async function renderVideoSessionsList() {
 async function loadVideoFolders() {
   videoFolders = await loadAllVideoFolders();
   if (videoFolders.length === 0) {
-    const defaultCol = { id: "vfolder_" + Date.now(), name: "My Videos", timestamp: Date.now() };
+    const defaultCol = { id: "vfolder_" + Date.now(), name: "My Videos", description: "Default folder for generated videos", timestamp: Date.now() };
     await saveVideoFolder(defaultCol);
     videoFolders = [defaultCol];
   }
@@ -7485,34 +7533,15 @@ async function videoGenerate() {
   };
   if (_videoStartingImage) body.image = _videoStartingImage;
 
-  // Create placeholder
-  const placeholder = document.createElement("div");
-  placeholder.className = "video-gen-placeholder";
-  placeholder.innerHTML = `
-    <div class="progress-ring">
-      <svg width="48" height="48" viewBox="0 0 48 48">
-        <circle cx="24" cy="24" r="20" fill="none" stroke="var(--surface2)" stroke-width="3"/>
-        <circle cx="24" cy="24" r="20" fill="none" stroke="var(--accent)" stroke-width="3"
-          stroke-dasharray="125.66" stroke-dashoffset="125.66" stroke-linecap="round"
-          style="transition: stroke-dashoffset 0.3s;" class="ring-progress"/>
-      </svg>
-    </div>
-    <div class="status-text">Preparing...</div>
-    <div class="progress-bar"><div class="progress-bar-fill" style="width:0%"></div></div>
-    <button class="stop-btn">Stop</button>
-  `;
+  // Create shared progress component
+  const progress = _createGenProgress();
   videoCanvasEmpty.style.display = "none";
-  videoCanvas.appendChild(placeholder);
+  videoCanvas.appendChild(progress.el);
   videoCanvas.scrollTop = videoCanvas.scrollHeight;
-
-  const ring = placeholder.querySelector(".ring-progress");
-  const statusText = placeholder.querySelector(".status-text");
-  const barFill = placeholder.querySelector(".progress-bar-fill");
-  const stopBtn = placeholder.querySelector(".stop-btn");
 
   let aborted = false;
   const abortCtrl = new AbortController();
-  stopBtn.addEventListener("click", () => { aborted = true; mediaFetch("/video/cancel", { method: "POST" }).catch(() => {}); abortCtrl.abort(); });
+  progress.stopBtn.addEventListener("click", () => { aborted = true; mediaFetch("/video/cancel", { method: "POST" }).catch(() => {}); abortCtrl.abort(); });
 
   // Progress polling
   const progressInterval = setInterval(async () => {
@@ -7520,14 +7549,7 @@ async function videoGenerate() {
       const res = await mediaFetch("/video/progress");
       const p = await res.json();
       if (p.running && p.total_steps > 0) {
-        const pct = Math.round((p.step / p.total_steps) * 100);
-        ring.style.strokeDashoffset = 125.66 - (125.66 * pct / 100);
-        barFill.style.width = pct + "%";
-        if (p.step >= p.total_steps) {
-          statusText.textContent = `Finalizing video... · ${p.elapsed_s || 0}s`;
-        } else {
-          statusText.textContent = `Step ${p.step}/${p.total_steps} · ${p.elapsed_s || 0}s`;
-        }
+        progress.update(p.step, p.total_steps, p.elapsed_s || 0);
       }
     } catch {}
   }, 500);
@@ -7568,7 +7590,7 @@ async function videoGenerate() {
 
     await saveVideoClip(record);
     const card = createVideoResultCard(record);
-    placeholder.replaceWith(card);
+    progress.el.replaceWith(card);
     videoCanvas.scrollTop = videoCanvas.scrollHeight;
     renderVideoSessionsList();
 
@@ -7590,14 +7612,14 @@ async function videoGenerate() {
       } catch {}
     })();
 
-    // No cover art generation for video - the video itself serves as its own preview
-
   } catch (e) {
     if (e.name === "AbortError" || aborted) {
-      placeholder.innerHTML = `<div class="status-text">Generation cancelled.</div>`;
-      setTimeout(() => placeholder.remove(), 2000);
+      progress.setStatus("Generation cancelled.");
+      setTimeout(() => progress.destroy(), 2000);
     } else {
-      placeholder.innerHTML = `<div class="status-text" style="color:var(--danger);">Error: ${esc(e.message)}</div><button class="stop-btn" onclick="this.parentElement.remove()">Dismiss</button>`;
+      progress.setStatus("Error: " + esc(e.message));
+      progress.stopBtn.textContent = "Dismiss";
+      progress.stopBtn.onclick = () => progress.destroy();
     }
   } finally {
     clearInterval(progressInterval);
@@ -7913,7 +7935,7 @@ async function loadImageFolders() {
     imageFolders = await loadAllImageFolders();
     if (imageFolders.length === 0) {
       // Create a default image folder
-      const defaultPg = { id: "pg_" + Date.now(), name: "My Images", timestamp: Date.now() };
+      const defaultPg = { id: "pg_" + Date.now(), name: "My Images", description: "Default folder for generated images", timestamp: Date.now() };
       await saveImageFolder(defaultPg);
       imageFolders = [defaultPg];
     }
@@ -8066,7 +8088,7 @@ function _makeGroupedSessionItem(sess) {
   item.className = "sb-item studio-session-item" + (sess.session_id === activeStudioSessionId ? " active" : "");
   item.dataset.sessionId = sess.session_id;
   item.draggable = true;
-  const badge = sess.imageCount > 1 ? `<span class="sb-item-badge studio-session-badge">${sess.imageCount}</span>` : "";
+  const badge = `<span class="sb-item-badge studio-session-badge">${sess.imageCount}</span>`;
   item.innerHTML = `<span class="sb-item-title studio-session-prompt">${esc(sess.firstPrompt)}</span>${badge}<button class="sb-item-menu studio-session-menu" title="Options">&#x22EF;</button>`;
   item.addEventListener("dragstart", e => {
     e.dataTransfer.setData("text/studio-session", sess.session_id);
@@ -8458,13 +8480,13 @@ async function loadStudioModels() {
 
 function updateStudioModelLabel() {
   const m = _studioModelsCache.find(x => x.id === studioModelSelect.value);
-  if (m) studioModelLabel.textContent = m.name;
+  if (m && studioModelLabel) studioModelLabel.textContent = m.name;
 }
 
 function updateStudioModelDefaults() {
   const m = _studioModelsCache.find(x => x.id === studioModelSelect.value);
   if (!m) return;
-  studioModelLabel.textContent = m.name;
+  if (studioModelLabel) studioModelLabel.textContent = m.name;
   studioSteps.value = m.default_steps;
   studioSteps.max = m.max_steps;
   studioStepsVal.textContent = m.default_steps;
@@ -8512,56 +8534,9 @@ studioPrompt.addEventListener("input", () => {
   studioPrompt.style.height = Math.min(studioPrompt.scrollHeight, 140) + "px";
 });
 
-function createStudioPlaceholder(imgW, imgH, totalSteps) {
-  const el = document.createElement("div");
-  el.className = "studio-gen-placeholder";
-
-  const CIRC = 2 * Math.PI * 19;
-  el.innerHTML = `
-    <div class="studio-gen-ring-wrap">
-      <svg width="48" height="48" viewBox="0 0 48 48">
-        <circle class="ring-bg" cx="24" cy="24" r="19" fill="none" stroke-width="4"/>
-        <circle class="ring-fill" cx="24" cy="24" r="19" fill="none" stroke-width="4"
-          stroke-dasharray="${CIRC}" stroke-dashoffset="${CIRC}" stroke-linecap="round"/>
-      </svg>
-      <div class="ring-text">0%</div>
-    </div>
-    <div class="studio-gen-info">
-      <div class="studio-gen-title">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-        <span class="status-text">Preparing...</span>
-      </div>
-      <div class="studio-gen-detail">${imgW}×${imgH} · ${totalSteps} steps</div>
-      <div class="studio-gen-bar"><div class="studio-gen-bar-fill"></div></div>
-    </div>
-    <button class="studio-placeholder-stop" title="Stop generation">&times;</button>
-  `;
-
-  const ringFill = el.querySelector(".ring-fill");
-  const ringText = el.querySelector(".ring-text");
-  const statusText = el.querySelector(".status-text");
-  const barFill = el.querySelector(".studio-gen-bar-fill");
-
-  return {
-    el,
-    update(step, total, elapsedS) {
-      const progress = total > 0 ? step / total : 0;
-      const pct = Math.round(progress * 100);
-      const offset = CIRC * (1 - progress);
-      ringFill.style.strokeDashoffset = offset;
-      ringText.textContent = pct + "%";
-      barFill.style.width = pct + "%";
-      if (step >= total) {
-        statusText.textContent = `Finalizing image... · ${elapsedS}s`;
-      } else {
-        statusText.textContent = `Step ${step}/${total} · ${elapsedS}s`;
-      }
-    },
-    setStatus(msg) {
-      statusText.textContent = msg;
-    },
-    stop() {},
-  };
+// createStudioPlaceholder — thin wrapper around shared _createGenProgress
+function createStudioPlaceholder() {
+  return _createGenProgress();
 }
 
 function renderStudioQueueTray() {
@@ -8650,11 +8625,12 @@ async function studioGenerate() {
 
   const count = studioCount;
 
-  // Insert fancy generating placeholder into canvas
-  const placeholder = createStudioPlaceholder(resW, resH, parseInt(studioSteps.value));
+  // Insert shared generating progress into canvas
+  const placeholder = createStudioPlaceholder();
   if (studioCanvasEmpty) studioCanvasEmpty.style.display = "none";
   studioCanvas.prepend(placeholder.el);
-  placeholder.el.querySelector(".studio-placeholder-stop").addEventListener("click", () => {
+  placeholder.stopBtn.addEventListener("click", () => {
+    mediaFetch("/image/cancel", { method: "POST" }).catch(() => {});
     studioAbortController?.abort();
     studioAbortController = null;
   });
@@ -8666,7 +8642,6 @@ async function studioGenerate() {
       if (!pr.ok) return;
       const p = await pr.json();
       if (p.running && p.total_steps > 0) {
-        const pct = Math.round((p.step / p.total_steps) * 100);
         placeholder.update(p.step, p.total_steps, p.elapsed_s);
       } else if (!p.running && p.step === 0) {
         placeholder.setStatus("Preparing model…");
@@ -8757,7 +8732,7 @@ async function studioGenerate() {
     }
   } finally {
     clearInterval(pollTimer);
-    placeholder.stop();
+    if (placeholder.el.parentNode) placeholder.destroy();
     studioGenerating = false;
     studioAbortController = null;
     studioGenerateBtn.disabled = false;
@@ -9010,14 +8985,15 @@ function appendStudioResult(dataArr, rawPrompt, body, recordId) {
   result.innerHTML = `
     <div class="studio-result-images ${gridClass}">${imagesHtml}</div>
     <div class="studio-meta-details">
-      <div class="studio-meta-prompt">${esc(rawPrompt)}${preset ? ` <span style="color:var(--accent);">[${preset}]</span>` : ""}</div>
       <span class="studio-meta-pills">
         ${dataArr[0].model ? `<span class="meta-pill">${esc(dataArr[0].model)}</span>` : ""}
         ${dataArr[0].width ? `<span class="meta-pill">${dataArr[0].width}×${dataArr[0].height}</span>` : ""}
         ${body?.steps ? `<span class="meta-pill">${body.steps} steps</span>` : ""}
         ${body?.guidance_scale != null ? `<span class="meta-pill">cfg ${body.guidance_scale}</span>` : ""}
         ${totalElapsed > 0 ? `<span class="meta-pill">${totalElapsed.toFixed(1)}s</span>` : ""}
+        <button class="studio-prompt-toggle"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg> Prompt</button>
       </span>
+      <div class="studio-meta-prompt">${esc(rawPrompt)}${preset ? ` <span style="color:var(--accent);">[${preset}]</span>` : ""}</div>
     </div>
   `;
 
@@ -9026,6 +9002,15 @@ function appendStudioResult(dataArr, rawPrompt, body, recordId) {
     src: `data:image/png;base64,${d.image}`, base64: d.image, recordId: id, imgIdx: i,
     rawPrompt, body, model: d.model, width: d.width, height: d.height,
   }));
+
+  // Prompt toggle
+  const promptToggle = result.querySelector(".studio-prompt-toggle");
+  if (promptToggle) {
+    promptToggle.addEventListener("click", () => {
+      promptToggle.classList.toggle("open");
+      result.querySelector(".studio-meta-prompt").classList.toggle("open");
+    });
+  }
 
   // Per-image: click to lightbox, info toggle, download, delete
   result.querySelectorAll(".studio-img-wrap").forEach(wrap => {
@@ -9808,15 +9793,12 @@ if (localStorage.getItem("diab_vault_open") === "1") openVaultPanel();
 function makePanelResizable(panelId, handleId, storageKey, defaultWidth, minWidth = 220, maxWidth = 700) {
   const panel = document.getElementById(panelId);
   const handle = document.getElementById(handleId);
-  function setW(px) {
-    panel.style.width = px + "px";
-    panel.style.flexBasis = px + "px";
-    panel.style.flexShrink = "0";
-    panel.style.flexGrow = "0";
-  }
 
+  // Use CSS custom property for saved width so transitions work smoothly
   const saved = parseInt(localStorage.getItem(storageKey));
-  if (saved && saved >= minWidth && saved <= maxWidth) setW(saved);
+  if (saved && saved >= minWidth && saved <= maxWidth) {
+    panel.style.setProperty("--panel-w", saved + "px");
+  }
 
   let startX, startW;
   handle.addEventListener("mousedown", e => {
@@ -9828,9 +9810,9 @@ function makePanelResizable(panelId, handleId, storageKey, defaultWidth, minWidt
     document.body.style.userSelect = "none";
 
     const onMove = e => {
-      const delta = startX - e.clientX; // dragging left edge: move left = wider
+      const delta = startX - e.clientX;
       const newW = Math.min(maxWidth, Math.max(minWidth, startW + delta));
-      setW(newW);
+      panel.style.setProperty("--panel-w", newW + "px");
     };
     const onUp = () => {
       handle.classList.remove("dragging");
@@ -9848,6 +9830,7 @@ function makePanelResizable(panelId, handleId, storageKey, defaultWidth, minWidt
 makePanelResizable("vault-panel", "vault-resize-handle", "diab_vault_w", 320);
 makePanelResizable("studio-fav-panel", "fav-resize-handle", "diab_fav_w", 340);
 makePanelResizable("music-fav-panel", "music-fav-resize-handle", "diab_music_fav_w", 340);
+makePanelResizable("video-fav-panel", "video-fav-resize-handle", "diab_video_fav_w", 340);
 
 // ── Sidebar resize ──
 (function() {
@@ -11293,7 +11276,7 @@ async function sendMessage() {
     steps.container?.remove();
     if (err.name !== "AbortError") showToast(`Error: ${err.message}`);
     // If we have partial text, finalize it as-is
-    if (streamBubble && fullAnswer) streamBubble.finalize();
+    if (streamBubble && fullAnswer) streamBubble.finalize(fullAnswer, [], [], null, null, null, "");
   } finally {
     chatAbortController = null;
     setLoading(false);

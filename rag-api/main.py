@@ -856,7 +856,7 @@ Answer concisely."""
     # Step 8: Save to DB
     conv_id = request.conversation_id
     if not conv_id:
-        conv_id = db.create_conversation(user_id=user_id, topic_id=request.folder_id)
+        conv_id = db.create_conversation(user_id=user_id, folder_id=request.folder_id)
     db.auto_title(conv_id, user_id, request.message)
     db.add_message(conv_id, "user", request.message)
     db.add_message(conv_id, "assistant", clean_answer, sources=sources, web_sources=web_sources, model_used=model)
