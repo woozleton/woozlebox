@@ -10,7 +10,6 @@ const videoGenerateBtn = document.getElementById("video-generate-btn");
 const videoFavPanel = document.getElementById("video-fav-panel");
 const videoFavToggle = document.getElementById("video-fav-toggle");
 const videoFavContent = document.getElementById("video-fav-content");
-const videoFavBadge = document.getElementById("video-fav-badge");
 const videoFavCountLabel = document.getElementById("video-fav-count-label");
 
 let _videoGenerating = false;

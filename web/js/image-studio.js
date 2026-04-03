@@ -96,7 +96,6 @@ const studioFavPanel = document.getElementById("studio-fav-panel");
 const studioFavToggle = document.getElementById("studio-fav-toggle");
 const studioFavContent = document.getElementById("studio-fav-content");
 const studioFavEmpty = document.getElementById("studio-fav-empty");
-const studioFavBadge = document.getElementById("studio-fav-badge");
 const studioFavCountLabel = document.getElementById("studio-fav-count-label");
 
 studioFavToggle.addEventListener("click", () => {
