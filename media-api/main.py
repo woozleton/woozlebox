@@ -34,6 +34,79 @@ MUSIC_GEN_URL     = os.environ.get("MUSIC_GEN_URL", "http://music-api:8200")
 VIDEO_GEN_URL     = os.environ.get("VIDEO_GEN_URL", "http://video-api:8300")
 GPU_MANAGER_URL   = os.environ.get("GPU_MANAGER_URL", "http://gpu-manager:8400")
 
+# ── LLM Prompt Templates ──
+# All system prompts in one place for easy editing.
+PROMPTS = {
+    "image_inspire": (
+        "You are a creative director who generates vivid, detailed text-to-image prompts. "
+        "Generate exactly ONE unique, imaginative prompt for an AI image generator. "
+        "Be specific about subject, setting, lighting, mood, and composition. "
+        "Vary widely between styles: landscapes, portraits, fantasy, sci-fi, nature, "
+        "architecture, abstract, etc. "
+        "Output ONLY the prompt text, nothing else -no quotes, no explanation, no numbering."
+    ),
+    "music_inspire": (
+        "You are a music producer who generates creative text-to-music prompts for an AI "
+        "music generator. Generate exactly ONE unique, vivid music prompt describing genre, "
+        "mood, instruments, tempo feel, and vibe. "
+        "Vary widely between styles: pop, rock, jazz, electronic, classical, hip-hop, folk, "
+        "ambient, metal, world, funk, cinematic, etc. "
+        "Output ONLY the prompt text, nothing else -no quotes, no explanation, no numbering. "
+        "Keep it to 1-2 sentences."
+    ),
+    "song_title": (
+        "You are a creative music producer. Given a song's style description and optional "
+        "lyrics, generate exactly ONE short, catchy song title (1-5 words). "
+        "Be creative and evocative. Output ONLY the title -no quotes, no explanation, "
+        "no punctuation except what's part of the title."
+    ),
+    "cover_art": (
+        "You are an album cover art director. Given a song description, generate a short "
+        "visual prompt for an album cover image. Describe the mood, colors, composition, "
+        "and artistic style. Think abstract, artistic, and evocative. Do NOT include text "
+        "or words in the image. "
+        "Output ONLY the image prompt, 1-2 sentences, no quotes or explanation."
+    ),
+    "songwriting": (
+        "You are a professional songwriter and music producer. Given a brief description, generate:\n"
+        "1. A concise music STYLE prompt (genre, mood, instruments, tempo feel) "
+        "-this describes the sound, NOT the lyrics\n"
+        "2. Full structured LYRICS with section tags like [verse], [chorus], [bridge], [outro]\n\n"
+        "Rules:\n"
+        "- The style prompt should be 1-2 sentences describing genre, mood, instruments, and vibe\n"
+        "- Lyrics should have at least 2 verses and a chorus\n"
+        "- Use [verse], [chorus], [bridge], [pre-chorus], [outro] tags on their own lines\n"
+        "- Write natural, singable lyrics that match the described mood\n"
+        "- Keep lyrics concise -each section should be 2-4 lines\n"
+        "- Do NOT include any explanation, just the output\n\n"
+        "Respond in EXACTLY this format:\n"
+        "STYLE: <style prompt here>\n\n"
+        "LYRICS:\n"
+        "<full lyrics here>"
+    ),
+    "video_inspire": (
+        "You are a creative video director who generates vivid text-to-video prompts for an "
+        "AI video generator. Generate exactly ONE unique, cinematic video prompt describing "
+        "the scene, action, camera movement, lighting, and mood. "
+        "Vary widely between styles: nature documentary, cinematic narrative, abstract art, "
+        "sci-fi, urban life, underwater, aerial, timelapse, etc. "
+        "Output ONLY the prompt text, nothing else -no quotes, no explanation, no numbering. "
+        "Keep it to 1-2 sentences."
+    ),
+    "video_session_title": (
+        "Generate a short, descriptive title (3-6 words) for a video generation session "
+        "based on the prompt. Capture the main scene and mood. "
+        "Output ONLY the title text, no quotes, no explanation."
+    ),
+    "video_thumbnail": (
+        "You are a video thumbnail designer. Given a video description, generate a short "
+        "visual prompt for a cinematic still frame that captures the essence of the video. "
+        "Describe the key moment, composition, lighting, and cinematic feel. "
+        "Do NOT include text or words in the image. "
+        "Output ONLY the image prompt, 1-2 sentences, no quotes or explanation."
+    ),
+}
+
 app = FastAPI(title="media-api")
 app.add_middleware(
     CORSMiddleware,
@@ -226,15 +299,8 @@ class VideoCoverArtRequest(BaseModel):
 
 @app.get("/image/inspire")
 async def image_inspire(user: dict = Depends(get_current_user)):
-    system = (
-        "You are a creative director who generates vivid, detailed text-to-image prompts. "
-        "Generate exactly ONE unique, imaginative prompt for an AI image generator. "
-        "Be specific about subject, setting, lighting, mood, and composition. "
-        "Vary widely between styles: landscapes, portraits, fantasy, sci-fi, nature, architecture, abstract, etc. "
-        "Output ONLY the prompt text, nothing else -no quotes, no explanation, no numbering."
-    )
     try:
-        text = await _utility_llm(system, "Give me a fresh, creative image generation prompt.", temperature=1.2, num_predict=150, user=user, force_default=True, caller="image inspire")
+        text = await _utility_llm(PROMPTS["image_inspire"], "Give me a fresh, creative image generation prompt.", temperature=1.2, num_predict=150, user=user, force_default=True, caller="image inspire")
         return {"prompt": text.strip('"').strip("'")}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Could not generate idea: {e}")
@@ -387,14 +453,8 @@ async def image_name_session(req: SessionNameRequest, user: dict = Depends(get_c
 
 @app.get("/music/inspire")
 async def music_inspire(user: dict = Depends(get_current_user)):
-    system = (
-        "You are a music producer who generates creative text-to-music prompts for an AI music generator. "
-        "Generate exactly ONE unique, vivid music prompt describing genre, mood, instruments, tempo feel, and vibe. "
-        "Vary widely between styles: pop, rock, jazz, electronic, classical, hip-hop, folk, ambient, metal, world, funk, cinematic, etc. "
-        "Output ONLY the prompt text, nothing else -no quotes, no explanation, no numbering. Keep it to 1-2 sentences."
-    )
     try:
-        text = await _utility_llm(system, "Give me a fresh, creative music generation prompt.", temperature=1.2, num_predict=100, user=user, force_default=True, caller="music inspire")
+        text = await _utility_llm(PROMPTS["music_inspire"], "Give me a fresh, creative music generation prompt.", temperature=1.2, num_predict=100, user=user, force_default=True, caller="music inspire")
         return {"prompt": text.strip('"').strip("'")}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Could not generate idea: {e}")
@@ -407,9 +467,7 @@ async def name_song(req: SongNameRequest, user: dict = Depends(get_current_user)
         if req.lyrics:
             context += f"\n\nLyrics:\n{req.lyrics[:500]}"
         title = await _utility_llm(
-            "You are a creative music producer. Given a song's style description and optional lyrics, "
-            "generate exactly ONE short, catchy song title (1-5 words). "
-            "Be creative and evocative. Output ONLY the title -no quotes, no explanation, no punctuation except what's part of the title.",
+            PROMPTS["song_title"],
             context, temperature=1.0, num_predict=20, user=user, force_default=True, caller="music name-song",
         )
         return {"title": title.strip('"').strip("'").split("\n")[0].strip().title()}
@@ -430,12 +488,7 @@ async def music_cover_art(req: CoverArtRequest, user: dict = Depends(get_current
         if req.lyrics:
             context += f"\nLyrics excerpt: {req.lyrics[:300]}"
         raw = await _utility_llm(
-            system=(
-                "You are an album cover art director. Given a song description, generate a short visual prompt "
-                "for an album cover image. Describe the mood, colors, composition, and artistic style. "
-                "Think abstract, artistic, and evocative. Do NOT include text or words in the image. "
-                "Output ONLY the image prompt, 1-2 sentences, no quotes or explanation."
-            ),
+            system=PROMPTS["cover_art"],
             prompt=context, temperature=0.9, num_predict=80, user=user,
             force_default=True, caller="music cover-art prompt",
         )
@@ -470,23 +523,7 @@ async def write_song(req: SongWriteRequest, user: dict = Depends(get_current_use
     if not req.description.strip():
         raise HTTPException(status_code=400, detail="description is required")
 
-    system_prompt = """You are a professional songwriter and music producer. Given a brief description, generate:
-1. A concise music STYLE prompt (genre, mood, instruments, tempo feel) -this describes the sound, NOT the lyrics
-2. Full structured LYRICS with section tags like [verse], [chorus], [bridge], [outro]
-
-Rules:
-- The style prompt should be 1-2 sentences describing genre, mood, instruments, and vibe
-- Lyrics should have at least 2 verses and a chorus
-- Use [verse], [chorus], [bridge], [pre-chorus], [outro] tags on their own lines
-- Write natural, singable lyrics that match the described mood
-- Keep lyrics concise -each section should be 2-4 lines
-- Do NOT include any explanation, just the output
-
-Respond in EXACTLY this format:
-STYLE: <style prompt here>
-
-LYRICS:
-<full lyrics here>"""
+    system_prompt = PROMPTS["songwriting"]
 
     user_msg = req.description.strip()
     if req.language and req.language != "en":
@@ -647,14 +684,8 @@ async def video_generate_proxy(req: VideoGenerateRequest, user: dict = Depends(g
 
 @app.get("/video/inspire")
 async def video_inspire(user: dict = Depends(get_current_user)):
-    system = (
-        "You are a creative video director who generates vivid text-to-video prompts for an AI video generator. "
-        "Generate exactly ONE unique, cinematic video prompt describing the scene, action, camera movement, lighting, and mood. "
-        "Vary widely between styles: nature documentary, cinematic narrative, abstract art, sci-fi, urban life, underwater, aerial, timelapse, etc. "
-        "Output ONLY the prompt text, nothing else -no quotes, no explanation, no numbering. Keep it to 1-2 sentences."
-    )
     try:
-        text = await _utility_llm(system, "Give me a fresh, creative video generation prompt.", temperature=1.2, num_predict=100, user=user, force_default=True, caller="video inspire")
+        text = await _utility_llm(PROMPTS["video_inspire"], "Give me a fresh, creative video generation prompt.", temperature=1.2, num_predict=100, user=user, force_default=True, caller="video inspire")
         return {"prompt": text.strip('"').strip("'")}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Could not generate idea: {e}")
@@ -664,9 +695,7 @@ async def video_inspire(user: dict = Depends(get_current_user)):
 async def video_name_session(req: VideoNameRequest, user: dict = Depends(get_current_user)):
     try:
         name = await _utility_llm(
-            "Generate a short, descriptive title (3-6 words) for a video generation session based on the prompt. "
-            "Capture the main scene and mood. "
-            "Output ONLY the title text, no quotes, no explanation.",
+            PROMPTS["video_session_title"],
             req.prompt[:200], temperature=0.5, num_predict=15, user=user, force_default=True, caller="video name-session",
         )
         return {"name": name.strip('"').strip("'").split("\n")[0].strip().title()[:60]}
@@ -686,13 +715,7 @@ async def video_cover_art(req: VideoCoverArtRequest, user: dict = Depends(get_cu
         if req.title:
             context = f"Video title: {req.title}\n{context}"
         raw = await _utility_llm(
-            system=(
-                "You are a video thumbnail designer. Given a video description, generate a short visual prompt "
-                "for a cinematic still frame that captures the essence of the video. "
-                "Describe the key moment, composition, lighting, and cinematic feel. "
-                "Do NOT include text or words in the image. "
-                "Output ONLY the image prompt, 1-2 sentences, no quotes or explanation."
-            ),
+            system=PROMPTS["video_thumbnail"],
             prompt=context, temperature=0.9, num_predict=80, user=user,
             force_default=True, caller="video thumbnail prompt",
         )

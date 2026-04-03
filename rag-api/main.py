@@ -53,6 +53,82 @@ DEFAULT_TOP_K     = 30
 NOT_FOUND_MSG     = "I couldn't find that in your vault."
 SUPPORTED_UPLOAD_EXTENSIONS = {".md", ".txt", ".pdf"}
 
+# ── LLM Prompt Templates ──
+# All system prompts in one place for easy editing.
+PROMPTS = {
+    "default_assistant": (
+        "You are a personal AI assistant. When relevant context from the "
+        "user's vault is provided, prioritize it in your answer. Otherwise, "
+        "answer using your general knowledge."
+    ),
+    "local_model_disclaimer": (
+        "You are running locally as {model} via Ollama on the user's own "
+        "machine. You are NOT cloud-based and you are NOT a different model. "
+        "Do not claim to be any other model or service."
+    ),
+    "web_search_off": (
+        "IMPORTANT: Web search is currently OFF. If the user's question "
+        "requires real-time, current, or location-specific information "
+        "(weather, news, prices, events, etc.) that you don't have, tell "
+        "them to click the globe icon (next to the chat input) to enable "
+        "web search so you can look it up. Do NOT fabricate URLs, links, or "
+        "suggest visiting specific websites. Do NOT make up current data. "
+        "Simply tell them to enable web search."
+    ),
+    "web_search_content": (
+        "You have been given real web page content in the [WEB SEARCH RESULTS] "
+        "above. Answer the user's question using that content directly. Do NOT "
+        "tell the user to visit a website. Do NOT say you lack real-time access. "
+        "Summarize and report the actual information from the content."
+    ),
+    "web_search_fallback": (
+        "Web search was performed but the pages could not be fully retrieved "
+        "(JavaScript-rendered or blocked). Summarize what you can from the "
+        "snippets and titles. Do not tell the user to visit a website -tell "
+        "them the pages weren't fully accessible and share what little was retrieved."
+    ),
+    "memory_auto": (
+        "MEMORY TOOL: You can save important facts about the user for future "
+        "conversations.\nWhen the user shares personal details, preferences, or "
+        "information worth remembering, include this tag in your response:\n"
+        "[SAVE_MEMORY: the fact to remember]\n"
+        "Examples: [SAVE_MEMORY: User's dog is named Max] or "
+        "[SAVE_MEMORY: User prefers Python over JavaScript]\n"
+        "Only save durable, useful facts. Do not save trivial or temporary information.\n"
+        "Do not mention the SAVE_MEMORY tag to the user. Just naturally confirm "
+        "you'll remember it.\n"
+        "To remove an outdated fact, use: [DELETE_MEMORY: the outdated fact]"
+    ),
+    "memory_manual": (
+        "MEMORY TOOL: You can save facts about the user when they explicitly "
+        "ask you to remember something.\nWhen the user says \"remember that...\", "
+        "\"save this...\", \"don't forget...\", or similar, include this tag in "
+        "your response:\n[SAVE_MEMORY: the fact to remember]\n"
+        "Only use this when the user explicitly asks you to remember something.\n"
+        "Do not mention the SAVE_MEMORY tag to the user. Just naturally confirm "
+        "you'll remember it.\n"
+        "To remove an outdated fact when asked, use: [DELETE_MEMORY: the outdated fact]"
+    ),
+    "search_query_rewrite": (
+        "Given the conversation history and the user's latest message, generate "
+        "a concise web search query that captures what the user actually wants to "
+        "find. Output ONLY the search query, nothing else."
+    ),
+    "conversation_summarizer": (
+        "You are a concise summarizer. Output only the summary, nothing else."
+    ),
+    "memory_fact_extractor": (
+        "Extract the single most important, memorable fact or takeaway from "
+        "the following AI response. Output ONLY the fact as a short sentence. "
+        "If there is nothing worth remembering, respond with exactly: NOTHING"
+    ),
+    "title_generator": (
+        "Generate a short, descriptive title (3-7 words) for this conversation. "
+        "The title should capture the main topic or question. "
+        "Output ONLY the title text, no quotes, no explanation."
+    ),
+}
+
 
 async def _report_vram(action: str, model: str, vram_mb: int = 0, detail: str = ""):
     """Fire-and-forget VRAM activity report to gpu-manager."""
@@ -544,7 +620,7 @@ async def chat_stream(request: ChatRequest, user_id: str) -> AsyncGenerator[str,
                         json={
                             "model": model,
                             "messages": [
-                                {"role": "system", "content": "Given the conversation history and the user's latest message, generate a concise web search query that captures what the user actually wants to find. Output ONLY the search query, nothing else." + loc_ctx},
+                                {"role": "system", "content": PROMPTS["search_query_rewrite"] + loc_ctx},
                                 {"role": "user", "content": f"Conversation:\n{history_text}\n\nLatest message: {raw_msg}"},
                             ],
                             "options": {"temperature": 0.1, "num_predict": 40},
@@ -639,9 +715,9 @@ async def chat_stream(request: ChatRequest, user_id: str) -> AsyncGenerator[str,
     # Build system prompt - topic override, memory, user profile
     now = datetime.now().astimezone()
     date_str = now.strftime("%A, %B %-d, %Y at %-I:%M %p %Z")
-    base_instructions = request.default_prompt or "You are a personal AI assistant. When relevant context from the user's vault is provided, prioritize it in your answer. Otherwise, answer using your general knowledge."
+    base_instructions = request.default_prompt or PROMPTS["default_assistant"]
     base_instructions += f"\n\nCurrent date and time: {date_str}"
-    base_instructions += f"\n\nYou are running locally as {request.model} via Ollama on the user's own machine. You are NOT cloud-based and you are NOT a different model. Do not claim to be any other model or service."
+    base_instructions += "\n\n" + PROMPTS["local_model_disclaimer"].format(model=request.model)
 
     # Use folder system prompt if provided (overrides default)
     if request.folder_id:
@@ -665,37 +741,22 @@ async def chat_stream(request: ChatRequest, user_id: str) -> AsyncGenerator[str,
 
     web_hint = ""
     if not request.web_search:
-        web_hint = "\n\nIMPORTANT: Web search is currently OFF. If the user's question requires real-time, current, or location-specific information (weather, news, prices, events, etc.) that you don't have, tell them to click the globe icon (next to the chat input) to enable web search so you can look it up. Do NOT fabricate URLs, links, or suggest visiting specific websites. Do NOT make up current data. Simply tell them to enable web search."
+        web_hint = "\n\n" + PROMPTS["web_search_off"]
 
     web_instruction = ""
     if web_sources:
         has_real_content = any(len(r.get("content", "")) > 100 for r in web_sources)
         if has_real_content:
-            web_instruction = "\n\nYou have been given real web page content in the [WEB SEARCH RESULTS] above. Answer the user's question using that content directly. Do NOT tell the user to visit a website. Do NOT say you lack real-time access. Summarize and report the actual information from the content."
+            web_instruction = "\n\n" + PROMPTS["web_search_content"]
         else:
-            web_instruction = "\n\nWeb search was performed but the pages could not be fully retrieved (JavaScript-rendered or blocked). Summarize what you can from the snippets and titles. Do not tell the user to visit a website -tell them the pages weren't fully accessible and share what little was retrieved."
+            web_instruction = "\n\n" + PROMPTS["web_search_fallback"]
 
     # Memory tool instructions
     memory_instruction = ""
     if request.auto_memory:
-        memory_instruction = """
-
-MEMORY TOOL: You can save important facts about the user for future conversations.
-When the user shares personal details, preferences, or information worth remembering, include this tag in your response:
-[SAVE_MEMORY: the fact to remember]
-Examples: [SAVE_MEMORY: User's dog is named Max] or [SAVE_MEMORY: User prefers Python over JavaScript]
-Only save durable, useful facts. Do not save trivial or temporary information.
-Do not mention the SAVE_MEMORY tag to the user. Just naturally confirm you'll remember it.
-To remove an outdated fact, use: [DELETE_MEMORY: the outdated fact]"""
+        memory_instruction = "\n\n" + PROMPTS["memory_auto"]
     else:
-        memory_instruction = """
-
-MEMORY TOOL: You can save facts about the user when they explicitly ask you to remember something.
-When the user says "remember that...", "save this...", "don't forget...", or similar, include this tag in your response:
-[SAVE_MEMORY: the fact to remember]
-Only use this when the user explicitly asks you to remember something.
-Do not mention the SAVE_MEMORY tag to the user. Just naturally confirm you'll remember it.
-To remove an outdated fact when asked, use: [DELETE_MEMORY: the outdated fact]"""
+        memory_instruction = "\n\n" + PROMPTS["memory_manual"]
 
     system_prompt = f"""{base_instructions}{memory_section}{user_section}{' ' + source_instruction if source_instruction else ''}{context_block}{web_instruction}{web_hint}{memory_instruction}
 
@@ -727,7 +788,7 @@ Answer concisely."""
                         json={
                             "model": model,
                             "messages": [
-                                {"role": "system", "content": "You are a concise summarizer. Output only the summary, nothing else."},
+                                {"role": "system", "content": PROMPTS["conversation_summarizer"]},
                                 {"role": "user", "content": f"Summarize this conversation history concisely, preserving all key facts, decisions, and context:\n\n{history_text}"},
                             ],
                             "options": {"temperature": 0.3, "num_predict": 600},
@@ -1077,7 +1138,7 @@ async def extract_memory(request: ExtractMemoryRequest, user: dict = Depends(get
             json={
                 "model": model,
                 "messages": [
-                    {"role": "system", "content": "Extract the single most important, memorable fact or takeaway from the following AI response. Output ONLY the fact as a short sentence. If there is nothing worth remembering, respond with exactly: NOTHING"},
+                    {"role": "system", "content": PROMPTS["memory_fact_extractor"]},
                     {"role": "user", "content": request.text},
                 ],
                 "options": {"temperature": 0.1, "num_predict": 100},
@@ -1545,9 +1606,7 @@ async def smart_title_conv(cid: str, user: dict = Depends(get_current_user)):
                 f"{OLLAMA_BASE_URL}/api/generate",
                 json={
                     "model": model,
-                    "system": "Generate a short, descriptive title (3-7 words) for this conversation. "
-                              "The title should capture the main topic or question. "
-                              "Output ONLY the title text, no quotes, no explanation.",
+                    "system": PROMPTS["title_generator"],
                     "prompt": context,
                     "stream": False,
                     "think": False,

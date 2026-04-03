@@ -27,13 +27,13 @@ A single CSS component class used by all three studios. Centered vertical layout
 
 ### Changes
 
-#### 1. `web/styles.css` — add shared `.gen-progress` styles, remove old per-studio styles
+#### 1. `web/styles.css` - add shared `.gen-progress` styles, remove old per-studio styles
 - Add new `.gen-progress` block (~40 lines)
 - Remove `.studio-gen-placeholder`, `.studio-gen-ring-wrap`, `.studio-gen-info`, `.studio-gen-title`, `.studio-gen-detail`, `.studio-gen-bar`, `.studio-gen-bar-fill`, `.studio-placeholder-stop` (~55 lines)
 - Remove `.music-gen-placeholder`, `.music-gen-ring-wrap`, `.music-gen-status`, `.music-gen-bar`, `.music-gen-bar-fill`, `.music-gen-stop` (~20 lines)
 - Remove `.video-gen-placeholder`, nested `.progress-ring`, `.status-text`, `.progress-bar`, `.progress-bar-fill`, `.stop-btn` (~15 lines)
 
-#### 2. `web/index.html` — shared JS factory function + update all three studios
+#### 2. `web/index.html` - shared JS factory function + update all three studios
 - Add `_createGenProgress(opts)` factory that returns `{ el, update(step, total, elapsed), setStatus(msg), destroy() }`
 - Update `createStudioPlaceholder` (image) to use the shared factory
 - Update music placeholder creation to use the shared factory
@@ -174,48 +174,48 @@ function _createGenProgress() {
 
 ### Server-side cancellation for image-api and music-api
 
-Video-api already has proper cancellation: `_cancel_requested` flag, `/cancel` endpoint, callback check that raises `RuntimeError`, caught as HTTP 499. Image-api and music-api have no cancel mechanism — the GPU keeps working even when the client disconnects.
+Video-api already has proper cancellation: `_cancel_requested` flag, `/cancel` endpoint, callback check that raises `RuntimeError`, caught as HTTP 499. Image-api and music-api have no cancel mechanism - the GPU keeps working even when the client disconnects.
 
-#### 3. `image-api/main.py` — add cancel support
+#### 3. `image-api/main.py` - add cancel support
 - Add `_cancel_requested = False` global (next to `_progress`)
 - Add `POST /cancel` endpoint (same pattern as video-api)
 - Update `_step_callback` in `/generate` and `/inpaint` to check `_cancel_requested` and raise `RuntimeError`
 - Catch cancellation in the exception handler, return HTTP 499
 - Reset `_cancel_requested = False` in the `finally` block and before starting
-- Note: `/upscale` uses Real-ESRGAN which has no step callback — can't be cancelled mid-inference, but it's fast (~2-3s)
+- Note: `/upscale` uses Real-ESRGAN which has no step callback - can't be cancelled mid-inference, but it's fast (~2-3s)
 
-#### 4. `music-api/main.py` — add cancel support
+#### 4. `music-api/main.py` - add cancel support
 - Add `_cancel_requested = False` global
 - Add `POST /cancel` endpoint
 - Update `_progress_cb` inside `_run_inference` to check `_cancel_requested` and raise `RuntimeError`
 - Catch cancellation, return HTTP 499
 - Reset flag in `finally` and before starting
 
-#### 5. `media-api/main.py` — add cancel proxy endpoints
+#### 5. `media-api/main.py` - add cancel proxy endpoints
 - Add `POST /image/cancel` that proxies to `image-api:8100/cancel`
-- Music already has no cancel proxy — add `POST /music/cancel` that proxies to `music-api:8200/cancel`
+- Music already has no cancel proxy - add `POST /music/cancel` that proxies to `music-api:8200/cancel`
 - Video already has `POST /video/cancel` proxied
 
-#### 6. `web/index.html` — wire stop buttons to cancel endpoints
+#### 6. `web/index.html` - wire stop buttons to cancel endpoints
 - In the shared `_createGenProgress()`, the `stopBtn` is exposed for each studio to wire up
 - Image: call `mediaFetch("/image/cancel", {method:"POST"})` + abort fetch
 - Music: call `mediaFetch("/music/cancel", {method:"POST"})` + abort fetch + set `_aborted = true`
-- Video: already calls `mediaFetch("/video/cancel", {method:"POST"})` — keep as-is
+- Video: already calls `mediaFetch("/video/cancel", {method:"POST"})` - keep as-is
 
 ### Files modified
-- `web/styles.css` — remove 3 old progress blocks, add 1 shared `.gen-progress` block
-- `web/index.html` — add `_createGenProgress()`, update image/music/video to use it, wire cancel
-- `image-api/main.py` — add `_cancel_requested`, `/cancel` endpoint, callback check
-- `music-api/main.py` — add `_cancel_requested`, `/cancel` endpoint, callback check
-- `media-api/main.py` — add `/image/cancel` and `/music/cancel` proxy endpoints
+- `web/styles.css` - remove 3 old progress blocks, add 1 shared `.gen-progress` block
+- `web/index.html` - add `_createGenProgress()`, update image/music/video to use it, wire cancel
+- `image-api/main.py` - add `_cancel_requested`, `/cancel` endpoint, callback check
+- `music-api/main.py` - add `_cancel_requested`, `/cancel` endpoint, callback check
+- `media-api/main.py` - add `/image/cancel` and `/music/cancel` proxy endpoints
 
 ### Verification
-1. Generate an image — progress ring + bar + stop works, "Finalizing..." shows at end
-2. **Stop image mid-generation** — GPU stops within 1 step, returns 499
-3. Generate music — same component, step/total updates, stop works
-4. **Stop music mid-generation** — GPU stops, returns 499
-5. Generate video — same component, "Finalizing..." at end, stop works
-6. **Stop video mid-generation** — GPU stops (already worked), returns 499
+1. Generate an image - progress ring + bar + stop works, "Finalizing..." shows at end
+2. **Stop image mid-generation** - GPU stops within 1 step, returns 499
+3. Generate music - same component, step/total updates, stop works
+4. **Stop music mid-generation** - GPU stops, returns 499
+5. Generate video - same component, "Finalizing..." at end, stop works
+6. **Stop video mid-generation** - GPU stops (already worked), returns 499
 7. All three look identical in style
 8. Stop button highlights red on hover in all three
 9. After cancellation, can immediately start a new generation

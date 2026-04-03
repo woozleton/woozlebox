@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WoozBox File Structure</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0F1117; color: #E4E4E7; font-family: 'Segoe UI', Calibri, sans-serif; padding: 40px; min-height: 100vh; }
+  h1 { font-size: 34px; font-weight: 700; margin-bottom: 6px; }
+  h2 { font-size: 26px; font-weight: 700; margin: 44px 0 20px; color: #E4E4E7; }
+  .subtitle { font-size: 18px; color: #9CA3AF; margin-bottom: 32px; }
+  .section-desc { font-size: 16px; color: #9CA3AF; margin-bottom: 20px; line-height: 1.5; }
+
+  /* Service section cards */
+  .svc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(460px, 1fr)); gap: 16px; max-width: 1100px; margin-bottom: 14px; }
+  .svc-card { background: #1A1D27; border: 1px solid #2A2D3A; border-radius: 10px; overflow: hidden; }
+  .svc-accent { height: 4px; }
+  .svc-header { padding: 16px 20px 10px; display: flex; align-items: baseline; gap: 10px; border-bottom: 1px solid #2A2D3A; }
+  .svc-name { font-size: 20px; font-weight: 700; }
+  .svc-role { font-size: 13px; color: #9CA3AF; }
+  .svc-body { padding: 12px 20px 16px; }
+
+  /* File tree */
+  .tree { font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace; font-size: 14px; line-height: 1.7; }
+  .tree-file { display: flex; align-items: baseline; gap: 10px; }
+  .tree-indent { color: #3A3D4A; user-select: none; white-space: pre; }
+  .tree-name { color: #E4E4E7; white-space: nowrap; }
+  .tree-name.dir { color: #60A5FA; font-weight: 600; }
+  .tree-desc { font-family: 'Segoe UI', Calibri, sans-serif; font-size: 12px; color: #6B7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tree-lines { font-size: 13px; font-family: monospace; color: #4B5563; white-space: nowrap; }
+
+  /* Root tree */
+  .root-tree { background: #1A1D27; border: 1px solid #2A2D3A; border-radius: 10px; padding: 20px 24px; max-width: 800px; margin-bottom: 14px; }
+
+  /* Colors */
+  .c-blue { color: #60A5FA; }
+  .c-green { color: #34D399; }
+  .c-amber { color: #F59E0B; }
+  .c-red { color: #EF4444; }
+  .c-purple { color: #818CF8; }
+  .c-orange { color: #F97316; }
+  .c-dim { color: #6B7280; }
+  .c-white { color: #E4E4E7; }
+  .accent-web { background: #E4E4E7; }
+  .accent-rag { background: #60A5FA; }
+  .accent-media { background: #818CF8; }
+  .accent-gpu { background: #F97316; }
+  .accent-image { background: #34D399; }
+  .accent-music { background: #F59E0B; }
+  .accent-video { background: #EF4444; }
+  .accent-docs { background: #6B7280; }
+
+  /* Script load order */
+  .load-order { max-width: 800px; }
+  .load-group { margin-bottom: 16px; }
+  .load-group-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #6B7280; margin-bottom: 8px; }
+  .load-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; font-size: 14px; }
+  .load-num { width: 22px; height: 22px; border-radius: 50%; background: #2A2D3A; color: #9CA3AF; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .load-file { font-family: monospace; font-size: 13px; min-width: 160px; }
+  .load-desc { font-size: 12px; color: #6B7280; }
+  .load-arrow { color: #3A3D4A; font-size: 12px; margin: 0 0 0 10px; }
+
+  .footnote { margin-top: 24px; font-size: 14px; color: #6B7280; font-style: italic; max-width: 1100px; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<h1>WoozBox File Structure</h1>
+<p class="subtitle">Complete codebase layout with file descriptions</p>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Root Layout</h2>
+<p class="section-desc">Monorepo with one directory per Docker service, plus a static frontend and docs.</p>
+
+<div class="root-tree">
+  <div class="tree">
+    <div class="tree-file"><span class="tree-name dir">dave-in-a-box/</span></div>
+    <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">docker-compose.yml</span><span class="tree-desc">All services, ports, volumes, GPU access</span></div>
+    <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">todo.md</span><span class="tree-desc">Project backlog</span></div>
+    <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name dir">web/</span><span class="tree-desc">Static SPA frontend (nginx :8080)</span></div>
+    <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name dir">rag-api/</span><span class="tree-desc">Chat, auth, vault, memory, TTS (FastAPI :8000)</span></div>
+    <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name dir">media-api/</span><span class="tree-desc">Media orchestration proxy (FastAPI :8500)</span></div>
+    <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name dir">gpu-manager/</span><span class="tree-desc">VRAM orchestration (FastAPI :8400)</span></div>
+    <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name dir">image-api/</span><span class="tree-desc">Diffusion image generation (FastAPI :8100)</span></div>
+    <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name dir">music-api/</span><span class="tree-desc">ACE-Step music generation (FastAPI :8200)</span></div>
+    <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name dir">video-api/</span><span class="tree-desc">Wan 2.1 video generation (FastAPI :8300)</span></div>
+    <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name dir">docs/</span><span class="tree-desc">Architecture and workflow documentation</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Frontend</h2>
+<p class="section-desc">Vanilla HTML/CSS/JS single-page application. No build tools, no frameworks. Served as static files by nginx.</p>
+
+<div class="svc-grid" style="grid-template-columns: 1fr;">
+  <div class="svc-card">
+    <div class="svc-accent accent-web"></div>
+    <div class="svc-header">
+      <span class="svc-name">web/</span>
+      <span class="svc-role">17 JS modules &middot; 6 CSS files &middot; 1,668 lines HTML</span>
+    </div>
+    <div class="svc-body">
+      <div class="tree">
+        <div class="tree-file"><span class="tree-name">index.html</span><span class="tree-lines">1,668</span><span class="tree-desc">Full SPA markup - chat, studios, settings, admin, vault</span></div>
+        <div class="tree-file"><span class="tree-name">icons.svg</span><span class="tree-lines">161</span><span class="tree-desc">SVG sprite sheet (34 symbols via &lt;use&gt;)</span></div>
+        <div class="tree-file">&nbsp;</div>
+        <div class="tree-file"><span class="tree-name dir">css/</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">1-variables.css</span><span class="tree-lines">78</span><span class="tree-desc">CSS custom properties, text sizes, wild themes</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">2-base.css</span><span class="tree-lines">577</span><span class="tree-desc">Reset, base elements, sidebar, layout, context menu</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">3-studios.css</span><span class="tree-lines">1,206</span><span class="tree-desc">Shared studio components, image/music/video studios</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">4-chat.css</span><span class="tree-lines">385</span><span class="tree-desc">Chat area, message bubbles, markdown, input area</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">5-ui.css</span><span class="tree-lines">771</span><span class="tree-desc">Settings dialog, modals, vault panel, auth, toast, utilities</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">6-responsive.css</span><span class="tree-lines">215</span><span class="tree-desc">Tablet, phone, and small-phone media queries</span></div>
+        <div class="tree-file">&nbsp;</div>
+        <div class="tree-file"><span class="tree-name dir">js/</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">config.js</span><span class="tree-lines">65</span><span class="tree-desc">API base URLs, getToken(), apiFetch(), mediaFetch()</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">app.js</span><span class="tree-lines">522</span><span class="tree-desc">DOM refs, state vars, initApp(), loadApp(), view switching</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">auth.js</span><span class="tree-lines">81</span><span class="tree-desc">Login/setup screen logic, auth form handlers</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">settings.js</span><span class="tree-lines">945</span><span class="tree-desc">Settings load/save, profile, themes, accent, branding</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">memory.js</span><span class="tree-lines">93</span><span class="tree-desc">Memory facts load/render/toggle/delete</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">ui.js</span><span class="tree-lines">744</span><span class="tree-desc">Sidebar, search modal, context menus, resize handles, mobile</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">markdown.js</span><span class="tree-lines">127</span><span class="tree-desc">renderMarkdown() - tables, code blocks, lists, links</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">tts.js</span><span class="tree-lines">136</span><span class="tree-desc">TTS audio engine, speech-to-text mic input</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">vault.js</span><span class="tree-lines">139</span><span class="tree-desc">File vault panel, upload, delete, move, index polling</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">gpu.js</span><span class="tree-lines">142</span><span class="tree-desc">VRAM SSE connection, status polling, sidebar display</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">admin.js</span><span class="tree-lines">255</span><span class="tree-desc">Admin panel, user management, default settings</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">db-helpers.js</span><span class="tree-lines">83</span><span class="tree-desc">createStudioDB() IndexedDB CRUD factory</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">studio-helpers.js</span><span class="tree-lines">52</span><span class="tree-desc">Shared utilities: trashAge(), updateBadge(), purgeOldTrash()</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">image-studio.js</span><span class="tree-lines">2,472</span><span class="tree-desc">Image generation, folders, trash, favorites, lightbox, inpaint</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">music-studio.js</span><span class="tree-lines">1,612</span><span class="tree-desc">Music generation, waveform, songwrite, sessions, presets</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">video-studio.js</span><span class="tree-lines">802</span><span class="tree-desc">Video generation, I2V upload, sessions, favorites</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">chat.js</span><span class="tree-lines">1,379</span><span class="tree-desc">Chat send, streaming, bubbles, suggestions, message queue</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Script Load Order</h2>
+<p class="section-desc">All scripts use the <code style="background:#2A2D3A;padding:2px 6px;border-radius:3px;font-size:14px;">defer</code> attribute. They execute after HTML parsing, in document order. Later scripts can call functions from earlier ones (global scope).</p>
+
+<div class="load-order">
+  <div class="load-group">
+    <div class="load-group-label">Core (no dependencies)</div>
+    <div class="load-row"><span class="load-num">1</span><span class="load-file c-blue">config.js</span><span class="load-desc">API constants, fetch wrappers</span></div>
+  </div>
+  <div class="load-group">
+    <div class="load-group-label">DOM refs &amp; state (depends on config)</div>
+    <div class="load-row"><span class="load-num">2</span><span class="load-file c-blue">app.js</span><span class="load-desc">All getElementById() refs, state variables, initApp()</span></div>
+  </div>
+  <div class="load-group">
+    <div class="load-group-label">Independent modules (depend on config + app)</div>
+    <div class="load-row"><span class="load-num">3</span><span class="load-file">auth.js</span></div>
+    <div class="load-row"><span class="load-num">4</span><span class="load-file">settings.js</span></div>
+    <div class="load-row"><span class="load-num">5</span><span class="load-file">memory.js</span></div>
+    <div class="load-row"><span class="load-num">6</span><span class="load-file">ui.js</span></div>
+    <div class="load-row"><span class="load-num">7</span><span class="load-file">markdown.js</span></div>
+    <div class="load-row"><span class="load-num">8</span><span class="load-file">tts.js</span></div>
+    <div class="load-row"><span class="load-num">9</span><span class="load-file">vault.js</span></div>
+    <div class="load-row"><span class="load-num">10</span><span class="load-file">gpu.js</span></div>
+    <div class="load-row"><span class="load-num">11</span><span class="load-file">admin.js</span></div>
+  </div>
+  <div class="load-group">
+    <div class="load-group-label">Studio infrastructure (depend on app)</div>
+    <div class="load-row"><span class="load-num">12</span><span class="load-file c-purple">db-helpers.js</span><span class="load-desc">IndexedDB factory used by all studios</span></div>
+    <div class="load-row"><span class="load-num">13</span><span class="load-file c-purple">studio-helpers.js</span><span class="load-desc">Shared utilities used by all studios</span></div>
+  </div>
+  <div class="load-group">
+    <div class="load-group-label">Studios (depend on db-helpers, studio-helpers, ui, settings)</div>
+    <div class="load-row"><span class="load-num">14</span><span class="load-file c-green">image-studio.js</span></div>
+    <div class="load-row"><span class="load-num">15</span><span class="load-file c-amber">music-studio.js</span></div>
+    <div class="load-row"><span class="load-num">16</span><span class="load-file c-red">video-studio.js</span></div>
+  </div>
+  <div class="load-group">
+    <div class="load-group-label">Chat (depends on markdown, tts, image-studio for inline gen)</div>
+    <div class="load-row"><span class="load-num">17</span><span class="load-file c-blue">chat.js</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Backend Services</h2>
+<p class="section-desc">Each service is a single-file FastAPI app with its own requirements.txt. No shared library code between services.</p>
+
+<div class="svc-grid">
+
+  <div class="svc-card">
+    <div class="svc-accent accent-rag"></div>
+    <div class="svc-header">
+      <span class="svc-name c-blue">rag-api/</span>
+      <span class="svc-role">:8000 &middot; Chat &amp; core platform</span>
+    </div>
+    <div class="svc-body">
+      <div class="tree">
+        <div class="tree-file"><span class="tree-name">main.py</span><span class="tree-lines">1,859</span><span class="tree-desc">Chat streaming, auth, vault, TTS proxy, conversations, folders, memory, web search, admin</span></div>
+        <div class="tree-file"><span class="tree-name">db.py</span><span class="tree-lines">490</span><span class="tree-desc">SQLite schema &amp; queries - users, conversations, messages, memory, folders</span></div>
+        <div class="tree-file"><span class="tree-name">indexer.py</span><span class="tree-lines">254</span><span class="tree-desc">Background document indexer - PDF/MD/TXT chunking into ChromaDB</span></div>
+        <div class="tree-file"><span class="tree-name">requirements.txt</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="svc-card">
+    <div class="svc-accent accent-media"></div>
+    <div class="svc-header">
+      <span class="svc-name c-purple">media-api/</span>
+      <span class="svc-role">:8500 &middot; Media orchestration</span>
+    </div>
+    <div class="svc-body">
+      <div class="tree">
+        <div class="tree-file"><span class="tree-name">main.py</span><span class="tree-lines">759</span><span class="tree-desc">Proxies to gen services, GPU acquire/release, utility LLM for inspire/naming/songwriting/cover art</span></div>
+        <div class="tree-file"><span class="tree-name">requirements.txt</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="svc-card">
+    <div class="svc-accent accent-gpu"></div>
+    <div class="svc-header">
+      <span class="svc-name c-orange">gpu-manager/</span>
+      <span class="svc-role">:8400 &middot; VRAM orchestration</span>
+    </div>
+    <div class="svc-body">
+      <div class="tree">
+        <div class="tree-file"><span class="tree-name">main.py</span><span class="tree-lines">629</span><span class="tree-desc">Model load/unload, Ollama eviction, VRAM profiles, SSE events, nvidia-smi polling</span></div>
+        <div class="tree-file"><span class="tree-name">requirements.txt</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="svc-card">
+    <div class="svc-accent accent-image"></div>
+    <div class="svc-header">
+      <span class="svc-name c-green">image-api/</span>
+      <span class="svc-role">:8100 &middot; Image generation</span>
+    </div>
+    <div class="svc-body">
+      <div class="tree">
+        <div class="tree-file"><span class="tree-name">main.py</span><span class="tree-lines">612</span><span class="tree-desc">Playground v2.5, SD 3.5, SDXL Turbo, SD Inpaint, Real-ESRGAN upscaler</span></div>
+        <div class="tree-file"><span class="tree-name">requirements.txt</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="svc-card">
+    <div class="svc-accent accent-music"></div>
+    <div class="svc-header">
+      <span class="svc-name c-amber">music-api/</span>
+      <span class="svc-role">:8200 &middot; Music generation</span>
+    </div>
+    <div class="svc-body">
+      <div class="tree">
+        <div class="tree-file"><span class="tree-name">main.py</span><span class="tree-lines">311</span><span class="tree-desc">ACE-Step 1.5 text-to-music, WAV output, progress callbacks</span></div>
+        <div class="tree-file"><span class="tree-name">requirements.txt</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="svc-card">
+    <div class="svc-accent accent-video"></div>
+    <div class="svc-header">
+      <span class="svc-name c-red">video-api/</span>
+      <span class="svc-role">:8300 &middot; Video generation</span>
+    </div>
+    <div class="svc-body">
+      <div class="tree">
+        <div class="tree-file"><span class="tree-name">main.py</span><span class="tree-lines">290</span><span class="tree-desc">Wan 2.1 T2V 1.3B - text-to-video and image-to-video, MP4 output</span></div>
+        <div class="tree-file"><span class="tree-name">requirements.txt</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Documentation</h2>
+
+<div class="svc-grid" style="grid-template-columns: 1fr;">
+  <div class="svc-card">
+    <div class="svc-accent accent-docs"></div>
+    <div class="svc-header">
+      <span class="svc-name c-dim">docs/</span>
+      <span class="svc-role">Reference documentation</span>
+    </div>
+    <div class="svc-body">
+      <div class="tree">
+        <div class="tree-file"><span class="tree-name">woozbox-architecture.html</span><span class="tree-desc">Service map, data flow, VRAM profiles per studio</span></div>
+        <div class="tree-file"><span class="tree-name">woozbox-workflows.html</span><span class="tree-desc">Step-by-step GPU orchestration for each studio mode</span></div>
+        <div class="tree-file"><span class="tree-name">woozbox-file-structure.html</span><span class="tree-desc">This file - complete codebase layout</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Key Patterns</h2>
+
+<div class="svc-grid" style="grid-template-columns: 1fr;">
+  <div class="svc-card">
+    <div class="svc-accent" style="background: #2A2D3A;"></div>
+    <div class="svc-body" style="padding: 20px 24px;">
+      <div style="display:grid; grid-template-columns:160px 1fr; gap:14px 20px; font-size:14px;">
+
+        <span class="c-dim" style="font-weight:600;">No build tools</span>
+        <span>Plain &lt;script defer&gt; and &lt;link&gt; tags. No bundler, no transpiler, no npm.</span>
+
+        <span class="c-dim" style="font-weight:600;">Global scope JS</span>
+        <span>All JS files share the global scope. Functions defined in any file are callable from any other file loaded after it.</span>
+
+        <span class="c-dim" style="font-weight:600;">IndexedDB factory</span>
+        <span><code style="background:#2A2D3A;padding:1px 5px;border-radius:3px;">createStudioDB()</code> in db-helpers.js generates CRUD functions (save, load, delete, update) for each studio's IndexedDB store.</span>
+
+        <span class="c-dim" style="font-weight:600;">Shared modals</span>
+        <span>Two shared modals (trash + folder) are reused across image/music/video studios via dynamic <code style="background:#2A2D3A;padding:1px 5px;border-radius:3px;">onclick</code> assignment.</span>
+
+        <span class="c-dim" style="font-weight:600;">SVG sprites</span>
+        <span>icons.svg contains 34 &lt;symbol&gt; elements. Used via <code style="background:#2A2D3A;padding:1px 5px;border-radius:3px;">icon("name", size)</code> helper which returns &lt;svg&gt;&lt;use&gt; markup.</span>
+
+        <span class="c-dim" style="font-weight:600;">PROMPTS dicts</span>
+        <span>All LLM system prompts are defined as <code style="background:#2A2D3A;padding:1px 5px;border-radius:3px;">PROMPTS = {}</code> dicts at the top of rag-api/main.py (10 prompts) and media-api/main.py (8 prompts).</span>
+
+        <span class="c-dim" style="font-weight:600;">Single-file services</span>
+        <span>Each backend service is one main.py file. Only rag-api has additional modules (db.py, indexer.py).</span>
+
+        <span class="c-dim" style="font-weight:600;">GPU serialization</span>
+        <span>gpu-manager serializes all /acquire calls via asyncio.Lock. Only one model occupies VRAM at a time (except music which keeps SDXL Turbo for cover art).</span>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="footnote">
+  Total codebase: ~5,200 lines of Python across 6 backend services, ~9,650 lines of JavaScript across 17 modules, ~3,230 lines of CSS across 6 files, and ~1,670 lines of HTML.
+</p>
+
+</body>
+</html>
