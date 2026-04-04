@@ -11,9 +11,9 @@ async function loadAdminUsers() {
       let userAvatarUrl = "";
       try {
         const s = JSON.parse(u.settings || "{}");
-        const p = JSON.parse(s.diab_profile || "{}");
+        const p = JSON.parse(s.wooz_profile || "{}");
         profileName = p.name || "";
-        userAvatarUrl = s.diab_avatar || "";
+        userAvatarUrl = s.wooz_avatar || "";
       } catch {}
       const initials = profileName ? profileName.trim().split(/\s+/).map(w => w[0]).join("").toUpperCase().slice(0, 2) : u.username[0].toUpperCase();
       const adminAvatarInner = userAvatarUrl
@@ -111,7 +111,7 @@ document.getElementById("admin-create-user-btn").addEventListener("click", async
 
 
 // ── Admin default settings ──
-const ADMIN_DEFAULTS_KEY = "diab_admin_defaults";
+const ADMIN_DEFAULTS_KEY = "wooz_admin_defaults";
 
 function loadAdminDefaults() {
   // Populate model list from main select

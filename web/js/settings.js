@@ -1,5 +1,5 @@
 // ── Settings (localStorage) ──
-const SETTINGS_KEY = "diab_settings";
+const SETTINGS_KEY = "wooz_settings";
 function loadSettings() {
   try {
     const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
@@ -48,8 +48,8 @@ document.getElementById("chat-advanced-toggle").addEventListener("click", functi
 });
 
 // ── Profile (localStorage) ──
-const PROFILE_KEY = "diab_profile";
-const AVATAR_KEY  = "diab_avatar";
+const PROFILE_KEY = "wooz_profile";
+const AVATAR_KEY  = "wooz_avatar";
 
 function applyAvatar(dataUrl) {
   const initials  = document.getElementById("profile-avatar-initials");
@@ -158,7 +158,7 @@ document.getElementById("avatar-reset-btn").addEventListener("click", e => {
 
 
 // ── Logo customization ──
-const LOGO_KEY = "diab_logo";
+const LOGO_KEY = "wooz_logo";
 function applyLogo(dataUrl) {
   const letter     = document.getElementById("logo-letter");
   const img        = document.getElementById("logo-img");
@@ -179,7 +179,7 @@ function applyLogo(dataUrl) {
     img.style.display = "none";
     // Restore title visibility based on brand preference
     if (title) {
-      const showSidebarName = (JSON.parse(localStorage.getItem("diab_brand") || "{}").showSidebarName !== false);
+      const showSidebarName = (JSON.parse(localStorage.getItem("wooz_brand") || "{}").showSidebarName !== false);
       title.style.display = showSidebarName ? "" : "none";
     }
     if (prev) prev.style.display = "none";
@@ -188,7 +188,7 @@ function applyLogo(dataUrl) {
   }
 }
 
-const LOGIN_LOGO_KEY = "diab_login_logo";
+const LOGIN_LOGO_KEY = "wooz_login_logo";
 function applyLoginLogo(dataUrl) {
   const prev       = document.getElementById("login-logo-preview");
   const prevLetter = document.getElementById("login-logo-letter-preview");
@@ -211,7 +211,7 @@ function applyLoginLogo(dataUrl) {
     authLetters.forEach(el => { if (el) el.style.display = ""; });
     authImgs.forEach(el => { if (el) { el.src = ""; el.style.display = "none"; } });
     // Restore name visibility based on brand preference
-    const showLoginName = (JSON.parse(localStorage.getItem("diab_brand") || "{}").showLoginName !== false);
+    const showLoginName = (JSON.parse(localStorage.getItem("wooz_brand") || "{}").showLoginName !== false);
     authNames.forEach(el => { if (el) el.style.display = showLoginName ? "" : "none"; });
   }
 }
@@ -258,7 +258,7 @@ document.getElementById("login-logo-reset-btn").addEventListener("click", e => {
 });
 
 // ── Favicon customization ──
-const FAVICON_KEY = "diab_favicon";
+const FAVICON_KEY = "wooz_favicon";
 function makeFaviconFromLetter(ch) {
   const canvas = document.createElement("canvas");
   canvas.width = canvas.height = 64;
@@ -284,7 +284,7 @@ function applyFavicon(dataUrl) {
     if (letter) letter.style.display = "none";
     if (reset)  reset.style.display = "flex";
   } else {
-    const ch = (JSON.parse(localStorage.getItem(BRAND_KEY) || "{}").name || "D").trim().charAt(0).toUpperCase();
+    const ch = (JSON.parse(localStorage.getItem(BRAND_KEY) || "{}").name || "W").trim().charAt(0).toUpperCase();
     link.href = makeFaviconFromLetter(ch);
     if (prev)   prev.style.display = "none";
     if (letter) letter.style.display = "";
@@ -312,7 +312,7 @@ document.getElementById("favicon-reset-btn").addEventListener("click", e => {
   scheduleSettingsSync();
 });
 // ── AI Avatar ──
-const AI_AVATAR_KEY = "diab_ai_avatar";
+const AI_AVATAR_KEY = "wooz_ai_avatar";
 function applyAIAvatar(dataUrl) {
   // Update settings widget
   const letter  = document.getElementById("ai-avatar-letter");
@@ -328,7 +328,7 @@ function applyAIAvatar(dataUrl) {
     if (reset)   reset.style.display = "none";
   }
   // Update all existing chat bubbles live
-  const fallbackLetter = (JSON.parse(localStorage.getItem("diab_brand") || "{}").name || "D").trim().charAt(0).toUpperCase();
+  const fallbackLetter = (JSON.parse(localStorage.getItem("wooz_brand") || "{}").name || "W").trim().charAt(0).toUpperCase();
   const inner = dataUrl
     ? `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`
     : fallbackLetter;
@@ -360,7 +360,7 @@ document.getElementById("ai-avatar-reset-btn")?.addEventListener("click", e => {
 });
 
 // ── Accent color ──
-const ACCENT_KEY = "diab_accent";
+const ACCENT_KEY = "wooz_accent";
 function applyAccent(color) {
   document.documentElement.style.setProperty("--accent", color);
   document.documentElement.style.setProperty("--accent-dim", color + "99");
@@ -668,7 +668,7 @@ async function restartContainer(name) {
 
 
 // ── Text size ──
-const TEXT_SIZE_KEY = "diab_text_size";
+const TEXT_SIZE_KEY = "wooz_text_size";
 const TEXT_SIZES = ["small", "medium", "large", "xlarge"];
 const TEXT_SIZE_LABELS = ["Small", "Medium", "Large", "X-Large"];
 function applyTextSize(size) {
@@ -691,7 +691,7 @@ if (textSizeSlider) {
 applyTextSize(localStorage.getItem(TEXT_SIZE_KEY) || "medium");
 
 // ── Themes ──
-const THEME_KEY = "diab_theme";
+const THEME_KEY = "wooz_theme";
 const THEMES = {
   midnight: { "--bg": "#0d1117", "--surface": "#161b22", "--surface2": "#1c2230", "--surface3": "#21283a", "--border": "#30363d", "--text": "#e6edf3", "--text-dim": "#7d8590", "--accent": "#58a6ff", "--user-bubble": "#161d2e", "--ai-bubble": "#13181f" },
   slate:    { "--bg": "#0f1117", "--surface": "#1e2433", "--surface2": "#252c3d", "--surface3": "#2c3347", "--border": "#363d50", "--text": "#e2e5ed", "--text-dim": "#7a8394", "--accent": "#94a3b8", "--user-bubble": "#202840", "--ai-bubble": "#1a2030" },
@@ -744,7 +744,7 @@ const savedTheme = localStorage.getItem(THEME_KEY);
 if (savedTheme && THEMES[savedTheme]) applyTheme(savedTheme, true);
 
 // ── App name / branding ──
-const BRAND_KEY = "diab_brand";
+const BRAND_KEY = "wooz_brand";
 function saveBrand(patch) {
   const saved = JSON.parse(localStorage.getItem(BRAND_KEY) || "{}");
   localStorage.setItem(BRAND_KEY, JSON.stringify({ ...saved, ...patch }));
@@ -881,11 +881,11 @@ async function loadModels() {
       if (m === data.default) opt.selected = true;
       modelSelect.appendChild(opt);
     });
-    const saved = localStorage.getItem("diab_model");
+    const saved = localStorage.getItem("wooz_model");
     const pick = saved && data.models.includes(saved) ? saved : data.default;
     modelSelect.value = pick;
     selectedModel = pick;
-    localStorage.setItem("diab_model", pick);
+    localStorage.setItem("wooz_model", pick);
     if (typeof checkVisionSupport === "function") checkVisionSupport(pick);
 
     // Populate songwrite model dropdown from same list
@@ -896,10 +896,10 @@ async function loadModels() {
       opt.value = m; opt.textContent = m;
       swSel.appendChild(opt);
     });
-    const savedSw = localStorage.getItem("diab_songwrite_model");
+    const savedSw = localStorage.getItem("wooz_songwrite_model");
     const swPick = savedSw && data.models.includes(savedSw) ? savedSw : data.default;
     swSel.value = swPick;
-    localStorage.setItem("diab_songwrite_model", swPick);
+    localStorage.setItem("wooz_songwrite_model", swPick);
 
     // Populate utility model dropdown from same list
     const utilSel = document.getElementById("utility-model-select");
@@ -909,10 +909,10 @@ async function loadModels() {
       opt.value = m; opt.textContent = m;
       utilSel.appendChild(opt);
     });
-    const savedUtil = localStorage.getItem("diab_utility_model");
+    const savedUtil = localStorage.getItem("wooz_utility_model");
     const utilPick = savedUtil && data.models.includes(savedUtil) ? savedUtil : (data.models.find(m => m.includes("0.6b") || m.includes("0.5b")) || data.models[data.models.length - 1] || "");
     utilSel.value = utilPick;
-    localStorage.setItem("diab_utility_model", utilPick);
+    localStorage.setItem("wooz_utility_model", utilPick);
   } catch { modelSelect.innerHTML = `<option value="">Unavailable</option>`; }
   loadSuggestions();
   const wa = document.getElementById("welcome-avatar");
@@ -922,7 +922,7 @@ async function loadModels() {
 }
 modelSelect.addEventListener("change", async () => {
   selectedModel = modelSelect.value || null;
-  if (selectedModel) { localStorage.setItem("diab_model", selectedModel); scheduleSettingsSync(); }
+  if (selectedModel) { localStorage.setItem("wooz_model", selectedModel); scheduleSettingsSync(); }
   if (activeConvId) updateContextBar(activeConvId);
   // Preload the new model into VRAM (non-blocking)
   if (selectedModel) {
@@ -935,11 +935,11 @@ modelSelect.addEventListener("change", async () => {
 });
 document.getElementById("songwrite-model-select").addEventListener("change", () => {
   const v = document.getElementById("songwrite-model-select").value;
-  if (v) { localStorage.setItem("diab_songwrite_model", v); scheduleSettingsSync(); }
+  if (v) { localStorage.setItem("wooz_songwrite_model", v); scheduleSettingsSync(); }
 });
 document.getElementById("utility-model-select").addEventListener("change", () => {
   const v = document.getElementById("utility-model-select").value;
-  if (v) { localStorage.setItem("diab_utility_model", v); scheduleSettingsSync(); }
+  if (v) { localStorage.setItem("wooz_utility_model", v); scheduleSettingsSync(); }
 });
 // loadModels() is called from loadApp()
 

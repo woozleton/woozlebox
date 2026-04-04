@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <title>Dave-in-a-Box</title>
+  <title>WoozleBox</title>
   <link rel="stylesheet" href="css/1-variables.css?v=1">
   <link rel="stylesheet" href="css/2-base.css?v=1">
   <link rel="stylesheet" href="css/3-studios.css?v=1">
@@ -15,11 +15,11 @@
 </head>
 <body>
 <script>
-  if(localStorage.getItem("diab_view")==="studio"){
+  if(localStorage.getItem("wooz_view")==="studio"){
     document.documentElement.classList.add("studio-preload");
-  } else if(localStorage.getItem("diab_view")==="music"){
+  } else if(localStorage.getItem("wooz_view")==="music"){
     document.documentElement.classList.add("music-preload");
-  } else if(localStorage.getItem("diab_view")==="video"){
+  } else if(localStorage.getItem("wooz_view")==="video"){
     document.documentElement.classList.add("video-preload");
   }
 </script>
@@ -154,7 +154,7 @@
     <div id="sidebar-logo">
       <div class="logo" id="logo-letter">D</div>
       <img id="logo-img" style="display:none;max-width:280px;max-height:32px;width:auto;height:auto;object-fit:contain;border-radius:4px;" />
-      <span id="sidebar-title">Dave-in-a-Box</span>
+      <span id="sidebar-title">WoozleBox</span>
       <button id="search-open-btn" class="sidebar-search-btn" title="Search">
         <svg width="15" height="15"><use href="#i-search"/></svg>
       </button>
@@ -1485,7 +1485,7 @@
     <div class="auth-logo">
       <div class="logo" id="auth-logo-letter-setup"><span>D</span></div>
       <img id="auth-logo-img-setup" class="auth-logo-img-wide" style="display:none;" />
-      <span id="auth-app-name-setup">Dave-in-a-Box</span>
+      <span id="auth-app-name-setup">WoozleBox</span>
     </div>
     <h1>Create administrator account</h1>
     <p>This is the first run. Set up your admin account to get started.</p>
@@ -1503,7 +1503,7 @@
     <div class="auth-logo">
       <div class="logo" id="auth-logo-letter-login"><span>D</span></div>
       <img id="auth-logo-img-login" class="auth-logo-img-wide" style="display:none;" />
-      <span id="auth-app-name-login">Dave-in-a-Box</span>
+      <span id="auth-app-name-login">WoozleBox</span>
     </div>
     <div class="auth-field"><label>Username</label><input id="login-username" type="text" autocomplete="username" /></div>
     <div class="auth-field"><label>Password</label><input id="login-password" type="password" autocomplete="current-password" /></div>

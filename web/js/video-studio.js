@@ -17,7 +17,7 @@ let _videoStartingImage = null; // base64 for I2V
 
 // ── Video IndexedDB (via factory) ──
 const _videoDB = createStudioDB({
-  name: "diab_video", version: 2,
+  name: "wooz_video", version: 2,
   stores: ["videos", "favorites", "trash", "folders"],
 });
 function openVideoDB()                  { return _videoDB.open(); }
@@ -38,8 +38,8 @@ async function loadAllVideoFolders()    { return _videoDB.loadAll("folders"); }
 
 // ── Video sessions & folders ──
 let videoFolders = [];
-let activeVideoFolderId = localStorage.getItem("diab_video_folder") || null;
-let activeVideoSessionId = localStorage.getItem("diab_video_session") || null;
+let activeVideoFolderId = localStorage.getItem("wooz_video_folder") || null;
+let activeVideoSessionId = localStorage.getItem("wooz_video_session") || null;
 
 function _newVideoSessionId() {
   const arr = new Uint8Array(12);
@@ -50,7 +50,7 @@ function _newVideoSessionId() {
 function _ensureVideoSession() {
   if (!activeVideoSessionId) {
     activeVideoSessionId = _newVideoSessionId();
-    localStorage.setItem("diab_video_session", activeVideoSessionId);
+    localStorage.setItem("wooz_video_session", activeVideoSessionId);
   }
 }
 
@@ -93,7 +93,7 @@ async function renderVideoSessionsList() {
     row.innerHTML = `<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.82rem;">${esc(label)}</span><span style="font-size:0.68rem;color:var(--text-dim);flex-shrink:0;">${count}</span>`;
     row.addEventListener("click", () => {
       activeVideoSessionId = s.id;
-      localStorage.setItem("diab_video_session", s.id);
+      localStorage.setItem("wooz_video_session", s.id);
       restoreVideoClips();
       renderVideoSessionsList();
     });
@@ -110,7 +110,7 @@ async function loadVideoFolders() {
   }
   if (!activeVideoFolderId || !videoFolders.find(c => c.id === activeVideoFolderId)) {
     activeVideoFolderId = videoFolders[0].id;
-    localStorage.setItem("diab_video_folder", activeVideoFolderId);
+    localStorage.setItem("wooz_video_folder", activeVideoFolderId);
   }
   renderVideoFoldersSidebar();
 }
@@ -129,7 +129,7 @@ function renderVideoFoldersSidebar() {
       if (e.target.classList.contains("sb-folder-menu")) return;
       if (col.id === activeVideoFolderId) return;
       activeVideoFolderId = col.id;
-      localStorage.setItem("diab_video_folder", col.id);
+      localStorage.setItem("wooz_video_folder", col.id);
       renderVideoFoldersSidebar();
       renderVideoSessionsList();
       restoreVideoClips();
@@ -200,11 +200,11 @@ function showVideoFolderCtxMenu(col, e) {
     videoFolders = videoFolders.filter(c => c.id !== col.id);
     if (activeVideoFolderId === col.id) {
       activeVideoFolderId = videoFolders[0].id;
-      localStorage.setItem("diab_video_folder", activeVideoFolderId);
+      localStorage.setItem("wooz_video_folder", activeVideoFolderId);
     }
     renderVideoFoldersSidebar();
     activeVideoSessionId = null;
-    localStorage.removeItem("diab_video_session");
+    localStorage.removeItem("wooz_video_session");
     restoreVideoClips();
     renderVideoSessionsList();
   });
@@ -225,10 +225,10 @@ document.getElementById("video-folder-new-btn").addEventListener("click", async 
   await saveVideoFolder(col);
   videoFolders.push(col);
   activeVideoFolderId = col.id;
-  localStorage.setItem("diab_video_folder", col.id);
+  localStorage.setItem("wooz_video_folder", col.id);
   renderVideoFoldersSidebar();
   activeVideoSessionId = null;
-  localStorage.removeItem("diab_video_session");
+  localStorage.removeItem("wooz_video_session");
   restoreVideoClips();
   renderVideoSessionsList();
 });
@@ -242,7 +242,7 @@ document.getElementById("video-sidebar-btn").addEventListener("click", toggleVid
 document.getElementById("strip-video-btn").addEventListener("click", toggleVideoStudio);
 document.getElementById("video-new-session-btn").addEventListener("click", () => {
   activeVideoSessionId = _newVideoSessionId();
-  localStorage.setItem("diab_video_session", activeVideoSessionId);
+  localStorage.setItem("wooz_video_session", activeVideoSessionId);
   document.querySelectorAll(".video-session-item").forEach(el => el.classList.remove("active"));
   videoCanvas.querySelectorAll(".video-result").forEach(el => el.remove());
   if (videoCanvasEmpty) videoCanvasEmpty.style.display = "";
@@ -624,13 +624,13 @@ videoPrompt.addEventListener("keydown", (e) => {
 videoFavToggle.addEventListener("click", () => {
   const isOpen = videoFavPanel.classList.toggle("open");
   videoFavToggle.classList.toggle("active", isOpen);
-  localStorage.setItem("diab_video_fav_open", isOpen ? "1" : "0");
+  localStorage.setItem("wooz_video_fav_open", isOpen ? "1" : "0");
   if (isOpen) refreshVideoFavoritesPanel();
 });
 document.getElementById("video-fav-close").addEventListener("click", () => {
   videoFavPanel.classList.remove("open");
   videoFavToggle.classList.remove("active");
-  localStorage.setItem("diab_video_fav_open", "0");
+  localStorage.setItem("wooz_video_fav_open", "0");
 });
 
 async function refreshVideoFavoritesPanel() {

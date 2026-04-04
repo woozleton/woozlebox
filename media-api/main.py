@@ -1,5 +1,5 @@
 """
-media-api - Media orchestration proxy for WoozBox.
+media-api - Media orchestration proxy for WoozleBox.
 
 Handles all image, music, and video generation workflows.
 Proxies to gen services (image-api, music-api, video-api),
@@ -156,7 +156,7 @@ def _get_utility_model(user: dict = None) -> str:
     if user:
         try:
             settings = json.loads(user.get("settings") or "{}")
-            um = settings.get("diab_utility_model", "")
+            um = settings.get("wooz_utility_model", "")
             if um:
                 return um
         except Exception:

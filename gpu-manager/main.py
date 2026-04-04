@@ -1,5 +1,5 @@
 """
-gpu-manager - Centralized VRAM orchestration for Dave-in-a-Box.
+gpu-manager - Centralized VRAM orchestration for WoozleBox.
 
 Owns all model loading/unloading decisions. Ensures only one model
 occupies VRAM at a time. Serializes acquire requests via asyncio.Lock

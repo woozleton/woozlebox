@@ -1,5 +1,5 @@
 """
-music-api - Text-to-music service for Dave-in-a-Box using ACE-Step 1.5.
+music-api - Text-to-music service for WoozleBox using ACE-Step 1.5.
 
 POST /generate   {prompt, lyrics, duration, infer_steps, guidance_scale, seed, instrumental, batch_size, vocal_language}
 GET  /health

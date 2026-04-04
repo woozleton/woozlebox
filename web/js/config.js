@@ -24,9 +24,9 @@ function icon(name, size = 14) {
 // ── Auth state ──
 let currentUser = null;
 
-function getToken() { return localStorage.getItem("diab_token"); }
+function getToken() { return localStorage.getItem("wooz_token"); }
 function clearSession() {
-  Object.keys(localStorage).filter(k => k.startsWith("diab_")).forEach(k => localStorage.removeItem(k));
+  Object.keys(localStorage).filter(k => k.startsWith("wooz_")).forEach(k => localStorage.removeItem(k));
   currentUser = null;
 }
 

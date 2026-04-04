@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-## Project: Dave-in-a-Box (WoozBox)
+## Project: WoozleBox (WoozleBox)
 
 Self-hosted AI toolbox - chat, image/music/video generation. Monorepo with Docker Compose, one directory per service, vanilla JS frontend.
 

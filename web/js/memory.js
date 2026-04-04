@@ -64,15 +64,15 @@ document.getElementById("clear-all-data-btn").addEventListener("click", async ()
     // Clear server-side data (conversations, folders, memory)
     await apiFetch("/users/me/data", { method: "DELETE" });
     // Clear client-side IndexedDB (image studio + music studio + video studio)
-    await new Promise((resolve) => { const r = indexedDB.deleteDatabase("diab_studio"); r.onsuccess = resolve; r.onerror = resolve; });
-    await new Promise((resolve) => { const r = indexedDB.deleteDatabase("diab_music"); r.onsuccess = resolve; r.onerror = resolve; });
-    await new Promise((resolve) => { const r = indexedDB.deleteDatabase("diab_video"); r.onsuccess = resolve; r.onerror = resolve; });
+    await new Promise((resolve) => { const r = indexedDB.deleteDatabase("wooz_studio"); r.onsuccess = resolve; r.onerror = resolve; });
+    await new Promise((resolve) => { const r = indexedDB.deleteDatabase("wooz_music"); r.onsuccess = resolve; r.onerror = resolve; });
+    await new Promise((resolve) => { const r = indexedDB.deleteDatabase("wooz_video"); r.onsuccess = resolve; r.onerror = resolve; });
     // Clear related localStorage keys
-    localStorage.removeItem("diab_studio_session");
-    localStorage.removeItem("diab_music_session");
-    localStorage.removeItem("diab_music_folder");
-    localStorage.removeItem("diab_video_session");
-    localStorage.removeItem("diab_video_folder");
+    localStorage.removeItem("wooz_studio_session");
+    localStorage.removeItem("wooz_music_session");
+    localStorage.removeItem("wooz_music_folder");
+    localStorage.removeItem("wooz_video_session");
+    localStorage.removeItem("wooz_video_folder");
     showToast("All data cleared.");
     closeSettings();
     loadConversations();

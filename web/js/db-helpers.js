@@ -2,7 +2,7 @@
 // Creates a reusable set of CRUD operations for a studio database.
 //
 // Usage:
-//   const db = createStudioDB({ name: "diab_studio", version: 6, stores: [...], onUpgrade: fn });
+//   const db = createStudioDB({ name: "wooz_studio", version: 6, stores: [...], onUpgrade: fn });
 //   await db.save("images", record);
 //   const all = await db.loadAll("favorites");
 //   await db.remove("trash", id);
