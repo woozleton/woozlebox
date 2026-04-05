@@ -1203,13 +1203,13 @@ function _meTrim() {
   const newLen = endSample - startSample;
   if (newLen < 1) return;
 
-  _mePushHistory();
   const newBuf = _musicAudioCtx.createBuffer(_me.buffer.numberOfChannels, newLen, sr);
   for (let ch = 0; ch < _me.buffer.numberOfChannels; ch++) {
     const src = _me.buffer.getChannelData(ch);
     newBuf.copyToChannel(src.slice(startSample, endSample), ch);
   }
   _me.buffer = newBuf;
+  _mePushHistory();
   _meClearSelection();
   _meStopPlayback();
   _me.pausedAt = 0;
@@ -1227,7 +1227,6 @@ function _meCut() {
   const newLen = _me.buffer.length - (endSample - startSample);
   if (newLen < 1) return;
 
-  _mePushHistory();
   const newBuf = _musicAudioCtx.createBuffer(_me.buffer.numberOfChannels, newLen, sr);
   for (let ch = 0; ch < _me.buffer.numberOfChannels; ch++) {
     const src = _me.buffer.getChannelData(ch);
@@ -1236,6 +1235,7 @@ function _meCut() {
     dest.set(src.subarray(endSample), startSample);
   }
   _me.buffer = newBuf;
+  _mePushHistory();
   _meClearSelection();
   _meStopPlayback();
   _me.pausedAt = Math.min(_me.pausedAt, newBuf.duration);
@@ -1245,7 +1245,8 @@ function _meCut() {
 
 function _meFadeIn() {
   if (!_me.buffer) return;
-  _mePushHistory();
+  // Clone buffer so we can modify in place without corrupting history
+  _me.buffer = _meCloneBuffer(_me.buffer);
   const sr = _me.buffer.sampleRate;
   let startSample, endSample;
   if (_me.selStart !== null && _me.selEnd !== null && _me.selStart !== _me.selEnd) {
@@ -1262,12 +1263,14 @@ function _meFadeIn() {
       data[startSample + i] *= i / len;
     }
   }
+  _mePushHistory();
   _meDrawWaveform();
 }
 
 function _meFadeOut() {
   if (!_me.buffer) return;
-  _mePushHistory();
+  // Clone buffer so we can modify in place without corrupting history
+  _me.buffer = _meCloneBuffer(_me.buffer);
   const sr = _me.buffer.sampleRate;
   let startSample, endSample;
   if (_me.selStart !== null && _me.selEnd !== null && _me.selStart !== _me.selEnd) {
@@ -1284,6 +1287,7 @@ function _meFadeOut() {
       data[startSample + i] *= 1 - (i / len);
     }
   }
+  _mePushHistory();
   _meDrawWaveform();
 }
 
@@ -1477,8 +1481,8 @@ function closeMusicEditor() {
 
 function _meReset() {
   if (!_me.originalBuffer) return;
-  _mePushHistory();
   _me.buffer = _meCloneBuffer(_me.originalBuffer);
+  _mePushHistory();
   _me.speed = 1.0;
   _me.speedSelect.value = "1";
   _meClearSelection();
@@ -1510,14 +1514,13 @@ function _meWireEvents() {
 
   // Speed
   _me.speedSelect.addEventListener("change", () => {
-    _me.speed = parseFloat(_me.speedSelect.value);
-    // If playing, restart with new speed
-    if (_me.playing) {
-      _me.pausedAt = (_musicAudioCtx.currentTime - _me.startedAt) * (_me.speed);
+    const wasPlaying = _me.playing;
+    if (wasPlaying) {
+      _me.pausedAt = (_musicAudioCtx.currentTime - _me.startedAt) * _me.speed;
       _meStopPlayback();
-      _me.speed = parseFloat(_me.speedSelect.value);
-      _mePlay();
     }
+    _me.speed = parseFloat(_me.speedSelect.value);
+    if (wasPlaying) _mePlay();
   });
 
   // Waveform mouse selection
