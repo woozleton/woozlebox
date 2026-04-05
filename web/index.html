@@ -6,6 +6,14 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>WoozleBox</title>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "/lib/three/three.module.min.js",
+      "three/addons/": "/lib/three/addons/"
+    }
+  }
+  </script>
   <link rel="stylesheet" href="css/1-variables.css?v=1">
   <link rel="stylesheet" href="css/2-base.css?v=1">
   <link rel="stylesheet" href="css/3-studios.css?v=1">
@@ -1216,6 +1224,16 @@
         <div class="settings-pane" id="pane-voice">
           <div class="setting-group">
             <div class="setting-label">
+              <span>3D Avatar</span>
+              <label class="toggle-switch" title="Show talking 3D avatar">
+                <input type="checkbox" id="avatar-toggle" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="setting-desc">Show a local 3D avatar that lip-syncs with voice responses.</div>
+          </div>
+          <div class="setting-group">
+            <div class="setting-label">
               <span>Auto-play Text-to-Speech (TTS)</span>
               <label class="toggle-switch">
                 <input type="checkbox" id="tts-toggle" />
@@ -1735,5 +1753,18 @@
 <script src="js/music-studio.js"></script>
 <script src="js/video-studio.js"></script>
 <script src="js/chat.js"></script>
+<script>
+  // Avatar settings toggle - wired after all deferred scripts have run
+  document.getElementById('avatar-toggle').addEventListener('change', function(e) {
+    window.applyAvatar(e.target.checked);
+    if (typeof scheduleSettingsSync === 'function') scheduleSettingsSync();
+  });
+  // Sync checkbox state when settings panel opens
+  document.getElementById('settings-btn').addEventListener('click', function() {
+    var cb = document.getElementById('avatar-toggle');
+    if (cb && window._avatarEnabled) cb.checked = window._avatarEnabled();
+  }, true);
+</script>
+<script type="module" src="js/avatar.js"></script>
 </body>
 </html>
