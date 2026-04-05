@@ -1,4 +1,4 @@
-# Dave-in-a-Box
+# WoozleBox
 
 A self-hosted AI toolbox that runs entirely on your own hardware. Chat with local LLMs, generate images, music, and video - all through a single web interface with no cloud dependencies.
 
