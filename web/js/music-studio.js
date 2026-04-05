@@ -660,6 +660,7 @@ function _createMusicFavCard(fav) {
       <div class="music-fav-duration">${durStr}</div>
     </div>
     <div class="music-fav-card-actions">
+      <button class="music-action-btn music-fav-edit" title="Edit">${icon("edit", 12)}</button>
       <button class="music-action-btn music-fav-dl" title="Download">${icon("download", 12)}</button>
       <button class="music-action-btn music-fav-reuse" title="Reuse settings">${icon("refresh", 12)}</button>
       <button class="music-action-btn music-fav-remove" title="Remove from favorites">${icon("heart", 12)}</button>
@@ -683,6 +684,11 @@ function _createMusicFavCard(fav) {
   audio.addEventListener("ended", () => {
     isPlaying = false; playBtn.classList.remove("playing");
     playBtn.innerHTML = icon("play", 16);
+  });
+
+  // Edit
+  card.querySelector(".music-fav-edit").addEventListener("click", () => {
+    openMusicEditor(fav.id, fav.audio, fav.format || "mp3");
   });
 
   // Download
@@ -938,6 +944,643 @@ function _formatMusicTime(s) {
   return m + ":" + String(sec).padStart(2, "0");
 }
 
+// ── Music Editor ──
+const _me = {
+  editor: null, card: null, canvas: null, ctx: null,
+  waveWrap: null, selOverlay: null, playheadEl: null,
+  playBtn: null, timeEl: null, selInfo: null,
+  formatSelect: null, speedSelect: null,
+
+  originalBuffer: null,
+  buffer: null,
+  sampleRate: 48000,
+
+  source: null,
+  playing: false,
+  startedAt: 0,
+  pausedAt: 0,
+  animFrame: null,
+  speed: 1.0,
+
+  selStart: null,
+  selEnd: null,
+  dragging: false,
+  dragStartX: null,
+
+  history: [],
+  historyIdx: -1,
+  maxHistory: 20,
+
+  recordId: null,
+  format: "mp3",
+  dirty: false,
+};
+
+function _meInitRefs() {
+  if (_me.editor) return;
+  _me.editor = document.getElementById("music-editor");
+  _me.card = document.getElementById("music-editor-card");
+  _me.canvas = document.getElementById("me-waveform-canvas");
+  _me.ctx = _me.canvas.getContext("2d");
+  _me.waveWrap = document.getElementById("me-waveform-wrap");
+  _me.selOverlay = document.getElementById("me-selection-overlay");
+  _me.playheadEl = document.getElementById("me-playhead");
+  _me.playBtn = document.getElementById("me-play");
+  _me.timeEl = document.getElementById("me-time");
+  _me.selInfo = document.getElementById("me-selection-info");
+  _me.formatSelect = document.getElementById("me-format");
+  _me.speedSelect = document.getElementById("me-speed");
+  _meWireEvents();
+}
+
+function _meCloneBuffer(buf) {
+  const clone = _musicAudioCtx.createBuffer(buf.numberOfChannels, buf.length, buf.sampleRate);
+  for (let ch = 0; ch < buf.numberOfChannels; ch++) {
+    clone.copyToChannel(buf.getChannelData(ch).slice(), ch);
+  }
+  return clone;
+}
+
+function _mePushHistory() {
+  // Truncate any redo branch
+  _me.history = _me.history.slice(0, _me.historyIdx + 1);
+  _me.history.push(_meCloneBuffer(_me.buffer));
+  if (_me.history.length > _me.maxHistory) _me.history.shift();
+  _me.historyIdx = _me.history.length - 1;
+  _me.dirty = true;
+  _meUpdateToolStates();
+}
+
+function _meUndo() {
+  if (_me.historyIdx <= 0) return;
+  _me.historyIdx--;
+  _me.buffer = _meCloneBuffer(_me.history[_me.historyIdx]);
+  _meClearSelection();
+  _meStopPlayback();
+  _meDrawWaveform();
+  _meUpdateTime();
+  _meUpdateToolStates();
+}
+
+function _meRedo() {
+  if (_me.historyIdx >= _me.history.length - 1) return;
+  _me.historyIdx++;
+  _me.buffer = _meCloneBuffer(_me.history[_me.historyIdx]);
+  _meClearSelection();
+  _meStopPlayback();
+  _meDrawWaveform();
+  _meUpdateTime();
+  _meUpdateToolStates();
+}
+
+function _meUpdateToolStates() {
+  document.getElementById("me-undo").disabled = _me.historyIdx <= 0;
+  document.getElementById("me-redo").disabled = _me.historyIdx >= _me.history.length - 1;
+  const hasSel = _me.selStart !== null && _me.selEnd !== null && _me.selStart !== _me.selEnd;
+  document.getElementById("me-trim").disabled = !hasSel;
+  document.getElementById("me-cut").disabled = !hasSel;
+}
+
+// -- Waveform drawing --
+function _meDrawWaveform() {
+  const canvas = _me.canvas;
+  const ctx = _me.ctx;
+  const dpr = window.devicePixelRatio || 1;
+  const w = _me.waveWrap.clientWidth;
+  const h = _me.waveWrap.clientHeight;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, w, h);
+
+  if (!_me.buffer) return;
+
+  const data = _me.buffer.getChannelData(0);
+  const step = Math.ceil(data.length / w);
+  const mid = h / 2;
+  const accent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#7c6af7";
+
+  ctx.fillStyle = accent;
+  for (let i = 0; i < w; i++) {
+    let min = 1, max = -1;
+    for (let j = 0; j < step; j++) {
+      const val = data[i * step + j] || 0;
+      if (val < min) min = val;
+      if (val > max) max = val;
+    }
+    const barH = Math.max(2, (max - min) * mid);
+    ctx.fillRect(i, mid - barH / 2, 1, barH);
+  }
+
+  // Time ruler
+  const dur = _me.buffer.duration;
+  ctx.fillStyle = "rgba(255,255,255,0.25)";
+  ctx.font = "10px sans-serif";
+  ctx.textAlign = "center";
+  const tickInterval = dur <= 10 ? 1 : dur <= 60 ? 5 : dur <= 300 ? 15 : 30;
+  for (let t = 0; t <= dur; t += tickInterval) {
+    const x = (t / dur) * w;
+    ctx.fillRect(x, h - 12, 1, 6);
+    ctx.fillText(_formatMusicTime(t), x, h - 1);
+  }
+}
+
+// -- Selection --
+function _mePixelToTime(px) {
+  if (!_me.buffer) return 0;
+  const w = _me.waveWrap.clientWidth;
+  return Math.max(0, Math.min(_me.buffer.duration, (px / w) * _me.buffer.duration));
+}
+
+function _meTimeToPixel(t) {
+  if (!_me.buffer) return 0;
+  return (t / _me.buffer.duration) * _me.waveWrap.clientWidth;
+}
+
+function _meUpdateSelectionOverlay() {
+  if (_me.selStart === null || _me.selEnd === null || _me.selStart === _me.selEnd) {
+    _me.selOverlay.classList.remove("active");
+    _me.selInfo.textContent = "";
+    _meUpdateToolStates();
+    return;
+  }
+  const lo = Math.min(_me.selStart, _me.selEnd);
+  const hi = Math.max(_me.selStart, _me.selEnd);
+  const left = _meTimeToPixel(lo);
+  const right = _meTimeToPixel(hi);
+  _me.selOverlay.style.left = left + "px";
+  _me.selOverlay.style.width = (right - left) + "px";
+  _me.selOverlay.classList.add("active");
+  _me.selInfo.textContent = "Selected: " + _formatMusicTime(lo) + " - " + _formatMusicTime(hi);
+  _meUpdateToolStates();
+}
+
+function _meClearSelection() {
+  _me.selStart = null;
+  _me.selEnd = null;
+  _meUpdateSelectionOverlay();
+}
+
+// -- Playback --
+function _meStopPlayback() {
+  if (_me.source) {
+    try { _me.source.stop(); } catch {}
+    _me.source = null;
+  }
+  _me.playing = false;
+  if (_me.animFrame) cancelAnimationFrame(_me.animFrame);
+  _me.animFrame = null;
+  _me.playBtn.innerHTML = '<svg width="14" height="14"><use href="#i-play"/></svg>';
+  _me.playheadEl.classList.remove("active");
+}
+
+function _mePlay() {
+  if (!_me.buffer) return;
+  _me.source = _musicAudioCtx.createBufferSource();
+  _me.source.buffer = _me.buffer;
+  _me.source.playbackRate.value = _me.speed;
+  _me.source.connect(_musicAudioCtx.destination);
+
+  _me.startedAt = _musicAudioCtx.currentTime - (_me.pausedAt / _me.speed);
+  _me.source.start(0, _me.pausedAt);
+  _me.playing = true;
+  _me.playBtn.innerHTML = '<svg width="14" height="14"><use href="#i-pause"/></svg>';
+  _me.playheadEl.classList.add("active");
+
+  _me.source.onended = () => {
+    if (_me.playing) {
+      _me.playing = false;
+      _me.pausedAt = 0;
+      _me.playBtn.innerHTML = '<svg width="14" height="14"><use href="#i-play"/></svg>';
+      _me.playheadEl.classList.remove("active");
+      _meUpdateTime();
+    }
+  };
+
+  _meAnimatePlayhead();
+}
+
+function _mePause() {
+  if (!_me.playing) return;
+  _me.pausedAt = (_musicAudioCtx.currentTime - _me.startedAt) * _me.speed;
+  _meStopPlayback();
+}
+
+function _meTogglePlay() {
+  if (_me.playing) _mePause();
+  else _mePlay();
+}
+
+function _meAnimatePlayhead() {
+  if (!_me.playing) return;
+  const elapsed = (_musicAudioCtx.currentTime - _me.startedAt) * _me.speed;
+  const dur = _me.buffer.duration;
+  if (elapsed >= dur) {
+    _me.pausedAt = 0;
+    _meStopPlayback();
+    _meUpdateTime();
+    return;
+  }
+  const px = _meTimeToPixel(elapsed);
+  _me.playheadEl.style.left = px + "px";
+  _me.timeEl.textContent = _formatMusicTime(elapsed) + " / " + _formatMusicTime(dur);
+  _me.animFrame = requestAnimationFrame(_meAnimatePlayhead);
+}
+
+function _meUpdateTime() {
+  if (!_me.buffer) { _me.timeEl.textContent = "0:00 / 0:00"; return; }
+  _me.timeEl.textContent = _formatMusicTime(_me.pausedAt || 0) + " / " + _formatMusicTime(_me.buffer.duration);
+}
+
+// -- Editing operations --
+function _meTrim() {
+  if (_me.selStart === null || _me.selEnd === null) return;
+  const lo = Math.min(_me.selStart, _me.selEnd);
+  const hi = Math.max(_me.selStart, _me.selEnd);
+  const sr = _me.buffer.sampleRate;
+  const startSample = Math.floor(lo * sr);
+  const endSample = Math.floor(hi * sr);
+  const newLen = endSample - startSample;
+  if (newLen < 1) return;
+
+  _mePushHistory();
+  const newBuf = _musicAudioCtx.createBuffer(_me.buffer.numberOfChannels, newLen, sr);
+  for (let ch = 0; ch < _me.buffer.numberOfChannels; ch++) {
+    const src = _me.buffer.getChannelData(ch);
+    newBuf.copyToChannel(src.slice(startSample, endSample), ch);
+  }
+  _me.buffer = newBuf;
+  _meClearSelection();
+  _meStopPlayback();
+  _me.pausedAt = 0;
+  _meDrawWaveform();
+  _meUpdateTime();
+}
+
+function _meCut() {
+  if (_me.selStart === null || _me.selEnd === null) return;
+  const lo = Math.min(_me.selStart, _me.selEnd);
+  const hi = Math.max(_me.selStart, _me.selEnd);
+  const sr = _me.buffer.sampleRate;
+  const startSample = Math.floor(lo * sr);
+  const endSample = Math.floor(hi * sr);
+  const newLen = _me.buffer.length - (endSample - startSample);
+  if (newLen < 1) return;
+
+  _mePushHistory();
+  const newBuf = _musicAudioCtx.createBuffer(_me.buffer.numberOfChannels, newLen, sr);
+  for (let ch = 0; ch < _me.buffer.numberOfChannels; ch++) {
+    const src = _me.buffer.getChannelData(ch);
+    const dest = newBuf.getChannelData(ch);
+    dest.set(src.subarray(0, startSample), 0);
+    dest.set(src.subarray(endSample), startSample);
+  }
+  _me.buffer = newBuf;
+  _meClearSelection();
+  _meStopPlayback();
+  _me.pausedAt = Math.min(_me.pausedAt, newBuf.duration);
+  _meDrawWaveform();
+  _meUpdateTime();
+}
+
+function _meFadeIn() {
+  if (!_me.buffer) return;
+  _mePushHistory();
+  const sr = _me.buffer.sampleRate;
+  let startSample, endSample;
+  if (_me.selStart !== null && _me.selEnd !== null && _me.selStart !== _me.selEnd) {
+    startSample = Math.floor(Math.min(_me.selStart, _me.selEnd) * sr);
+    endSample = Math.floor(Math.max(_me.selStart, _me.selEnd) * sr);
+  } else {
+    startSample = 0;
+    endSample = Math.min(Math.floor(2 * sr), _me.buffer.length);
+  }
+  const len = endSample - startSample;
+  for (let ch = 0; ch < _me.buffer.numberOfChannels; ch++) {
+    const data = _me.buffer.getChannelData(ch);
+    for (let i = 0; i < len; i++) {
+      data[startSample + i] *= i / len;
+    }
+  }
+  _meDrawWaveform();
+}
+
+function _meFadeOut() {
+  if (!_me.buffer) return;
+  _mePushHistory();
+  const sr = _me.buffer.sampleRate;
+  let startSample, endSample;
+  if (_me.selStart !== null && _me.selEnd !== null && _me.selStart !== _me.selEnd) {
+    startSample = Math.floor(Math.min(_me.selStart, _me.selEnd) * sr);
+    endSample = Math.floor(Math.max(_me.selStart, _me.selEnd) * sr);
+  } else {
+    endSample = _me.buffer.length;
+    startSample = Math.max(0, endSample - Math.floor(2 * sr));
+  }
+  const len = endSample - startSample;
+  for (let ch = 0; ch < _me.buffer.numberOfChannels; ch++) {
+    const data = _me.buffer.getChannelData(ch);
+    for (let i = 0; i < len; i++) {
+      data[startSample + i] *= 1 - (i / len);
+    }
+  }
+  _meDrawWaveform();
+}
+
+async function _meBakeSpeed() {
+  if (_me.speed === 1.0) return _me.buffer;
+  const src = _me.buffer;
+  const newLen = Math.round(src.length / _me.speed);
+  const offline = new OfflineAudioContext(src.numberOfChannels, newLen, src.sampleRate);
+  const node = offline.createBufferSource();
+  node.buffer = src;
+  node.playbackRate.value = _me.speed;
+  node.connect(offline.destination);
+  node.start(0);
+  return offline.startRendering();
+}
+
+// -- Export --
+function _meEncodeWav(buffer) {
+  const numCh = buffer.numberOfChannels;
+  const sr = buffer.sampleRate;
+  const bitsPerSample = 16;
+  const bytesPerSample = bitsPerSample / 8;
+  const blockAlign = numCh * bytesPerSample;
+  const dataSize = buffer.length * blockAlign;
+  const headerSize = 44;
+  const ab = new ArrayBuffer(headerSize + dataSize);
+  const view = new DataView(ab);
+
+  function writeStr(offset, str) {
+    for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+  }
+  writeStr(0, "RIFF");
+  view.setUint32(4, 36 + dataSize, true);
+  writeStr(8, "WAVE");
+  writeStr(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, numCh, true);
+  view.setUint32(24, sr, true);
+  view.setUint32(28, sr * blockAlign, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, bitsPerSample, true);
+  writeStr(36, "data");
+  view.setUint32(40, dataSize, true);
+
+  const channels = [];
+  for (let ch = 0; ch < numCh; ch++) channels.push(buffer.getChannelData(ch));
+  let offset = 44;
+  for (let i = 0; i < buffer.length; i++) {
+    for (let ch = 0; ch < numCh; ch++) {
+      const s = Math.max(-1, Math.min(1, channels[ch][i]));
+      view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+      offset += 2;
+    }
+  }
+  return new Blob([ab], { type: "audio/wav" });
+}
+
+function _meEncodeMp3(buffer) {
+  const numCh = buffer.numberOfChannels;
+  const sr = buffer.sampleRate;
+  const kbps = 128;
+  const encoder = new lamejs.Mp3Encoder(numCh, sr, kbps);
+  const blockSize = 1152;
+  const mp3Chunks = [];
+
+  const left = _meFloatTo16(buffer.getChannelData(0));
+  const right = numCh > 1 ? _meFloatTo16(buffer.getChannelData(1)) : left;
+
+  for (let i = 0; i < left.length; i += blockSize) {
+    const lChunk = left.subarray(i, i + blockSize);
+    const rChunk = right.subarray(i, i + blockSize);
+    const mp3buf = encoder.encodeBuffer(lChunk, rChunk);
+    if (mp3buf.length > 0) mp3Chunks.push(mp3buf);
+  }
+  const last = encoder.flush();
+  if (last.length > 0) mp3Chunks.push(last);
+  return new Blob(mp3Chunks, { type: "audio/mpeg" });
+}
+
+function _meFloatTo16(float32) {
+  const int16 = new Int16Array(float32.length);
+  for (let i = 0; i < float32.length; i++) {
+    const s = Math.max(-1, Math.min(1, float32[i]));
+    int16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+  }
+  return int16;
+}
+
+async function _meExport() {
+  const buf = await _meBakeSpeed();
+  const fmt = _me.formatSelect.value;
+  const blob = fmt === "wav" ? _meEncodeWav(buf) : _meEncodeMp3(buf);
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "edited-audio." + fmt;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+
+async function _meSave() {
+  if (!_me.recordId) return;
+  const buf = await _meBakeSpeed();
+  const fmt = _me.formatSelect.value;
+  const blob = fmt === "wav" ? _meEncodeWav(buf) : _meEncodeMp3(buf);
+
+  // Convert blob to base64
+  const reader = new FileReader();
+  const base64 = await new Promise((resolve) => {
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      resolve(dataUrl.split(",")[1]);
+    };
+    reader.readAsDataURL(blob);
+  });
+
+  // Load and update the track record
+  const db = await _musicDB.open();
+  const tx = db.transaction("tracks", "readwrite");
+  const store = tx.objectStore("tracks");
+  const getReq = store.get(_me.recordId);
+  getReq.onsuccess = () => {
+    const rec = getReq.result;
+    if (!rec) return;
+    rec.audio = base64;
+    rec.format = fmt;
+    rec.duration = buf.duration;
+    store.put(rec);
+    tx.oncomplete = () => {
+      // Refresh the card in the canvas
+      const oldCard = document.querySelector(`.music-result[data-music-id="${_me.recordId}"]`);
+      if (oldCard) {
+        const newCard = createMusicResultCard(rec);
+        oldCard.replaceWith(newCard);
+      }
+      if (typeof showToast === "function") showToast("Track saved");
+      _me.dirty = false;
+    };
+  };
+}
+
+// -- Open/Close --
+async function openMusicEditor(recordId, base64Audio, format) {
+  _meInitRefs();
+  _me.recordId = recordId;
+  _me.format = format || "mp3";
+  _me.formatSelect.value = _me.format;
+  _me.speed = 1.0;
+  _me.speedSelect.value = "1";
+  _me.pausedAt = 0;
+  _me.dirty = false;
+  _meClearSelection();
+
+  // Decode base64 to AudioBuffer
+  const byteStr = atob(base64Audio);
+  const bytes = new Uint8Array(byteStr.length);
+  for (let i = 0; i < byteStr.length; i++) bytes[i] = byteStr.charCodeAt(i);
+  const arrayBuf = bytes.buffer;
+
+  try {
+    const decoded = await _musicAudioCtx.decodeAudioData(arrayBuf.slice(0));
+    _me.buffer = decoded;
+    _me.originalBuffer = _meCloneBuffer(decoded);
+    _me.sampleRate = decoded.sampleRate;
+    _me.history = [_meCloneBuffer(decoded)];
+    _me.historyIdx = 0;
+  } catch (err) {
+    if (typeof showToast === "function") showToast("Failed to decode audio", "error");
+    return;
+  }
+
+  _me.editor.classList.add("active");
+  // Draw after layout settles
+  requestAnimationFrame(() => {
+    _meDrawWaveform();
+    _meUpdateTime();
+    _meUpdateToolStates();
+  });
+}
+
+function closeMusicEditor() {
+  _meStopPlayback();
+  _me.editor.classList.remove("active");
+  _me.buffer = null;
+  _me.originalBuffer = null;
+  _me.history = [];
+  _me.historyIdx = -1;
+  _me.recordId = null;
+  _me.dirty = false;
+}
+
+function _meReset() {
+  if (!_me.originalBuffer) return;
+  _mePushHistory();
+  _me.buffer = _meCloneBuffer(_me.originalBuffer);
+  _me.speed = 1.0;
+  _me.speedSelect.value = "1";
+  _meClearSelection();
+  _meStopPlayback();
+  _me.pausedAt = 0;
+  _meDrawWaveform();
+  _meUpdateTime();
+}
+
+// -- Event wiring --
+function _meWireEvents() {
+  // Close
+  document.getElementById("music-editor-close").addEventListener("click", closeMusicEditor);
+  _me.editor.addEventListener("click", (e) => {
+    if (e.target === _me.editor) closeMusicEditor();
+  });
+
+  // Tools
+  document.getElementById("me-trim").addEventListener("click", _meTrim);
+  document.getElementById("me-cut").addEventListener("click", _meCut);
+  document.getElementById("me-fade-in").addEventListener("click", _meFadeIn);
+  document.getElementById("me-fade-out").addEventListener("click", _meFadeOut);
+  document.getElementById("me-undo").addEventListener("click", _meUndo);
+  document.getElementById("me-redo").addEventListener("click", _meRedo);
+  document.getElementById("me-play").addEventListener("click", _meTogglePlay);
+  document.getElementById("me-export").addEventListener("click", _meExport);
+  document.getElementById("me-save").addEventListener("click", _meSave);
+  document.getElementById("me-reset").addEventListener("click", _meReset);
+
+  // Speed
+  _me.speedSelect.addEventListener("change", () => {
+    _me.speed = parseFloat(_me.speedSelect.value);
+    // If playing, restart with new speed
+    if (_me.playing) {
+      _me.pausedAt = (_musicAudioCtx.currentTime - _me.startedAt) * (_me.speed);
+      _meStopPlayback();
+      _me.speed = parseFloat(_me.speedSelect.value);
+      _mePlay();
+    }
+  });
+
+  // Waveform mouse selection
+  _me.waveWrap.addEventListener("mousedown", (e) => {
+    if (!_me.buffer) return;
+    const rect = _me.waveWrap.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    _me.dragging = true;
+    _me.dragStartX = x;
+    _me.selStart = _mePixelToTime(x);
+    _me.selEnd = _me.selStart;
+    _meUpdateSelectionOverlay();
+  });
+
+  window.addEventListener("mousemove", (e) => {
+    if (!_me.dragging) return;
+    const rect = _me.waveWrap.getBoundingClientRect();
+    const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+    _me.selEnd = _mePixelToTime(x);
+    _meUpdateSelectionOverlay();
+  });
+
+  window.addEventListener("mouseup", () => {
+    if (!_me.dragging) return;
+    _me.dragging = false;
+    // If no drag distance, treat as seek
+    if (_me.selStart !== null && _me.selEnd !== null && Math.abs(_me.selStart - _me.selEnd) < 0.02) {
+      _me.pausedAt = _me.selStart;
+      _meClearSelection();
+      _meUpdateTime();
+      _me.playheadEl.style.left = _meTimeToPixel(_me.pausedAt) + "px";
+      _me.playheadEl.classList.add("active");
+    }
+  });
+
+  // Double-click to select all
+  _me.waveWrap.addEventListener("dblclick", () => {
+    if (!_me.buffer) return;
+    _me.selStart = 0;
+    _me.selEnd = _me.buffer.duration;
+    _meUpdateSelectionOverlay();
+  });
+
+  // Keyboard shortcuts
+  document.addEventListener("keydown", (e) => {
+    if (!_me.editor.classList.contains("active")) return;
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
+
+    if (e.key === "Escape") { closeMusicEditor(); e.preventDefault(); return; }
+    if (e.key === " ") { _meTogglePlay(); e.preventDefault(); return; }
+    if (e.key === "z" && (e.ctrlKey || e.metaKey) && !e.shiftKey) { _meUndo(); e.preventDefault(); return; }
+    if ((e.key === "y" && (e.ctrlKey || e.metaKey)) || (e.key === "z" && (e.ctrlKey || e.metaKey) && e.shiftKey)) {
+      _meRedo(); e.preventDefault(); return;
+    }
+  });
+
+  // Resize redraw
+  const resizeObs = new ResizeObserver(() => {
+    if (_me.editor.classList.contains("active") && _me.buffer) _meDrawWaveform();
+  });
+  resizeObs.observe(_me.waveWrap);
+}
+
 // ── Create music result card ──
 function createMusicResultCard(record) {
   const el = document.createElement("div");
@@ -995,6 +1638,9 @@ function createMusicResultCard(record) {
             ${lyricsToggleHtml}
           </div>
           <div class="music-result-actions">
+            <button class="music-action-btn music-edit" title="Edit">
+              ${icon("edit", 12)}
+            </button>
             <button class="music-action-btn music-reuse" title="Reuse settings">
               ${icon("refresh", 12)}
             </button>
@@ -1119,6 +1765,11 @@ function createMusicResultCard(record) {
       favBtn.classList.add("is-fav");
     }
     if (musicFavPanel.classList.contains("open")) refreshMusicFavoritesPanel();
+  });
+
+  // Edit
+  el.querySelector(".music-edit").addEventListener("click", () => {
+    openMusicEditor(record.id, record.audio, record.format || "mp3");
   });
 
   // Reuse settings

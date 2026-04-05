@@ -924,6 +924,84 @@
     #inpaint-loading .enhance-overlay-spinner { width: 32px; height: 32px; }
     #inpaint-loading-text { font-size: 0.8rem; color: var(--text); font-weight: 600; }
 
+    /* ── Music Editor Modal ── */
+    #music-editor {
+      display: none; position: fixed; inset: 0; z-index: 10000;
+      background: rgba(0,0,0,0.55); backdrop-filter: blur(6px);
+      align-items: center; justify-content: center;
+    }
+    #music-editor.active { display: flex; animation: fadeIn 0.2s ease; }
+    #music-editor-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; display: flex; flex-direction: column;
+      max-width: 800px; width: 92vw; height: 80vh;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04) inset;
+      overflow: hidden;
+    }
+    #music-editor-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px; border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    #music-editor-header-left { display: flex; flex-direction: column; gap: 1px; }
+    #music-editor-title { font-size: 0.82rem; font-weight: 600; color: var(--text); white-space: nowrap; }
+    #music-editor-desc { font-size: 0.62rem; color: var(--text-dim); white-space: nowrap; }
+    #music-editor-tools { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+    #music-editor-tools .inpaint-tool-btn { font-size: 0.65rem; padding: 4px 8px; width: auto; }
+    #me-speed-label {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 0.68rem; color: var(--text-dim); white-space: nowrap;
+    }
+    #me-speed {
+      background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+      border-radius: 5px; font-size: 0.66rem; padding: 2px 4px; cursor: pointer;
+    }
+    #music-editor-close {
+      margin-left: 2px; background: none; border: none; color: var(--text-dim);
+      font-size: 1.2rem; cursor: pointer; padding: 2px 6px; line-height: 1;
+    }
+    #music-editor-close:hover { color: var(--text); }
+
+    #me-waveform-wrap {
+      flex: 1; position: relative; overflow: hidden; min-height: 0;
+      background: rgba(0,0,0,0.3); cursor: crosshair;
+    }
+    #me-waveform-canvas { width: 100%; height: 100%; display: block; }
+    #me-selection-overlay {
+      position: absolute; top: 0; bottom: 0; display: none;
+      background: rgba(124,106,247,0.18); border-left: 1px solid var(--accent);
+      border-right: 1px solid var(--accent); pointer-events: none;
+    }
+    #me-selection-overlay.active { display: block; }
+    #me-playhead {
+      position: absolute; top: 0; bottom: 0; width: 2px;
+      background: var(--accent); pointer-events: none;
+      left: 0; display: none;
+    }
+    #me-playhead.active { display: block; }
+
+    #me-transport {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 16px; border-top: 1px solid var(--border); flex-shrink: 0;
+    }
+    #me-time { font-size: 0.72rem; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+    #me-selection-info { font-size: 0.68rem; color: var(--accent); margin-left: auto; }
+
+    #me-footer {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 16px; border-top: 1px solid var(--border); flex-shrink: 0;
+    }
+    #me-export-group {
+      display: flex; align-items: center; gap: 6px; margin-right: auto;
+    }
+    #me-format-label { font-size: 0.7rem; color: var(--text-dim); }
+    #me-format {
+      background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+      border-radius: 6px; font-size: 0.75rem; padding: 4px 8px; cursor: pointer;
+    }
+    #me-footer .accent-btn { display: flex; align-items: center; gap: 4px; }
+    #me-footer .accent-btn svg { flex-shrink: 0; }
+
     /* ── Generated image bubble ── */
     .generated-image-wrap { display: flex; flex-direction: column; gap: 6px; }
     .generated-image-wrap img {

@@ -144,6 +144,76 @@
   </div>
 </div>
 
+<!-- MUSIC EDITOR MODAL -->
+<div id="music-editor">
+  <div id="music-editor-card">
+    <div id="music-editor-header">
+      <div id="music-editor-header-left">
+        <span id="music-editor-title">Edit Audio</span>
+        <span id="music-editor-desc">Select a region to trim, cut, or apply effects</span>
+      </div>
+      <div id="music-editor-tools">
+        <button class="inpaint-tool-btn" id="me-trim" title="Trim to selection">Trim</button>
+        <button class="inpaint-tool-btn" id="me-cut" title="Cut selection">
+          <svg width="14" height="14"><use href="#i-scissors"/></svg>
+        </button>
+        <div class="inpaint-sep"></div>
+        <button class="inpaint-tool-btn" id="me-fade-in" title="Fade in">Fade In</button>
+        <button class="inpaint-tool-btn" id="me-fade-out" title="Fade out">Fade Out</button>
+        <div class="inpaint-sep"></div>
+        <label id="me-speed-label">Speed
+          <select id="me-speed">
+            <option value="0.5">0.5x</option>
+            <option value="0.75">0.75x</option>
+            <option value="1" selected>1x</option>
+            <option value="1.25">1.25x</option>
+            <option value="1.5">1.5x</option>
+            <option value="2">2x</option>
+          </select>
+        </label>
+        <div class="inpaint-sep"></div>
+        <button class="inpaint-tool-btn" id="me-undo" title="Undo (Ctrl+Z)">
+          <svg width="14" height="14"><use href="#i-refresh"/></svg>
+        </button>
+        <button class="inpaint-tool-btn" id="me-redo" title="Redo (Ctrl+Y)">
+          <svg width="14" height="14"><use href="#i-redo"/></svg>
+        </button>
+      </div>
+      <button id="music-editor-close">&times;</button>
+    </div>
+    <div id="me-waveform-wrap">
+      <canvas id="me-waveform-canvas"></canvas>
+      <div id="me-selection-overlay"></div>
+      <div id="me-playhead"></div>
+    </div>
+    <div id="me-transport">
+      <button class="inpaint-tool-btn" id="me-play" title="Play/Pause">
+        <svg width="14" height="14"><use href="#i-play"/></svg>
+      </button>
+      <span id="me-time">0:00 / 0:00</span>
+      <span id="me-selection-info"></span>
+    </div>
+    <div id="me-footer">
+      <div id="me-export-group">
+        <label id="me-format-label">Format</label>
+        <select id="me-format">
+          <option value="mp3">MP3</option>
+          <option value="wav">WAV</option>
+        </select>
+      </div>
+      <button class="accent-btn" id="me-export" title="Download edited audio">
+        <svg width="14" height="14"><use href="#i-download"/></svg> Export
+      </button>
+      <button class="accent-btn" id="me-save" title="Save changes back to studio">
+        <svg width="14" height="14"><use href="#i-check"/></svg> Save
+      </button>
+      <button class="accent-btn" id="me-reset" title="Reset to original">
+        <svg width="14" height="14"><use href="#i-refresh"/></svg> Reset
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- MAIN -->
 <div id="main">
 
@@ -1661,6 +1731,7 @@
 <script src="js/db-helpers.js"></script>
 <script src="js/studio-helpers.js"></script>
 <script src="js/image-studio.js"></script>
+<script src="lib/lamejs.min.js"></script>
 <script src="js/music-studio.js"></script>
 <script src="js/video-studio.js"></script>
 <script src="js/chat.js"></script>
