@@ -24,8 +24,8 @@ A self-hosted AI toolbox that runs entirely on your own hardware. Chat with loca
 ## Quick Start
 
 ```bash
-git clone https://github.com/woozleton/dave-in-a-box.git
-cd dave-in-a-box
+git clone https://github.com/woozleton/woozlebox.git
+cd woozlebox
 docker compose up -d
 ```
 
@@ -91,7 +91,7 @@ See `docs/` for detailed architecture diagrams and VRAM workflow documentation.
 ## File Structure
 
 ```
-dave-in-a-box/
+woozlebox/
 ├── docker-compose.yml          # All services, ports, volumes, GPU access
 ├── web/                        # Static SPA frontend (vanilla JS, no framework)
 │   ├── index.html              # Full app markup (1,668 lines)

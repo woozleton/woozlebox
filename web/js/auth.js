@@ -30,7 +30,7 @@ document.getElementById("login-submit-btn").addEventListener("click", async () =
     });
     if (!res.ok) { const d = await res.json().catch(() => ({})); errEl.textContent = d.detail || "Invalid credentials"; const card = document.querySelector("#login-screen .auth-card"); card.classList.remove("shake"); void card.offsetWidth; card.classList.add("shake"); return; }
     const data = await res.json();
-    localStorage.setItem("diab_token", data.token);
+    localStorage.setItem("wooz_token", data.token);
     applyUserSession(data.user);
     hideAuthScreens();
     loadApp();
@@ -64,7 +64,7 @@ document.getElementById("setup-submit-btn").addEventListener("click", async () =
     });
     if (!loginRes.ok) { showLoginScreen(); return; }
     const data = await loginRes.json();
-    localStorage.setItem("diab_token", data.token);
+    localStorage.setItem("wooz_token", data.token);
     applyUserSession(data.user);
     hideAuthScreens();
     loadApp();

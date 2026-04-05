@@ -1,5 +1,5 @@
 """
-image-api - Multi-model text-to-image service for Dave-in-a-Box.
+image-api - Multi-model text-to-image service for WoozleBox.
 
 POST /generate   {prompt, aspect, steps, seed, model}
 POST /inpaint    {image, mask, prompt, negative_prompt, steps, seed, guidance_scale}

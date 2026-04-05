@@ -18,7 +18,7 @@ function applyUserSession(user) {
   if (user.settings && user.settings !== "{}") {
     try {
       const s = JSON.parse(user.settings);
-      const skip = new Set(["diab_token", "diab_vault_pinned", "diab_view"]);
+      const skip = new Set(["wooz_token", "wooz_vault_pinned", "wooz_view"]);
       Object.entries(s).forEach(([k, v]) => { if (!skip.has(k)) localStorage.setItem(k, typeof v === "object" ? JSON.stringify(v) : v); });
       // Re-apply brand so DOM reflects any server-side values (e.g. showLoginName toggle)
       applyBrand();
@@ -34,8 +34,8 @@ function scheduleSettingsSync() {
   _settingsSyncTimer = setTimeout(async () => {
     if (!currentUser) return;
     const snap = {};
-    const _syncSkip = new Set(["diab_token", "diab_view"]);
-    Object.keys(localStorage).filter(k => k.startsWith("diab_") && !_syncSkip.has(k)).forEach(k => {
+    const _syncSkip = new Set(["wooz_token", "wooz_view"]);
+    Object.keys(localStorage).filter(k => k.startsWith("wooz_") && !_syncSkip.has(k)).forEach(k => {
       snap[k] = localStorage.getItem(k);
     });
     try {
@@ -121,7 +121,7 @@ async function loadApp() {
   applyTextSize(localStorage.getItem(TEXT_SIZE_KEY) || "medium");
   if (typeof restoreStudioSettings === "function") restoreStudioSettings();
   // Restore active view BEFORE loading conversations to prevent chat flash
-  const _savedView = localStorage.getItem("diab_view");
+  const _savedView = localStorage.getItem("wooz_view");
   if (_savedView === "studio") {
     showStudio();
   } else if (_savedView === "music") {
@@ -196,7 +196,7 @@ const _modelReady = { chat: false, studio: false, music: false, video: false };
 let _prepareAbort = null;
 
 function setView(view) {
-  localStorage.setItem("diab_view", view);
+  localStorage.setItem("wooz_view", view);
   const $ = id => document.getElementById(id);
 
   // Content areas
@@ -290,7 +290,7 @@ async function prepareModelsForView(view) {
   if (view === "chat") {
     _modelReady.chat = false;
     _setModelLoading("chat", true, "chat model");
-    const _chatModel = selectedModel || localStorage.getItem("diab_model") || null;
+    const _chatModel = selectedModel || localStorage.getItem("wooz_model") || null;
     try {
       await fetch(GPU_API + "/acquire", {
         method: "POST",
@@ -316,7 +316,7 @@ async function prepareModelsForView(view) {
       _setModelLoading("studio", false);
       // Evict other models in background if loaded
       if (loaded.some(m => m.type === "music") || loaded.some(m => m.type === "video")) {
-        const _savedImgModel = localStorage.getItem("diab_image_model") || null;
+        const _savedImgModel = localStorage.getItem("wooz_image_model") || null;
         fetch(GPU_API + "/acquire", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -366,7 +366,7 @@ async function prepareModelsForView(view) {
 
   try {
     if (view === "studio") {
-      const _savedImgModel = localStorage.getItem("diab_image_model") || null;
+      const _savedImgModel = localStorage.getItem("wooz_image_model") || null;
       await fetch(GPU_API + "/acquire", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -450,7 +450,7 @@ async function showMusicStudio() {
   _ensureMusicSession();
   restoreMusicTracks();
   _refreshMusicTrashBadge();
-  if (localStorage.getItem("diab_music_fav_open") === "1") {
+  if (localStorage.getItem("wooz_music_fav_open") === "1") {
     musicFavPanel.classList.add("open");
     musicFavToggle.classList.add("active");
     refreshMusicFavoritesPanel();
@@ -472,7 +472,7 @@ async function showVideoStudio() {
   _ensureVideoSession();
   restoreVideoClips();
   _refreshVideoTrashBadge();
-  if (localStorage.getItem("diab_video_fav_open") === "1") {
+  if (localStorage.getItem("wooz_video_fav_open") === "1") {
     const vfp = document.getElementById("video-fav-panel");
     const vft = document.getElementById("video-fav-toggle");
     if (vfp) vfp.classList.add("open");
@@ -496,7 +496,7 @@ document.getElementById("studio-sidebar-btn").addEventListener("click", toggleSt
 document.getElementById("strip-studio-btn").addEventListener("click", toggleStudio);
 document.getElementById("studio-new-session-btn").addEventListener("click", () => {
   activeStudioSessionId = "sess_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
-  localStorage.setItem("diab_studio_session", activeStudioSessionId);
+  localStorage.setItem("wooz_studio_session", activeStudioSessionId);
   document.querySelectorAll(".studio-session-item").forEach(el => el.classList.remove("active"));
   // Clear canvas to show fresh state
   studioCanvas.querySelectorAll(".studio-result").forEach(el => el.remove());

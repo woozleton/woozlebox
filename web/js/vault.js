@@ -7,14 +7,14 @@ function openVaultPanel() {
   closeSettings();
   vaultPanel.classList.add("open");
   vaultToggleBtn.classList.add("active");
-  localStorage.setItem("diab_vault_open", "1");
+  localStorage.setItem("wooz_vault_open", "1");
   loadVaultFiles();
   startIndexPolling();
 }
 function closeVaultPanel() {
   vaultPanel.classList.remove("open");
   vaultToggleBtn.classList.remove("active");
-  localStorage.setItem("diab_vault_open", "0");
+  localStorage.setItem("wooz_vault_open", "0");
   stopIndexPolling();
 }
 function toggleVaultPanel() {
@@ -26,7 +26,7 @@ vaultToggleBtn.addEventListener("click", toggleVaultPanel);
 vaultClose.addEventListener("click", closeVaultPanel);
 
 // Restore vault panel state
-if (localStorage.getItem("diab_vault_open") === "1") openVaultPanel();
+if (localStorage.getItem("wooz_vault_open") === "1") openVaultPanel();
 
 
 // ── Auto-index status polling ──

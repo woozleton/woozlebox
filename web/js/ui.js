@@ -1,5 +1,5 @@
 // ── Sidebar toggle ──
-const SIDEBAR_KEY = "diab_sidebar_open";
+const SIDEBAR_KEY = "wooz_sidebar_open";
 function applySidebar(open) {
   document.body.classList.toggle("sidebar-collapsed", !open);
   sidebarOpenBtn.style.display = "none";
@@ -7,7 +7,7 @@ function applySidebar(open) {
   if (!open) {
     sidebar.style.width = "";
   } else {
-    const saved = parseInt(localStorage.getItem("diab_sidebar_w"));
+    const saved = parseInt(localStorage.getItem("wooz_sidebar_w"));
     if (saved) sidebar.style.width = saved + "px";
   }
 }
@@ -218,7 +218,7 @@ function openCtxMenu(e, id) {
         body: JSON.stringify({ folder_id: p.id }),
       });
       activeChatFolderId = p.id;
-      localStorage.setItem("diab_chat_folder", p.id);
+      localStorage.setItem("wooz_chat_folder", p.id);
       await loadConversations();
     });
     sub.appendChild(btn);
@@ -297,16 +297,16 @@ function makePanelResizable(panelId, handleId, storageKey, defaultWidth, minWidt
   });
 }
 
-makePanelResizable("vault-panel", "vault-resize-handle", "diab_vault_w", 320);
-makePanelResizable("studio-fav-panel", "fav-resize-handle", "diab_fav_w", 340);
-makePanelResizable("music-fav-panel", "music-fav-resize-handle", "diab_music_fav_w", 340);
-makePanelResizable("video-fav-panel", "video-fav-resize-handle", "diab_video_fav_w", 340);
+makePanelResizable("vault-panel", "vault-resize-handle", "wooz_vault_w", 320);
+makePanelResizable("studio-fav-panel", "fav-resize-handle", "wooz_fav_w", 340);
+makePanelResizable("music-fav-panel", "music-fav-resize-handle", "wooz_music_fav_w", 340);
+makePanelResizable("video-fav-panel", "video-fav-resize-handle", "wooz_video_fav_w", 340);
 
 // ── Sidebar resize ──
 (function() {
   const sidebar = document.getElementById("sidebar");
   const handle  = document.getElementById("sidebar-resize-handle");
-  const MIN = 180, MAX = 480, KEY = "diab_sidebar_w";
+  const MIN = 180, MAX = 480, KEY = "wooz_sidebar_w";
   const saved = parseInt(localStorage.getItem(KEY));
   if (saved && saved >= MIN && saved <= MAX) {
     sidebar.style.width = saved + "px";

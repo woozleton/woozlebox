@@ -140,7 +140,7 @@ document.getElementById("music-write-song-btn").addEventListener("click", async 
   try {
     const res = await mediaFetch("/music/write-song", {
       method: "POST",
-      body: JSON.stringify({ description: desc, language: lang, model: localStorage.getItem("diab_songwrite_model") || selectedModel || null }),
+      body: JSON.stringify({ description: desc, language: lang, model: localStorage.getItem("wooz_songwrite_model") || selectedModel || null }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -178,7 +178,7 @@ document.getElementById("music-write-song-btn").addEventListener("click", async 
 
 // ── Music IndexedDB ──
 const _musicDB = createStudioDB({
-  name: "diab_music", version: 4,
+  name: "wooz_music", version: 4,
   stores: ["tracks", "favorites", "trash", "folders"],
   onUpgrade(e, req) {
     if (e.oldVersion < 3 && req.result.objectStoreNames.contains("tracks")) {
@@ -220,10 +220,10 @@ async function saveMusicFolder(col) { return _musicDB.save("folders", col); }
 async function deleteMusicFolder(id) { return _musicDB.remove("folders", id); }
 async function loadAllMusicFolders() { return _musicDB.loadAll("folders"); }
 let musicFolders = [];
-let activeMusicFolderId = localStorage.getItem("diab_music_folder") || null;
+let activeMusicFolderId = localStorage.getItem("wooz_music_folder") || null;
 
 // ── Music sessions ──
-let activeMusicSessionId = localStorage.getItem("diab_music_session") || null;
+let activeMusicSessionId = localStorage.getItem("wooz_music_session") || null;
 
 function _newMusicSessionId() {
   const arr = new Uint8Array(12);
@@ -234,7 +234,7 @@ function _newMusicSessionId() {
 function _ensureMusicSession() {
   if (!activeMusicSessionId) {
     activeMusicSessionId = _newMusicSessionId();
-    localStorage.setItem("diab_music_session", activeMusicSessionId);
+    localStorage.setItem("wooz_music_session", activeMusicSessionId);
   }
   return activeMusicSessionId;
 }
@@ -293,7 +293,7 @@ function _makeMusicSessionItem(sess) {
     item.addEventListener("click", (e) => {
       if (e.target.closest(".music-session-menu")) return;
       activeMusicSessionId = sess.session_id;
-      localStorage.setItem("diab_music_session", activeMusicSessionId);
+      localStorage.setItem("wooz_music_session", activeMusicSessionId);
       renderMusicSessionsList();
       restoreMusicTracks();
     });
@@ -402,7 +402,7 @@ function _showMusicSessionMenu(sess, itemEl, e) {
     _refreshMusicTrashBadge();
     if (activeMusicSessionId === sess.session_id) {
       activeMusicSessionId = _newMusicSessionId();
-      localStorage.setItem("diab_music_session", activeMusicSessionId);
+      localStorage.setItem("wooz_music_session", activeMusicSessionId);
     }
     renderMusicSessionsList();
     restoreMusicTracks();
@@ -424,7 +424,7 @@ function _showMusicSessionMenu(sess, itemEl, e) {
 
 document.getElementById("music-new-session-btn").addEventListener("click", () => {
   activeMusicSessionId = _newMusicSessionId();
-  localStorage.setItem("diab_music_session", activeMusicSessionId);
+  localStorage.setItem("wooz_music_session", activeMusicSessionId);
   renderMusicSessionsList();
   restoreMusicTracks();
   musicPrompt.focus();
@@ -441,7 +441,7 @@ async function loadMusicFolders() {
     }
     if (!activeMusicFolderId || !musicFolders.find(c => c.id === activeMusicFolderId)) {
       activeMusicFolderId = musicFolders[0].id;
-      localStorage.setItem("diab_music_folder", activeMusicFolderId);
+      localStorage.setItem("wooz_music_folder", activeMusicFolderId);
     }
     renderMusicFoldersSidebar();
   } catch (e) { console.warn("Failed to load music folders:", e); }
@@ -461,11 +461,11 @@ function renderMusicFoldersSidebar() {
       if (e.target.classList.contains("sb-folder-menu")) return;
       if (col.id === activeMusicFolderId) return;
       activeMusicFolderId = col.id;
-      localStorage.setItem("diab_music_folder", col.id);
+      localStorage.setItem("wooz_music_folder", col.id);
       renderMusicFoldersSidebar();
       // Reset session and reload
       activeMusicSessionId = null;
-      localStorage.removeItem("diab_music_session");
+      localStorage.removeItem("wooz_music_session");
       restoreMusicTracks();
       renderMusicSessionsList();
     });
@@ -548,11 +548,11 @@ function showMusicColCtxMenu(col, e) {
     musicFolders = musicFolders.filter(c => c.id !== col.id);
     if (activeMusicFolderId === col.id) {
       activeMusicFolderId = musicFolders[0].id;
-      localStorage.setItem("diab_music_folder", activeMusicFolderId);
+      localStorage.setItem("wooz_music_folder", activeMusicFolderId);
     }
     renderMusicFoldersSidebar();
     activeMusicSessionId = null;
-    localStorage.removeItem("diab_music_session");
+    localStorage.removeItem("wooz_music_session");
     restoreMusicTracks();
     renderMusicSessionsList();
   });
@@ -591,9 +591,9 @@ function openMusicFolderModal(col) {
       await saveMusicFolder(col);
       musicFolders.push(col);
       activeMusicFolderId = col.id;
-      localStorage.setItem("diab_music_folder", col.id);
+      localStorage.setItem("wooz_music_folder", col.id);
       activeMusicSessionId = null;
-      localStorage.removeItem("diab_music_session");
+      localStorage.removeItem("wooz_music_session");
       restoreMusicTracks();
       renderMusicSessionsList();
     }
@@ -748,12 +748,12 @@ musicFavToggle.addEventListener("click", () => {
   const isOpen = musicFavPanel.classList.toggle("open");
   musicFavToggle.classList.toggle("active", isOpen);
   if (isOpen) refreshMusicFavoritesPanel();
-  localStorage.setItem("diab_music_fav_open", isOpen ? "1" : "0");
+  localStorage.setItem("wooz_music_fav_open", isOpen ? "1" : "0");
 });
 document.getElementById("music-fav-close").addEventListener("click", () => {
   musicFavPanel.classList.remove("open");
   musicFavToggle.classList.remove("active");
-  localStorage.setItem("diab_music_fav_open", "0");
+  localStorage.setItem("wooz_music_fav_open", "0");
 });
 
 // ── Music view switching ──
@@ -782,7 +782,7 @@ const MUSIC_PRESETS = {
   "lo-fi":        { suffix: "lo-fi, chill beats, vinyl crackle, mellow, relaxing" },
   "ambient":      { suffix: "ambient, ethereal pads, atmospheric, dreamy, soundscape" },
 };
-const MUSIC_CUSTOM_PRESETS_KEY = "diab_music_custom_presets";
+const MUSIC_CUSTOM_PRESETS_KEY = "wooz_music_custom_presets";
 const _bpmSteps = [70, 90, 110, 120, 140, 170];
 let musicActivePreset = null;
 function getMusicCustomPresets() {

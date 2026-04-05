@@ -82,7 +82,7 @@ async function runReindex({ statusBtn, statusBtnLabel } = {}) {
 
 // ── Chat Folders ──
 let chatFolders = [];
-let activeChatFolderId = localStorage.getItem("diab_chat_folder") || null;
+let activeChatFolderId = localStorage.getItem("wooz_chat_folder") || null;
 let editingFolderId = null;
 let folderCtxTargetId = null;
 
@@ -105,7 +105,7 @@ async function ensureDefaultFolder() {
   const valid = chatFolders.find(p => p.id === activeChatFolderId);
   if (!valid && chatFolders.length > 0) {
     activeChatFolderId = chatFolders[0].id;
-    localStorage.setItem("diab_chat_folder", activeChatFolderId);
+    localStorage.setItem("wooz_chat_folder", activeChatFolderId);
   }
 }
 
@@ -130,7 +130,7 @@ function renderFoldersSidebar() {
     row.addEventListener("click", e => {
       if (e.target.classList.contains("sb-folder-menu")) return;
       activeChatFolderId = p.id;
-      localStorage.setItem("diab_chat_folder", p.id);
+      localStorage.setItem("wooz_chat_folder", p.id);
       renderFoldersSidebar();
       renderSidebar(allConversations, false);
     });
@@ -154,7 +154,7 @@ function renderFoldersSidebar() {
         body: JSON.stringify({ folder_id: p.id }),
       });
       activeChatFolderId = p.id;
-      localStorage.setItem("diab_chat_folder", p.id);
+      localStorage.setItem("wooz_chat_folder", p.id);
       await loadConversations();
     });
     row.querySelector(".sb-folder-menu").addEventListener("click", e => {
@@ -202,7 +202,7 @@ document.getElementById("folder-ctx-delete").addEventListener("click", async () 
   await apiFetch(`/folders/${folderCtxTargetId}`, { method: "DELETE" });
   if (activeChatFolderId === folderCtxTargetId) {
     activeChatFolderId = fallback.id;
-    localStorage.setItem("diab_chat_folder", fallback.id);
+    localStorage.setItem("wooz_chat_folder", fallback.id);
   }
   folderCtxTargetId = null;
   await loadConversations();
@@ -250,7 +250,7 @@ function openFolderModal(folder, { required = false } = {}) {
       const data = await res.json();
       if (data.id) {
         activeChatFolderId = data.id;
-        localStorage.setItem("diab_chat_folder", data.id);
+        localStorage.setItem("wooz_chat_folder", data.id);
       }
     }
     closeFolderModal();
@@ -366,7 +366,7 @@ function renderSidebar(convs, flat = false) {
 }
 
 async function loadConversation(id) {
-  if (localStorage.getItem("diab_view") !== "chat") {
+  if (localStorage.getItem("wooz_view") !== "chat") {
     setView("chat");
     prepareModelsForView("chat");
   }
@@ -396,7 +396,7 @@ function updateActiveSidebar() {
 
 // ── New chat ──
 newChatBtn.addEventListener("click", async () => {
-  if (localStorage.getItem("diab_view") !== "chat") {
+  if (localStorage.getItem("wooz_view") !== "chat") {
     setView("chat");
     prepareModelsForView("chat");
   }
@@ -514,7 +514,7 @@ function appendUserBubble(text, images) {
   let avatarInitials = "?";
   let avatarDataUrl = localStorage.getItem(AVATAR_KEY) || "";
   try {
-    const p = JSON.parse(localStorage.getItem("diab_profile") || "{}");
+    const p = JSON.parse(localStorage.getItem("wooz_profile") || "{}");
     const name = p.name || currentUser?.username || "";
     avatarInitials = name.trim().split(/\s+/).map(w => w[0]).join("").toUpperCase().slice(0, 2) || "?";
   } catch {}
@@ -1063,7 +1063,7 @@ async function sendImageRequest(prompt) {
   try {
     const res = await mediaFetch("/image/generate", {
       method: "POST",
-      body: JSON.stringify({ prompt, aspect: "square", model: localStorage.getItem("diab_image_model") || null }),
+      body: JSON.stringify({ prompt, aspect: "square", model: localStorage.getItem("wooz_image_model") || null }),
     });
     if (!res.ok) {
       const e = await res.json().catch(() => ({}));

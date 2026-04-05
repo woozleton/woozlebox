@@ -1,5 +1,5 @@
 """
-main.py -FastAPI RAG service for Dave-in-a-Box.
+main.py -FastAPI RAG service for WoozleBox.
 
 Chat flow (streaming SSE):
   1. Embed question via nomic-embed-text
@@ -360,7 +360,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Dave-in-a-Box RAG API", lifespan=lifespan)
+app = FastAPI(title="WoozleBox RAG API", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 
@@ -482,7 +482,7 @@ def _get_utility_model(user: dict = None) -> str:
     if user:
         try:
             settings = json.loads(user.get("settings") or "{}")
-            um = settings.get("diab_utility_model", "")
+            um = settings.get("wooz_utility_model", "")
             if um:
                 return um
         except Exception:
@@ -1310,11 +1310,11 @@ def auth_brand():
         if user.get("role") == "admin":
             try:
                 s = json.loads(user.get("settings") or "{}")
-                b = json.loads(s.get("diab_brand") or "{}")
+                b = json.loads(s.get("wooz_brand") or "{}")
                 return {
                     "name":            b.get("name", ""),
-                    "logo":            s.get("diab_logo", ""),
-                    "login_logo":      s.get("diab_login_logo", ""),
+                    "logo":            s.get("wooz_logo", ""),
+                    "login_logo":      s.get("wooz_login_logo", ""),
                     "theme":           b.get("theme", ""),
                     "accent":          b.get("accent", ""),
                     "show_login_name": b.get("showLoginName", True),
@@ -1600,7 +1600,7 @@ async def smart_title_conv(cid: str, user: dict = Depends(get_current_user)):
             settings = json.loads(user.get("settings") or "{}")
         except Exception:
             pass
-        model = settings.get("diab_model") or LLM_MODEL
+        model = settings.get("wooz_model") or LLM_MODEL
         async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.post(
                 f"{OLLAMA_BASE_URL}/api/generate",

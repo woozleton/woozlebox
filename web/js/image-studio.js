@@ -49,7 +49,7 @@ document.querySelectorAll(".studio-count-btn").forEach(btn => {
 
 // ── Studio IndexedDB persistence ──
 const _imageDB = createStudioDB({
-  name: "diab_studio", version: 6,
+  name: "wooz_studio", version: 6,
   stores: ["images", "favorites", "folders", "trash"],
   onUpgrade(e, req) {
     if (e.oldVersion < 4) {
@@ -73,7 +73,7 @@ async function saveImageFolder(pg) { return _imageDB.save("folders", pg); }
 async function deleteImageFolder(id) { return _imageDB.remove("folders", id); }
 async function loadAllImageFolders() { return _imageDB.loadAll("folders"); }
 let imageFolders = [];
-let activeImageFolderId = localStorage.getItem("diab_image_folder") || null;
+let activeImageFolderId = localStorage.getItem("wooz_image_folder") || null;
 async function saveStudioImage(record) { return _imageDB.save("images", record); }
 async function deleteStudioImage(id) { return _imageDB.remove("images", id); }
 async function loadAllStudioImages() { return _imageDB.loadAll("images"); }
@@ -101,24 +101,24 @@ const studioFavCountLabel = document.getElementById("studio-fav-count-label");
 studioFavToggle.addEventListener("click", () => {
   const open = studioFavPanel.classList.toggle("open");
   studioFavToggle.classList.toggle("active", open);
-  localStorage.setItem("diab_fav_open", open ? "1" : "0");
+  localStorage.setItem("wooz_fav_open", open ? "1" : "0");
   if (open) refreshFavoritesPanel();
 });
 document.getElementById("studio-fav-close").addEventListener("click", () => {
   studioFavPanel.classList.remove("open");
   studioFavToggle.classList.remove("active");
-  localStorage.setItem("diab_fav_open", "0");
+  localStorage.setItem("wooz_fav_open", "0");
 });
 
 // Fav zoom controls
 const _favZoomLevels = [80, 100, 120, 150, 180, 220];
-let _favZoomIdx = parseInt(localStorage.getItem("diab_fav_zoom") || "2");
+let _favZoomIdx = parseInt(localStorage.getItem("wooz_fav_zoom") || "2");
 function _applyFavZoom() {
   const content = document.getElementById("studio-fav-content");
   if (content) {
     content.style.setProperty("--fav-thumb-size", _favZoomLevels[_favZoomIdx] + "px");
   }
-  localStorage.setItem("diab_fav_zoom", _favZoomIdx);
+  localStorage.setItem("wooz_fav_zoom", _favZoomIdx);
 }
 document.getElementById("fav-zoom-in").addEventListener("click", () => {
   if (_favZoomIdx < _favZoomLevels.length - 1) { _favZoomIdx++; _applyFavZoom(); }
@@ -250,7 +250,7 @@ function updateFavCount(count) {
 
 // Restore favorites panel state (suppress slide animation on load)
 document.querySelectorAll(".fav-panel, #vault-panel").forEach(p => p.classList.add("no-transition"));
-if (localStorage.getItem("diab_fav_open") === "1") {
+if (localStorage.getItem("wooz_fav_open") === "1") {
   studioFavPanel.classList.add("open");
   studioFavToggle.classList.add("active");
   refreshFavoritesPanel();
@@ -1029,7 +1029,7 @@ async function restoreStudioImages(forceReload = false) {
 function restoreStudioSettings() {
   // Control values
   try {
-    const c = JSON.parse(localStorage.getItem("diab_studio_controls") || "{}");
+    const c = JSON.parse(localStorage.getItem("wooz_studio_controls") || "{}");
     if (c.steps) { studioSteps.value = c.steps; studioStepsVal.textContent = c.steps; }
     if (c.guidance) { studioGuidance.value = c.guidance; studioGuidanceVal.textContent = parseFloat(c.guidance).toFixed(1); }
     if (c.aspect) {
@@ -1043,7 +1043,7 @@ function restoreStudioSettings() {
       document.querySelectorAll(".studio-count-btn").forEach(b => b.classList.toggle("active", parseInt(b.dataset.count) === studioCount));
     }
     if (c.model) {
-      localStorage.setItem("diab_image_model", c.model);
+      localStorage.setItem("wooz_image_model", c.model);
     }
   } catch {}
   // Presets
@@ -1293,7 +1293,7 @@ async function loadImageFolders() {
     }
     if (!activeImageFolderId || !imageFolders.find(p => p.id === activeImageFolderId)) {
       activeImageFolderId = imageFolders[0].id;
-      localStorage.setItem("diab_image_folder", activeImageFolderId);
+      localStorage.setItem("wooz_image_folder", activeImageFolderId);
     }
     renderImageFoldersSidebar();
   } catch (e) { console.warn("Failed to load image folders:", e); }
@@ -1312,7 +1312,7 @@ function renderImageFoldersSidebar() {
       if (e.target.classList.contains("sb-folder-menu")) return;
       if (pg.id === activeImageFolderId) return;
       activeImageFolderId = pg.id;
-      localStorage.setItem("diab_image_folder", pg.id);
+      localStorage.setItem("wooz_image_folder", pg.id);
       renderImageFoldersSidebar();
       _studioRestored = false;
       restoreStudioImages(true);
@@ -1364,7 +1364,7 @@ function renderImageFoldersSidebar() {
 }
 
 let activeSessionId = null;
-let activeStudioSessionId = localStorage.getItem("diab_studio_session") || null;
+let activeStudioSessionId = localStorage.getItem("wooz_studio_session") || null;
 
 function relativeTime(ts) {
   const mins = Math.floor((Date.now() - ts) / 60000);
@@ -1451,7 +1451,7 @@ function _makeGroupedSessionItem(sess) {
     if (e.target.classList.contains("studio-session-menu")) return;
     // Switch to this session
     activeStudioSessionId = sess.session_id;
-    localStorage.setItem("diab_studio_session", sess.session_id);
+    localStorage.setItem("wooz_studio_session", sess.session_id);
     document.querySelectorAll(".studio-session-item").forEach(el =>
       el.classList.toggle("active", el.dataset.sessionId === sess.session_id));
     // Re-render canvas filtered to this session
@@ -1576,7 +1576,7 @@ function showGroupedSessionCtxMenu(sess, itemEl, e) {
       studioCanvasEmpty.style.display = "";
     if (activeStudioSessionId === sess.session_id) {
       activeStudioSessionId = null;
-      localStorage.removeItem("diab_studio_session");
+      localStorage.removeItem("wooz_studio_session");
     }
   });
   menu.appendChild(delItem);
@@ -1626,7 +1626,7 @@ function showImageFolderCtxMenu(pg, e) {
     imageFolders = imageFolders.filter(p => p.id !== pg.id);
     if (activeImageFolderId === pg.id) {
       activeImageFolderId = imageFolders[0].id;
-      localStorage.setItem("diab_image_folder", activeImageFolderId);
+      localStorage.setItem("wooz_image_folder", activeImageFolderId);
     }
     renderImageFoldersSidebar();
     _studioRestored = false;
@@ -1670,7 +1670,7 @@ function openImageFolderModal(pg) {
       await saveImageFolder(pg);
       imageFolders.push(pg);
       activeImageFolderId = pg.id;
-      localStorage.setItem("diab_image_folder", pg.id);
+      localStorage.setItem("wooz_image_folder", pg.id);
       _studioRestored = false;
       restoreStudioImages(true);
     }
@@ -1694,7 +1694,7 @@ document.getElementById("image-folder-new-btn").addEventListener("click", () => 
 
 // Save studio control values
 function saveStudioControls() {
-  localStorage.setItem("diab_studio_controls", JSON.stringify({
+  localStorage.setItem("wooz_studio_controls", JSON.stringify({
     steps: studioSteps.value,
     guidance: studioGuidance.value,
     aspect: studioAspect,
@@ -1723,7 +1723,7 @@ document.querySelectorAll(".studio-aspect-btn").forEach(btn => {
 });
 
 // ── Dynamic preset system with custom presets ──
-const CUSTOM_PRESETS_KEY = "diab_studio_custom_presets";
+const CUSTOM_PRESETS_KEY = "wooz_studio_custom_presets";
 function getCustomPresets() {
   try { return JSON.parse(localStorage.getItem(CUSTOM_PRESETS_KEY) || "{}"); } catch { return {}; }
 }
@@ -1809,13 +1809,13 @@ async function loadStudioModels() {
       if (m.id === data.current) opt.selected = true;
       studioModelSelect.appendChild(opt);
     });
-    const saved = localStorage.getItem("diab_image_model");
+    const saved = localStorage.getItem("wooz_image_model");
     if (saved && data.models.some(m => m.id === saved)) studioModelSelect.value = saved;
     updateStudioModelLabel();
     // Only apply model defaults on first load if no saved controls exist
     if (!_studioModelsLoaded) {
       _studioModelsLoaded = true;
-      if (!localStorage.getItem("diab_studio_controls")) updateStudioModelDefaults();
+      if (!localStorage.getItem("wooz_studio_controls")) updateStudioModelDefaults();
     }
     updateStudioSettingsSummary();
   } catch {
@@ -1854,7 +1854,7 @@ studioModelSelect.addEventListener("change", async () => {
       body: JSON.stringify({ model: newModel }),
     });
     if (res.ok) {
-      localStorage.setItem("diab_image_model", newModel);
+      localStorage.setItem("wooz_image_model", newModel);
       updateStudioModelDefaults();
       saveStudioControls();
       scheduleSettingsSync();
@@ -2272,7 +2272,7 @@ function _persistStudioRecord(id, results, rawPrompt, body) {
   // Auto-create a session if none active
   if (!activeStudioSessionId) {
     activeStudioSessionId = "sess_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
-    localStorage.setItem("diab_studio_session", activeStudioSessionId);
+    localStorage.setItem("wooz_studio_session", activeStudioSessionId);
   }
   const record = {
     id,
@@ -2441,7 +2441,7 @@ function appendStudioResult(dataArr, rawPrompt, body, recordId) {
     // Auto-create a session if none active
     if (!activeStudioSessionId) {
       activeStudioSessionId = "sess_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
-      localStorage.setItem("diab_studio_session", activeStudioSessionId);
+      localStorage.setItem("wooz_studio_session", activeStudioSessionId);
     }
     const record = {
       id,
