@@ -11,6 +11,7 @@ A self-hosted AI toolbox that runs entirely on your own hardware. Chat with loca
 - **File Vault** - Upload PDFs, markdown, and text files for semantic search during chat
 - **Web Search** - Optional web search integration via Tavily for current information
 - **Text-to-Speech** - 50+ voices via Kokoro TTS
+- **3D Avatar** - Local talking avatar (TalkingHead + Three.js) with amplitude-driven lip-sync, floating draggable overlay, fully offline
 - **Speech-to-Text** - Browser-native voice input
 - **Memory** - Automatic and manual fact memory across conversations
 - **Multi-user** - User accounts with admin panel, per-user settings and conversations
@@ -97,7 +98,9 @@ woozlebox/
 │   ├── index.html              # Full app markup (1,668 lines)
 │   ├── icons.svg               # SVG sprite sheet (34 icons)
 │   ├── css/                    # 6 CSS modules (variables, base, studios, chat, ui, responsive)
-│   └── js/                     # 17 JS modules (config, app, chat, studios, settings, etc.)
+│   ├── js/                     # 18 JS modules (config, app, chat, studios, settings, avatar, etc.)
+│   ├── lib/                    # Vendored JS libraries (Three.js r170, TalkingHead, lamejs)
+│   └── models/                 # 3D avatar GLB files (brunette.glb)
 ├── rag-api/                    # Chat, auth, vault, memory, TTS (FastAPI)
 │   ├── main.py                 # API endpoints
 │   ├── db.py                   # SQLite schema & queries
@@ -160,6 +163,15 @@ The `gpu-manager` automatically evicts models from VRAM when switching between m
 - Image-to-video (upload a starting frame)
 - Configurable resolution, frame count, and guidance
 - Session management, favorites, trash
+
+### 3D Avatar
+- TalkingHead library with Three.js WebGL rendering, fully vendored locally
+- Amplitude-driven lip-sync - jaw open blend shape driven from Web Audio AnalyserNode in real-time
+- Floating draggable panel (bottom-right), resizable, persists position between drags
+- Lazy init - GLB and WebGL context load only when first enabled, not on every page load
+- Toggle in Settings - Voice pane, state persisted in localStorage
+- Shares the same AudioContext as TTS for zero-overhead audio tapping
+- No new Docker service - runs entirely in the browser
 
 ### Platform
 - Multi-user with admin panel
