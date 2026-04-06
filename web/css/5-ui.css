@@ -769,3 +769,65 @@
     .fav-card:hover .img-fav-solo,
     .music-result-cover:hover .img-fav-solo { opacity: 1; }
 
+
+/* ══════════════════════════════════════════════════════════════
+   AVATAR FLOATING PANEL
+   ══════════════════════════════════════════════════════════════ */
+
+#avatar-float {
+  display: none;
+  position: fixed;
+  right: 20px;
+  bottom: 80px;
+  width: 260px;
+  height: 320px;
+  z-index: 250;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+  resize: both;
+}
+
+#avatar-float-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  cursor: grab;
+  user-select: none;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+#avatar-float-header:active { cursor: grabbing; }
+
+#avatar-close-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+#avatar-close-btn:hover { color: var(--text); }
+
+#avatar-canvas-wrap {
+  flex: 1;
+  overflow: hidden;
+  background: var(--surface2);
+  min-height: 0;
+}
+
+#avatar-canvas-wrap canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}

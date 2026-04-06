@@ -30,7 +30,10 @@ let ttsAbortController = null;
 let activeTtsBtn = null;
 
 function getAudioCtx() {
-  if (!audioCtx) audioCtx = new AudioContext();
+  if (!audioCtx) {
+    audioCtx = window._ttsAudioCtx || new AudioContext();
+    window._ttsAudioCtx = audioCtx;
+  }
   if (audioCtx.state === "suspended") audioCtx.resume();
   return audioCtx;
 }
@@ -58,6 +61,7 @@ function playSingleBuffer(decoded, signal) {
     const source = ctx.createBufferSource();
     source.buffer = decoded;
     source.connect(ctx.destination);
+    if (window._avatarAnalyser) source.connect(window._avatarAnalyser);
     currentSource = source;
     source.onended = resolve;
     source.start();
