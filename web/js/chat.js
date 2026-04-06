@@ -493,8 +493,7 @@ let chatAbortController = null;
 function stopStream() {
   chatAbortController?.abort();
   chatAbortController = null;
-  window._activeStreamingTts?.stop();
-  window._activeStreamingTts = null;
+  stopStreamingTts();
 }
 
 function setLoading(v) {
@@ -1171,8 +1170,8 @@ async function sendMessage() {
   let streamingTts = null;
   if (ttsEnabled) {
     streamingTts = new StreamingTTSSpeaker(getVoice());
-    window._activeStreamingTts = streamingTts;
-    if (typeof voiceModeActive !== "undefined" && voiceModeActive) {
+    setStreamingTts(streamingTts);
+    if (voiceModeActive) {
       streamingTts.onComplete = () => setTimeout(startListening, 300);
     }
   }
@@ -1264,8 +1263,6 @@ async function sendMessage() {
               } catch (_) {}
             })();
           }
-          // Auto-play TTS if enabled - streaming TTS already playing,
-          // just flush the remaining buffer
           if (streamingTts) {
             streamingTts.flush();
           } else if (ttsEnabled && answerText) {
@@ -1285,7 +1282,7 @@ async function sendMessage() {
     if (streamBubble && fullAnswer) streamBubble.finalize(fullAnswer, [], [], null, null, null, "");
   } finally {
     chatAbortController = null;
-    window._activeStreamingTts = null;
+    setStreamingTts(null);
     setLoading(false);
     // Drain queue: if messages are waiting, fire the next one
     if (messageQueue.length > 0) {

@@ -54,18 +54,25 @@ async function fetchTTSChunk(text, voice, signal) {
   return res.arrayBuffer();
 }
 
-function playSingleBuffer(decoded, signal) {
-  return new Promise((resolve, reject) => {
+function playSingleBuffer(decoded, signal, onSourceChange) {
+  return new Promise((resolve) => {
     if (signal.aborted) return resolve();
     const ctx = getAudioCtx();
     const source = ctx.createBufferSource();
     source.buffer = decoded;
     source.connect(ctx.destination);
     if (window._avatarAnalyser) source.connect(window._avatarAnalyser);
+    if (onSourceChange) onSourceChange(source);
     currentSource = source;
-    source.onended = resolve;
+    const onAbort = () => { try { source.stop(); } catch {} cleanup(); };
+    const cleanup = () => {
+      signal.removeEventListener("abort", onAbort);
+      if (onSourceChange) onSourceChange(null);
+      resolve();
+    };
+    source.onended = cleanup;
     source.start();
-    signal.addEventListener("abort", () => { try { source.stop(); } catch {} resolve(); });
+    signal.addEventListener("abort", onAbort);
   });
 }
 
@@ -105,11 +112,25 @@ function stopSpeaking() {
 // ── Streaming TTS Speaker ──
 // Plays TTS sentence-by-sentence as tokens arrive from the SSE stream,
 // pre-fetching the next sentence's audio while the current one plays.
+let activeStreamingTts = null;
+
+function setStreamingTts(instance) { activeStreamingTts = instance; }
+
+function stopStreamingTts() {
+  activeStreamingTts?.stop();
+  activeStreamingTts = null;
+}
+
+function stopAllTts() {
+  stopSpeaking();
+  stopStreamingTts();
+}
+
 class StreamingTTSSpeaker {
   constructor(voice) {
     this.voice = voice;
     this.buffer = "";
-    this.queue = [];       // [{fetchPromise, text}]
+    this.queue = [];
     this.playing = false;
     this.flushed = false;
     this.abortController = new AbortController();
@@ -177,27 +198,11 @@ class StreamingTTSSpeaker {
       if (this.abortController.signal.aborted) return;
       const decoded = await getAudioCtx().decodeAudioData(buf);
       if (this.abortController.signal.aborted) return;
-      await this._playSingle(decoded);
+      await playSingleBuffer(decoded, this.abortController.signal, (s) => { this.currentSource = s; });
     } catch (e) {
       if (e.name !== "AbortError") console.warn("Streaming TTS error:", e);
     }
     this._playNext();
-  }
-
-  _playSingle(decoded) {
-    return new Promise((resolve) => {
-      const signal = this.abortController.signal;
-      if (signal.aborted) return resolve();
-      const ctx = getAudioCtx();
-      const source = ctx.createBufferSource();
-      source.buffer = decoded;
-      source.connect(ctx.destination);
-      if (window._avatarAnalyser) source.connect(window._avatarAnalyser);
-      this.currentSource = source;
-      source.onended = () => { this.currentSource = null; resolve(); };
-      source.start();
-      signal.addEventListener("abort", () => { try { source.stop(); } catch {} resolve(); });
-    });
   }
 
   _fireComplete() {
@@ -220,10 +225,8 @@ if (SpeechRecognition) {
     sttActive = true;
     micBtn.classList.add("recording");
     micBtn.title = "Listening... click to stop";
-    // Interrupt any playing TTS when user starts speaking
-    stopSpeaking();
-    if (window._activeStreamingTts) { window._activeStreamingTts.stop(); window._activeStreamingTts = null; }
-    if (voiceModeActive && typeof stopStream === "function") stopStream();
+    stopAllTts();
+    if (voiceModeActive) stopStream();
   };
   sttRecognition.onend = () => {
     sttActive = false;
@@ -231,7 +234,6 @@ if (SpeechRecognition) {
     micBtn.title = "Voice input";
     const transcript = input.value.replace(/\u200B[\s\S]*$/, "").trim();
     input.value = transcript;
-    // In voice mode, auto-send if we got a transcript
     if (voiceModeActive && transcript) sendMessage();
   };
   sttRecognition.onerror = (e) => { if (e.error !== "aborted") showToast("Mic error: " + e.error); sttActive = false; micBtn.classList.remove("recording"); };
@@ -280,9 +282,7 @@ function stopVoiceMode() {
   voiceModeBtn.classList.remove("active");
   voiceModeBtn.title = "Voice conversation mode";
   if (sttActive) sttRecognition.stop();
-  stopSpeaking();
-  window._activeStreamingTts?.stop();
-  window._activeStreamingTts = null;
+  stopAllTts();
 }
 
 function startListening() {
