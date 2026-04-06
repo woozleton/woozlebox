@@ -7,17 +7,18 @@ import { TalkingHead } from '/lib/talkinghead/talkinghead.mjs';
 
 const AVATAR_KEY = 'wooz_avatar_enabled';
 let head = null;
-let analyser = null;
+let headInitialized = false;
 let avatarEnabled = localStorage.getItem(AVATAR_KEY) === 'true';
 
 // ── Shared AudioContext ──
-// Create this early so tts.js (deferred) can pick it up via window._ttsAudioCtx.
-// TalkingHead is also passed this same context via the audioCtx option.
+// Created here so tts.js (a regular defer script) can pick it up via
+// window._ttsAudioCtx when the user first triggers TTS (always after this
+// module has run, since modules execute before DOMContentLoaded).
 const sharedAudioCtx = new AudioContext();
 window._ttsAudioCtx = sharedAudioCtx;
 
-// AnalyserNode on the shared context - tts.js connects audio sources to it.
-analyser = sharedAudioCtx.createAnalyser();
+// AnalyserNode on the shared context - tts.js connects each audio source to it.
+const analyser = sharedAudioCtx.createAnalyser();
 analyser.fftSize = 256;
 window._avatarAnalyser = analyser;
 
@@ -44,6 +45,8 @@ function makeDraggable(panel, handle) {
 }
 
 // ── Amplitude-driven jaw animation ──
+// Only drives jawOpen - mouthOpen is a synthetic TalkingHead key that mixes
+// into jawOpen at 0.5x, so setting both would double the effect.
 function startAnimLoop() {
   const data = new Uint8Array(analyser.frequencyBinCount);
   function tick() {
@@ -55,15 +58,49 @@ function startAnimLoop() {
     const amplitude = Math.min(1, (sum / data.length / 128) * 5);
     const jaw = head.mtAvatar['jawOpen'];
     if (jaw) { jaw.realtime = amplitude; jaw.needsUpdate = true; }
-    const mouth = head.mtAvatar['mouthOpen'];
-    if (mouth) { mouth.realtime = amplitude * 0.5; mouth.needsUpdate = true; }
   }
   tick();
 }
 
-// ── Init ──
-async function initAvatar() {
-  // Build floating panel
+// ── Lazy TalkingHead init ──
+// Only called the first time the avatar is enabled - avoids loading the 4.7MB
+// GLB and starting the WebGL render loop on every page load.
+async function initTalkingHead() {
+  if (headInitialized) return;
+  headInitialized = true;
+
+  const wrap = document.getElementById('avatar-canvas-wrap');
+  head = new TalkingHead(wrap, {
+    ttsEndpoint: '',
+    audioCtx: sharedAudioCtx,
+    modelPixelRatio: 1,
+    cameraView: 'upper',
+  });
+
+  await head.showAvatar('/models/avatar.glb');
+  startAnimLoop();
+}
+
+// ── Toggle ──
+function applyAvatar(enabled) {
+  avatarEnabled = enabled;
+  localStorage.setItem(AVATAR_KEY, enabled);
+  const panel = document.getElementById('avatar-float');
+  if (!panel) return;
+  if (enabled) {
+    panel.style.display = 'flex';
+    initTalkingHead().catch(err => console.error('Avatar init failed:', err));
+  } else {
+    panel.style.display = 'none';
+  }
+}
+
+// Expose for settings toggle wired in index.html
+window.applyAvatar = applyAvatar;
+window._avatarEnabled = () => avatarEnabled;
+
+// ── Build panel DOM ──
+function buildPanel() {
   const panel = document.createElement('div');
   panel.id = 'avatar-float';
   panel.innerHTML =
@@ -82,31 +119,13 @@ async function initAvatar() {
     if (cb) cb.checked = false;
   });
 
-  // Init TalkingHead - pass shared AudioContext so it doesn't create a second one
-  const wrap = document.getElementById('avatar-canvas-wrap');
-  head = new TalkingHead(wrap, {
-    ttsEndpoint: '',
-    audioCtx: sharedAudioCtx,
-    modelPixelRatio: 1,
-    cameraView: 'upper',
-  });
-
-  await head.showAvatar('/models/avatar.glb');
-
-  startAnimLoop();
+  // Restore saved preference - if enabled, show panel and start TalkingHead
   applyAvatar(avatarEnabled);
 }
 
-// ── Toggle ──
-function applyAvatar(enabled) {
-  avatarEnabled = enabled;
-  localStorage.setItem(AVATAR_KEY, enabled);
-  const panel = document.getElementById('avatar-float');
-  if (panel) panel.style.display = enabled ? 'flex' : 'none';
+// Guard for cases where DOMContentLoaded may have already fired
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', buildPanel);
+} else {
+  buildPanel();
 }
-
-// Expose for settings toggle wired in index.html
-window.applyAvatar = applyAvatar;
-window._avatarEnabled = () => avatarEnabled;
-
-document.addEventListener('DOMContentLoaded', initAvatar);
