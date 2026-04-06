@@ -370,6 +370,9 @@
     #send-btn.stopping { background: var(--surface3); color: var(--danger); }
     #send-btn.stopping:hover { background: rgba(249,115,22,0.15); }
     #mic-btn.recording { color: #ef4444; background: rgba(239,68,68,0.12); animation: mic-pulse 1s ease-in-out infinite; }
+    #voice-mode-btn.active { color: #22c55e; background: rgba(34,197,94,0.12); animation: voice-pulse 1.5s ease-in-out infinite; }
+    body.voice-mode #input-box { border-color: rgba(34,197,94,0.4); box-shadow: 0 0 0 2px rgba(34,197,94,0.15); }
+    body.voice-mode #mic-btn.recording { color: #22c55e; background: rgba(34,197,94,0.12); animation: voice-pulse 1.5s ease-in-out infinite; }
 
     /* Vision image attachment */
     #image-preview-bar { display: none; align-items: center; gap: 6px; padding: 4px 8px; border-bottom: 1px solid var(--border); }

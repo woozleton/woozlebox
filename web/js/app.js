@@ -145,6 +145,7 @@ const input           = document.getElementById("message-input");
 const sendBtn         = document.getElementById("send-btn");
 const webBtn          = document.getElementById("web-btn");
 const micBtn          = document.getElementById("mic-btn");
+const voiceModeBtn    = document.getElementById("voice-mode-btn");
 const attachBtn       = document.getElementById("attach-btn");
 const imageFileInput  = document.getElementById("image-file-input");
 const imagePreviewBar = document.getElementById("image-preview-bar");

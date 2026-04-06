@@ -493,6 +493,8 @@ let chatAbortController = null;
 function stopStream() {
   chatAbortController?.abort();
   chatAbortController = null;
+  window._activeStreamingTts?.stop();
+  window._activeStreamingTts = null;
 }
 
 function setLoading(v) {
@@ -1166,6 +1168,14 @@ async function sendMessage() {
   };
 
   chatAbortController = new AbortController();
+  let streamingTts = null;
+  if (ttsEnabled) {
+    streamingTts = new StreamingTTSSpeaker(getVoice());
+    window._activeStreamingTts = streamingTts;
+    if (typeof voiceModeActive !== "undefined" && voiceModeActive) {
+      streamingTts.onComplete = () => setTimeout(startListening, 300);
+    }
+  }
   try {
     const res = await apiFetch(`/chat`, {
       method: "POST",
@@ -1214,6 +1224,7 @@ async function sendMessage() {
           tokenCount++;
           fullAnswer += event.text;
           streamBubble.appendToken(event.text);
+          if (streamingTts) streamingTts.pushToken(event.text);
         } else if (event.type === "memory_saved") {
           (event.facts || []).forEach(f => {
             showMemoryToast("Saved to memory: " + f.fact);
@@ -1253,8 +1264,11 @@ async function sendMessage() {
               } catch (_) {}
             })();
           }
-          // Auto-play TTS if enabled
-          if (ttsEnabled && answerText) {
+          // Auto-play TTS if enabled - streaming TTS already playing,
+          // just flush the remaining buffer
+          if (streamingTts) {
+            streamingTts.flush();
+          } else if (ttsEnabled && answerText) {
             const lastBubble = chatWindow.querySelector(".message-row.ai:last-child .tts-btn");
             speakText(answerText, getVoice(), lastBubble || null);
           }
@@ -1271,6 +1285,7 @@ async function sendMessage() {
     if (streamBubble && fullAnswer) streamBubble.finalize(fullAnswer, [], [], null, null, null, "");
   } finally {
     chatAbortController = null;
+    window._activeStreamingTts = null;
     setLoading(false);
     // Drain queue: if messages are waiting, fire the next one
     if (messageQueue.length > 0) {
