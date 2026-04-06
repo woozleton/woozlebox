@@ -98,7 +98,7 @@
     <div class="svc-accent accent-web"></div>
     <div class="svc-header">
       <span class="svc-name">web/</span>
-      <span class="svc-role">17 JS modules &middot; 6 CSS files &middot; 1,668 lines HTML</span>
+      <span class="svc-role">18 JS modules &middot; 6 CSS files &middot; 1,770 lines HTML</span>
     </div>
     <div class="svc-body">
       <div class="tree">
@@ -110,7 +110,7 @@
         <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">2-base.css</span><span class="tree-lines">577</span><span class="tree-desc">Reset, base elements, sidebar, layout, context menu</span></div>
         <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">3-studios.css</span><span class="tree-lines">1,206</span><span class="tree-desc">Shared studio components, image/music/video studios</span></div>
         <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">4-chat.css</span><span class="tree-lines">385</span><span class="tree-desc">Chat area, message bubbles, markdown, input area</span></div>
-        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">5-ui.css</span><span class="tree-lines">771</span><span class="tree-desc">Settings dialog, modals, vault panel, auth, toast, utilities</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">5-ui.css</span><span class="tree-lines">833</span><span class="tree-desc">Settings dialog, modals, vault panel, auth, toast, avatar panel, utilities</span></div>
         <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">6-responsive.css</span><span class="tree-lines">215</span><span class="tree-desc">Tablet, phone, and small-phone media queries</span></div>
         <div class="tree-file">&nbsp;</div>
         <div class="tree-file"><span class="tree-name dir">js/</span></div>
@@ -121,7 +121,7 @@
         <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">memory.js</span><span class="tree-lines">93</span><span class="tree-desc">Memory facts load/render/toggle/delete</span></div>
         <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">ui.js</span><span class="tree-lines">744</span><span class="tree-desc">Sidebar, search modal, context menus, resize handles, mobile</span></div>
         <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">markdown.js</span><span class="tree-lines">127</span><span class="tree-desc">renderMarkdown() - tables, code blocks, lists, links</span></div>
-        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">tts.js</span><span class="tree-lines">136</span><span class="tree-desc">TTS audio engine, speech-to-text mic input</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">tts.js</span><span class="tree-lines">140</span><span class="tree-desc">TTS audio engine, shared AudioContext for avatar lip-sync, STT mic input</span></div>
         <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">vault.js</span><span class="tree-lines">139</span><span class="tree-desc">File vault panel, upload, delete, move, index polling</span></div>
         <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">gpu.js</span><span class="tree-lines">142</span><span class="tree-desc">VRAM SSE connection, status polling, sidebar display</span></div>
         <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">admin.js</span><span class="tree-lines">255</span><span class="tree-desc">Admin panel, user management, default settings</span></div>
@@ -131,6 +131,15 @@
         <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">music-studio.js</span><span class="tree-lines">1,612</span><span class="tree-desc">Music generation, waveform, songwrite, sessions, presets</span></div>
         <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">video-studio.js</span><span class="tree-lines">802</span><span class="tree-desc">Video generation, I2V upload, sessions, favorites</span></div>
         <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">chat.js</span><span class="tree-lines">1,379</span><span class="tree-desc">Chat send, streaming, bubbles, suggestions, message queue</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">avatar.js</span><span class="tree-lines">131</span><span class="tree-desc">3D avatar (ES module) - TalkingHead init, floating panel, amplitude lip-sync loop</span></div>
+        <div class="tree-file">&nbsp;</div>
+        <div class="tree-file"><span class="tree-name dir">lib/</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">talkinghead/</span><span class="tree-desc">TalkingHead library + lipsync modules (vendored, MIT)</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">three/</span><span class="tree-desc">Three.js r170 ES module + addons (GLTFLoader, OrbitControls, etc.)</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">lamejs.min.js</span><span class="tree-desc">MP3 encoder for music studio recording</span></div>
+        <div class="tree-file">&nbsp;</div>
+        <div class="tree-file"><span class="tree-name dir">models/</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">avatar.glb</span><span class="tree-desc">3D avatar GLB with ARKit blend shapes (brunette, ~4.7 MB)</span></div>
       </div>
     </div>
   </div>
@@ -138,7 +147,7 @@
 
 <!-- ═══════════════════════════════════════════════════════════ -->
 <h2>Script Load Order</h2>
-<p class="section-desc">All scripts use the <code style="background:#2A2D3A;padding:2px 6px;border-radius:3px;font-size:14px;">defer</code> attribute. They execute after HTML parsing, in document order. Later scripts can call functions from earlier ones (global scope).</p>
+<p class="section-desc">Most scripts use the <code style="background:#2A2D3A;padding:2px 6px;border-radius:3px;font-size:14px;">defer</code> attribute and share global scope. <code style="background:#2A2D3A;padding:2px 6px;border-radius:3px;font-size:14px;">avatar.js</code> is a <code style="background:#2A2D3A;padding:2px 6px;border-radius:3px;font-size:14px;">type="module"</code> and runs in its own scope - it exposes functions via <code style="background:#2A2D3A;padding:2px 6px;border-radius:3px;font-size:14px;">window.*</code>. An <code style="background:#2A2D3A;padding:2px 6px;border-radius:3px;font-size:14px;">importmap</code> in <code style="background:#2A2D3A;padding:2px 6px;border-radius:3px;font-size:14px;">&lt;head&gt;</code> maps <code style="background:#2A2D3A;padding:2px 6px;border-radius:3px;font-size:14px;">three</code> and <code style="background:#2A2D3A;padding:2px 6px;border-radius:3px;font-size:14px;">three/addons/</code> to local vendored files.</p>
 
 <div class="load-order">
   <div class="load-group">
@@ -175,6 +184,10 @@
   <div class="load-group">
     <div class="load-group-label">Chat (depends on markdown, tts, image-studio for inline gen)</div>
     <div class="load-row"><span class="load-num">17</span><span class="load-file c-blue">chat.js</span></div>
+  </div>
+  <div class="load-group">
+    <div class="load-group-label">ES module (own scope, exposes window.applyAvatar + window._avatarEnabled)</div>
+    <div class="load-row"><span class="load-num">18</span><span class="load-file c-purple">avatar.js</span><span class="load-desc">type="module" - TalkingHead, Three.js, Web Audio via importmap</span></div>
   </div>
 </div>
 
@@ -325,13 +338,19 @@
         <span class="c-dim" style="font-weight:600;">GPU serialization</span>
         <span>gpu-manager serializes all /acquire calls via asyncio.Lock. Only one model occupies VRAM at a time (except music which keeps SDXL Turbo for cover art).</span>
 
+        <span class="c-dim" style="font-weight:600;">ES module + importmap</span>
+        <span>avatar.js is the only ES module. An importmap in &lt;head&gt; maps the bare specifiers <code style="background:#2A2D3A;padding:1px 5px;border-radius:3px;">three</code> and <code style="background:#2A2D3A;padding:1px 5px;border-radius:3px;">three/addons/</code> to vendored local files in <code style="background:#2A2D3A;padding:1px 5px;border-radius:3px;">web/lib/</code>, so TalkingHead and its deps resolve without a bundler.</span>
+
+        <span class="c-dim" style="font-weight:600;">Shared AudioContext</span>
+        <span>avatar.js creates the Web Audio AudioContext early and exposes it as <code style="background:#2A2D3A;padding:1px 5px;border-radius:3px;">window._ttsAudioCtx</code>. tts.js picks it up lazily on first TTS use, ensuring both share one context so the AnalyserNode can tap TTS audio for lip-sync.</span>
+
       </div>
     </div>
   </div>
 </div>
 
 <p class="footnote">
-  Total codebase: ~5,200 lines of Python across 6 backend services, ~9,650 lines of JavaScript across 17 modules, ~3,230 lines of CSS across 6 files, and ~1,670 lines of HTML.
+  Total codebase: ~5,200 lines of Python across 6 backend services, ~9,780 lines of JavaScript across 18 modules, ~3,292 lines of CSS across 6 files, and ~1,770 lines of HTML.
 </p>
 
 </body>
