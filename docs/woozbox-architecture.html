@@ -45,6 +45,7 @@
   .c-green { color: #34D399; }
   .c-blue { color: #60A5FA; }
   .c-purple { color: #818CF8; }
+  .c-teal { color: #2DD4BF; }
   .c-dim { color: #6B7280; }
   .c-text { color: #E4E4E7; }
   .accent-chat { background: #60A5FA; }
@@ -53,6 +54,7 @@
   .accent-video { background: #EF4444; }
   .accent-media { background: #818CF8; }
   .accent-gpu { background: #F97316; }
+  .accent-notetaker { background: #2DD4BF; }
   .accent-infra { background: #6B7280; }
   .bg-blue { background: #60A5FA22; color: #60A5FA; }
   .bg-purple { background: #818CF822; color: #818CF8; }
@@ -60,6 +62,7 @@
   .bg-amber { background: #F59E0B22; color: #F59E0B; }
   .bg-red { background: #EF444422; color: #EF4444; }
   .bg-orange { background: #F9731622; color: #F97316; }
+  .bg-teal { background: #2DD4BF22; color: #2DD4BF; }
   .bg-dim { background: #6B728022; color: #9CA3AF; }
 
   .footnote { margin-top: 24px; font-size: 14px; color: #6B7280; font-style: italic; max-width: 1100px; line-height: 1.6; }
@@ -107,7 +110,7 @@
 </div>
 
 <div class="arch-row-label">Generation Services (GPU)</div>
-<div class="arch-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+<div class="arch-grid">
   <div class="arch-card">
     <div class="arch-accent accent-image"></div>
     <div class="name c-green">image-api</div>
@@ -125,6 +128,12 @@
     <div class="name c-red">video-api</div>
     <div class="port">:8300</div>
     <div class="desc">Wan 2.1 T2V 1.3B - text/image-to-video</div>
+  </div>
+  <div class="arch-card">
+    <div class="arch-accent accent-notetaker"></div>
+    <div class="name c-teal">notetaker-api</div>
+    <div class="port">:8600</div>
+    <div class="desc">whisperX transcription + pyannote speaker diarization</div>
   </div>
 </div>
 
@@ -202,6 +211,18 @@
     <div class="flow-svc bg-red">video-api</div>
   </div>
   <div class="flow-row">
+    <div class="flow-label c-text">Note Taker</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-svc bg-purple">media-api</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-svc bg-orange">gpu-manager</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-svc bg-teal">notetaker-api</div>
+    <div class="flow-arrow">+</div>
+    <div class="flow-svc bg-dim">Ollama</div>
+    <div class="c-dim" style="font-size:10px;">(summaries)</div>
+  </div>
+  <div class="flow-row">
     <div class="flow-label c-text">Inspire / Name</div>
     <div class="flow-arrow">&rarr;</div>
     <div class="flow-svc bg-purple">media-api</div>
@@ -236,7 +257,7 @@
 <h2>VRAM Profiles</h2>
 <p class="section-desc">What gpu-manager loads/evicts when switching views. All gen services evict ALL Ollama models before inference.</p>
 
-<div class="grid">
+<div class="grid" style="grid-template-columns: repeat(5, 1fr);">
 
   <div class="card">
     <div class="card-accent accent-chat"></div>
@@ -338,12 +359,37 @@
     </div>
   </div>
 
+  <div class="card">
+    <div class="card-accent accent-notetaker"></div>
+    <div class="card-header"><span>&#127908;</span> Note Taker</div>
+    <div class="row">
+      <div class="row-label">Evict from Ollama</div>
+      <div class="row-value c-red">Non-utility LLMs</div>
+    </div>
+    <div class="row">
+      <div class="row-label">Unload Services</div>
+      <div class="row-value c-amber">image-api<br>music-api<br>video-api</div>
+    </div>
+    <div class="row">
+      <div class="row-label">Load into VRAM</div>
+      <div class="row-value c-green">whisperX model<br>(e.g. base ~1GB)</div>
+    </div>
+    <div class="row">
+      <div class="row-label">Utility LLM</div>
+      <div class="row-value c-purple">Yes (naming)<br>Full LLM (summaries)</div>
+    </div>
+    <div class="row">
+      <div class="row-label">Typical VRAM</div>
+      <div class="row-value c-blue">~1 - 3 GB</div>
+    </div>
+  </div>
+
 </div>
 
 <p class="footnote">
   gpu-manager is the sole VRAM authority. media-api calls /acquire before every generation.
   rag-api checks gpu-manager /status to detect GPU-busy state and defer chat.
-  Gen services (image/music/video-api) are pure generators with no Ollama access.
+  Gen services (image/music/video/notetaker-api) are pure generators with no Ollama access.
 </p>
 
 </body>
