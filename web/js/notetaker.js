@@ -268,7 +268,8 @@ function _displayNote(note) {
   // Audio player
   if (note.audioUrl) {
     ntPlayer.style.display = "";
-    ntAudio.src = MEDIA_API + "/notetaker/audio/" + note.id;
+    // Fetch audio with auth token and create blob URL for playback
+    _loadAudioWithAuth(note.id);
     _setupAudioPlayer();
   } else {
     ntPlayer.style.display = "none";
@@ -292,7 +293,25 @@ function _displayNote(note) {
 
 // ── Audio player ──
 
+async function _loadAudioWithAuth(noteId) {
+  try {
+    const resp = await mediaFetch("/notetaker/audio/" + noteId);
+    if (!resp.ok) return;
+    const blob = await resp.blob();
+    // Revoke previous blob URL if any
+    if (ntAudio._blobUrl) URL.revokeObjectURL(ntAudio._blobUrl);
+    ntAudio._blobUrl = URL.createObjectURL(blob);
+    ntAudio.src = ntAudio._blobUrl;
+  } catch (e) {
+    console.warn("Failed to load audio:", e);
+  }
+}
+
+let _ntPlayerWired = false;
 function _setupAudioPlayer() {
+  if (_ntPlayerWired) return;
+  _ntPlayerWired = true;
+
   const seekBar = document.getElementById("notetaker-seek");
   const timeCurrent = document.getElementById("notetaker-time-current");
   const timeTotal = document.getElementById("notetaker-time-total");
@@ -792,8 +811,8 @@ async function _renderNtTrashList() {
   for (const item of items) {
     const card = document.createElement("div");
     card.className = "studio-trash-card";
-    card.innerHTML = `<div class="studio-trash-card-info"><div class="studio-trash-card-prompt">${esc(item.title || "Untitled Note")}</div><div class="studio-trash-card-meta">${trashAge(item.deletedAt)}</div></div><div class="studio-trash-card-actions"><button class="restore-btn" title="Restore">Restore</button><button class="delete-btn" title="Delete permanently">Delete</button></div>`;
-    card.querySelector(".restore-btn").addEventListener("click", async () => {
+    card.innerHTML = `<div class="studio-trash-card-info"><div class="studio-trash-card-prompt">${esc(item.title || "Untitled Note")}</div><div class="studio-trash-card-meta">${trashAge(item.deletedAt)}</div></div><div class="studio-trash-card-actions"><button class="studio-trash-restore" title="Restore">Restore</button><button class="studio-trash-del" title="Delete permanently">Delete</button></div>`;
+    card.querySelector(".studio-trash-restore").addEventListener("click", async () => {
       delete item.deletedAt;
       await saveNote(item);
       await deleteFromNtTrash(item.id);
@@ -801,7 +820,7 @@ async function _renderNtTrashList() {
       restoreNotes();
       renderNotetakerSessionsList();
     });
-    card.querySelector(".delete-btn").addEventListener("click", async () => {
+    card.querySelector(".studio-trash-del").addEventListener("click", async () => {
       try { await mediaFetch("/notetaker/audio/" + item.id, { method: "DELETE" }); } catch (_) {}
       await deleteFromNtTrash(item.id);
       await _renderNtTrashList();
