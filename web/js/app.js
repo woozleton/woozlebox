@@ -195,7 +195,7 @@ let historyIndex   = -1;
 
 
 // ── Centralized view switching ──
-const _modelReady = { chat: false, studio: false, music: false, video: false };
+const _modelReady = { chat: false, studio: false, music: false, video: false, notetaker: false };
 let _prepareAbort = null;
 
 function setView(view) {
@@ -316,7 +316,7 @@ async function prepareModelsForView(view) {
   }
 
   // Don't evict models if a generation is actively running
-  if (studioGenerating || _musicGenerating || _videoGenerating || isLoading) return;
+  if (studioGenerating || _musicGenerating || _videoGenerating || _ntTranscribing || isLoading) return;
 
   // Check if target model already loaded
   try {
@@ -361,12 +361,24 @@ async function prepareModelsForView(view) {
       }
       return;
     }
+    if (view === "notetaker" && loaded.some(m => m.type === "notetaker")) {
+      _modelReady.notetaker = true;
+      if (loaded.some(m => m.type === "image") || loaded.some(m => m.type === "music") || loaded.some(m => m.type === "video")) {
+        fetch(GPU_API + "/acquire", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ service: "notetaker" }),
+        }).catch(() => {});
+      }
+      return;
+    }
   } catch {}
 
   // Model not loaded - show loading in prompt placeholder
   _modelReady[view] = false;
   const modelName = view === "studio"
     ? (studioModelSelect.options[studioModelSelect.selectedIndex]?.textContent || "image model")
+    : view === "notetaker" ? "Whisper"
     : view === "video" ? "Wan 2.2" : "ACE-Step";
   _setModelLoading(view, true, modelName);
 
@@ -411,6 +423,16 @@ async function prepareModelsForView(view) {
         _modelReady.video = true;
         _setModelLoading("video", false);
       }
+    } else if (view === "notetaker") {
+      await fetch(GPU_API + "/acquire", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ service: "notetaker" }),
+        signal: abort.signal,
+      });
+      if (!abort.signal.aborted) {
+        _modelReady.notetaker = true;
+      }
     }
   } catch (e) {
     if (e.name !== "AbortError") {
@@ -424,7 +446,7 @@ async function prepareModelsForView(view) {
 
 // View switching wrappers
 function _isGenerating() {
-  return studioGenerating || _musicGenerating || _videoGenerating;
+  return studioGenerating || _musicGenerating || _videoGenerating || _ntTranscribing;
 }
 
 async function _confirmViewSwitch() {
@@ -515,11 +537,13 @@ async function showNotetaker() {
     if (nft) nft.classList.add("active");
     if (typeof refreshNotetakerFavoritesPanel === "function") refreshNotetakerFavoritesPanel();
   }
+  prepareModelsForView("notetaker");
 }
 
 async function hideNotetaker() {
   if (!await _confirmViewSwitch()) return;
   setView("chat");
+  prepareModelsForView("chat");
 }
 
 function toggleStudio() {

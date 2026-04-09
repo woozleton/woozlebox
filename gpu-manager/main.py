@@ -386,6 +386,12 @@ VRAM_PROFILES = {
         "keep_utility_llm": False,
         "evict_all_llms": True,
     },
+    "notetaker": {
+        # Notetaker: Whisper only, nothing else (needs full VRAM for transcription)
+        "keep_services": [],
+        "keep_utility_llm": False,
+        "evict_all_llms": True,
+    },
 }
 
 # SDXL Turbo is the small/fast model used for cover art
