@@ -55,6 +55,7 @@ let _ntRecordStart = 0;
 let _ntTimerInterval = null;
 let _ntUploadedFile = null;
 let _ntPollTimer = null;
+let _ntTranscribing = false;
 let _ntCurrentNote = null;  // currently displayed note
 let _ntSpeakerColors = {};  // speaker -> color index mapping
 
@@ -569,6 +570,8 @@ document.getElementById("notetaker-transcribe-btn").addEventListener("click", as
   // Show progress
   ntProgress.style.display = "";
   document.getElementById("notetaker-transcribe-btn").disabled = true;
+  _ntTranscribing = true;
+  setVramAcquiring("notetaker", "Whisper");
   _startProgressPoll();
 
   try {
@@ -634,6 +637,8 @@ document.getElementById("notetaker-transcribe-btn").addEventListener("click", as
   } catch (err) {
     showToast(err.message, "error");
   } finally {
+    _ntTranscribing = false;
+    clearVramAcquiring();
     _stopProgressPoll();
     ntProgress.style.display = "none";
     document.getElementById("notetaker-transcribe-btn").disabled = false;

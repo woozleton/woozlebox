@@ -978,7 +978,7 @@ async def notetaker_summarize(req: NotetakerSummarizeRequest, user: dict = Depen
     if req.note_type == "custom" and req.custom_instructions:
         system = system.replace("{custom_instructions}", req.custom_instructions)
 
-    await _report_vram("call", LLM_MODEL, detail="notetaker_summary")
+    await _acquire_gpu("chat", model=LLM_MODEL)
 
     try:
         async with httpx.AsyncClient(timeout=120.0) as client:
