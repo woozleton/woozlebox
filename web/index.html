@@ -256,6 +256,10 @@
         <svg width="15" height="15"><use href="#i-video"/></svg>
         Video Studio
       </button>
+      <button class="sidebar-row sidebar-studio-btn" id="notetaker-sidebar-btn">
+        <svg width="15" height="15"><use href="#i-mic"/></svg>
+        Note Taker
+      </button>
     </div>
     <button id="sidebar-toggle" title="Collapse sidebar">
       <svg width="15" height="15"><use href="#i-sidebar"/></svg>
@@ -277,6 +281,9 @@
       </button>
       <button class="strip-btn" id="strip-video-btn" title="Video Studio">
         <svg width="16" height="16"><use href="#i-video"/></svg>
+      </button>
+      <button class="strip-btn" id="strip-notetaker-btn" title="Note Taker">
+        <svg width="16" height="16"><use href="#i-mic"/></svg>
       </button>
       <button class="strip-btn" id="strip-search-btn" title="Search chats">
         <svg width="16" height="16"><use href="#i-search"/></svg>
@@ -347,6 +354,21 @@
       <button id="video-new-session-btn" title="New session">+</button>
     </div>
     <div id="video-sessions-list" class="sb-list" style="display:none;"></div>
+
+    <!-- Note Taker: Folders + Sessions -->
+    <div id="notetaker-folders-section" class="sb-section" style="display:none;">
+      <div id="notetaker-folders-header" class="sb-section-header">
+        <span>Folders</span>
+        <button id="notetaker-folder-new-btn" title="New folder">+</button>
+      </div>
+      <div id="notetaker-folders-list"></div>
+    </div>
+    <div id="notetaker-folders-divider" class="sb-divider" style="display:none;"></div>
+    <div id="notetaker-sessions-header" class="sb-section-header" style="display:none;">
+      <span>Sessions</span>
+      <button id="notetaker-new-session-btn" title="New session">+</button>
+    </div>
+    <div id="notetaker-sessions-list" class="sb-list" style="display:none;"></div>
 
     <!-- Sidebar bottom -->
     <div id="sidebar-bottom">
@@ -900,6 +922,195 @@
           <p>Click the heart on any video to add it to your favorites.</p>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- ═══ Note Taker ═══ -->
+  <div id="notetaker-view" class="studio-view">
+    <div class="studio-col">
+    <div id="notetaker-header" class="studio-header">
+      <button id="notetaker-trash-btn" class="studio-trash-btn" title="Trash">
+        <svg width="14" height="14"><use href="#i-trash-lines"/></svg>
+        <span id="notetaker-trash-badge" class="studio-trash-badge"></span>
+      </button>
+      <button id="notetaker-fav-toggle" class="fav-toggle-btn" title="Favorites">
+        <svg width="14" height="14"><use href="#i-heart"/></svg>
+      </button>
+      <button id="notetaker-copy-md-btn" class="fav-toggle-btn" title="Copy as Markdown">
+        <svg width="14" height="14"><use href="#i-copy"/></svg>
+      </button>
+      <button id="notetaker-export-md-btn" class="fav-toggle-btn" title="Export Markdown">
+        <svg width="14" height="14"><use href="#i-download"/></svg>
+      </button>
+    </div>
+    <div class="studio-body-layout">
+      <div class="studio-main-area">
+        <!-- Transcript canvas -->
+        <div id="notetaker-canvas" class="studio-canvas" style="display:none;">
+        </div>
+        <div id="notetaker-canvas-empty" class="studio-canvas-empty">
+          <svg width="48" height="48"><use href="#i-mic"/></svg>
+          <p>Record a meeting or upload an audio file to get started.</p>
+        </div>
+        <!-- Audio player bar -->
+        <div id="notetaker-player" class="nt-audio-player" style="display:none;">
+          <audio id="notetaker-audio" preload="metadata"></audio>
+          <button id="notetaker-play-btn" class="nt-play-btn" title="Play">
+            <svg width="14" height="14"><use href="#i-play"/></svg>
+          </button>
+          <span id="notetaker-time-current">0:00</span>
+          <input id="notetaker-seek" type="range" min="0" max="100" value="0" class="nt-seek-bar">
+          <span id="notetaker-time-total">0:00</span>
+          <select id="notetaker-speed" class="nt-speed-select">
+            <option value="0.5">0.5x</option>
+            <option value="1" selected>1x</option>
+            <option value="1.5">1.5x</option>
+            <option value="2">2x</option>
+          </select>
+        </div>
+        <!-- Summary panel -->
+        <div id="notetaker-summary-panel" class="nt-summary-section" style="display:none;">
+          <div class="nt-summary-header">
+            <span>Summary</span>
+            <button id="notetaker-regen-summary-btn" class="fav-toggle-btn" title="Regenerate summary">
+              <svg width="12" height="12"><use href="#i-refresh"/></svg>
+            </button>
+            <button id="notetaker-copy-summary-btn" class="fav-toggle-btn" title="Copy summary">
+              <svg width="12" height="12"><use href="#i-copy"/></svg>
+            </button>
+          </div>
+          <div id="notetaker-summary-text" class="nt-summary-text"></div>
+        </div>
+      </div>
+      <!-- Right sidebar: source + settings -->
+      <div class="studio-col" style="max-width:340px; min-width:260px; border-left:1px solid var(--border);">
+        <!-- Audio source tabs -->
+        <div class="nt-source-tabs">
+          <button class="nt-source-tab active" data-source="mic" title="Microphone">
+            <svg width="14" height="14"><use href="#i-mic"/></svg> Mic
+          </button>
+          <button class="nt-source-tab" data-source="system" title="System Audio">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> System
+          </button>
+          <button class="nt-source-tab" data-source="upload" title="Upload File">
+            <svg width="14" height="14"><use href="#i-upload"/></svg> Upload
+          </button>
+        </div>
+        <!-- Recording controls (mic/system) -->
+        <div id="notetaker-record-section" class="nt-record-section">
+          <canvas id="notetaker-waveform" class="nt-waveform" width="280" height="60"></canvas>
+          <div id="notetaker-record-timer" class="nt-record-timer">0:00</div>
+          <div class="nt-record-btns">
+            <button id="notetaker-record-btn" class="accent-btn">
+              <svg width="14" height="14"><use href="#i-mic"/></svg> Record
+            </button>
+            <button id="notetaker-pause-btn" class="fav-toggle-btn" style="display:none;" title="Pause">
+              <svg width="14" height="14"><use href="#i-pause"/></svg>
+            </button>
+            <button id="notetaker-stop-btn" class="fav-toggle-btn" style="display:none;" title="Stop">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+            </button>
+          </div>
+        </div>
+        <!-- Upload section -->
+        <div id="notetaker-upload-section" class="nt-upload-section" style="display:none;">
+          <div id="notetaker-dropzone" class="video-image-upload">
+            Drop audio/video file here or <label for="notetaker-file-input" style="color:var(--accent);cursor:pointer;text-decoration:underline;">browse</label>
+            <input id="notetaker-file-input" type="file" accept=".wav,.mp3,.m4a,.flac,.mp4,.mkv,.webm,.mov,.ogg,.wma" style="display:none;">
+            <div id="notetaker-file-info" style="display:none; margin-top:8px; font-size:0.75rem; color:var(--text-dim);"></div>
+          </div>
+        </div>
+        <!-- Settings panel -->
+        <div class="studio-controls">
+          <div id="notetaker-settings-crumb" class="settings-crumb">
+            <span id="notetaker-settings-trigger" class="settings-trigger">
+              Settings
+              <svg class="chevron-icon" width="9" height="9" style="opacity:0.5;"><use href="#i-chevron-down"/></svg>
+            </span>
+          </div>
+          <div id="notetaker-settings-panel" class="settings-panel">
+            <div class="nt-settings-grid">
+              <label>Note Type
+                <select id="notetaker-type-select">
+                  <option value="professional">Professional</option>
+                  <option value="personal">Personal</option>
+                  <option value="casual">Casual</option>
+                  <option value="training">Training</option>
+                  <option value="interview">Interview</option>
+                  <option value="client">Client</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </label>
+              <div id="notetaker-custom-instructions-row" style="display:none;">
+                <label>Custom Instructions
+                  <textarea id="notetaker-custom-instructions" rows="2" placeholder="e.g., Focus on technical decisions and architecture changes"></textarea>
+                </label>
+              </div>
+              <label>Model
+                <select id="notetaker-model-select">
+                  <option value="tiny">tiny</option>
+                  <option value="base" selected>base</option>
+                  <option value="small">small</option>
+                  <option value="medium">medium</option>
+                  <option value="large-v3">large-v3</option>
+                </select>
+              </label>
+              <label>Language
+                <select id="notetaker-lang-select">
+                  <option value="auto">Auto-detect</option>
+                  <option value="en">English</option>
+                  <option value="es">Spanish</option>
+                  <option value="fr">French</option>
+                  <option value="de">German</option>
+                  <option value="it">Italian</option>
+                  <option value="pt">Portuguese</option>
+                  <option value="nl">Dutch</option>
+                  <option value="ja">Japanese</option>
+                  <option value="ko">Korean</option>
+                  <option value="zh">Chinese</option>
+                  <option value="ru">Russian</option>
+                  <option value="ar">Arabic</option>
+                  <option value="hi">Hindi</option>
+                </select>
+              </label>
+              <label class="nt-checkbox-label">
+                <input type="checkbox" id="notetaker-diarize-check" checked>
+                Speaker Diarization
+              </label>
+              <label id="notetaker-speakers-label">Speakers (hint)
+                <input type="number" id="notetaker-speakers-input" min="1" max="20" placeholder="auto">
+              </label>
+            </div>
+          </div>
+        </div>
+        <!-- Transcribe button -->
+        <div style="padding:8px 16px 16px;">
+          <button id="notetaker-transcribe-btn" class="accent-btn" style="width:100%;">Transcribe</button>
+          <button id="notetaker-summarize-btn" class="accent-btn" style="width:100%; margin-top:8px; display:none;">Generate Summary</button>
+        </div>
+        <!-- Progress -->
+        <div id="notetaker-progress" class="studio-live-footer" style="display:none;">
+          <div id="notetaker-progress-msg" class="studio-live-progress">
+            <span class="slp-dot"></span><span class="slp-dot"></span><span class="slp-dot"></span>
+            <span id="notetaker-progress-text">Transcribing...</span>
+          </div>
+          <button id="notetaker-cancel-btn" class="studio-live-stop" title="Cancel">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- Favorites panel -->
+    <div id="notetaker-fav-panel" class="fav-panel">
+      <div class="fav-panel-header">
+        <h3><svg width="14" height="14"><use href="#i-heart"/></svg> Favorites <span id="notetaker-fav-count" class="fav-count"></span></h3>
+      </div>
+      <div id="notetaker-fav-list" class="fav-panel-list"></div>
+      <div id="notetaker-fav-empty" class="fav-panel-empty">
+        <svg width="32" height="32" style="opacity:0.3"><use href="#i-heart"/></svg>
+        <p>Click the heart on any note to add it to your favorites.</p>
+      </div>
+    </div>
     </div>
   </div>
 
@@ -1755,6 +1966,7 @@
 <script src="lib/lamejs.min.js"></script>
 <script src="js/music-studio.js"></script>
 <script src="js/video-studio.js"></script>
+<script src="js/notetaker.js"></script>
 <script src="js/chat.js"></script>
 <script>
   // Avatar settings toggle - wired after all deferred scripts have run

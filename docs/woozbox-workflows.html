@@ -53,6 +53,7 @@
   .chip-amber { background: #F59E0B22; color: #F59E0B; }
   .chip-red { background: #EF444422; color: #EF4444; }
   .chip-purple { background: #818CF822; color: #818CF8; }
+  .chip-teal { background: #2DD4BF22; color: #2DD4BF; }
   .chip-dim { background: #6B728022; color: #9CA3AF; }
   .chip-gone { background: transparent; color: #4B5563; border: 1px dashed #4B5563; }
 
@@ -60,12 +61,14 @@
   .dot-green { background: #34D399; border-color: #34D399; }
   .dot-amber { background: #F59E0B; border-color: #F59E0B; }
   .dot-red { background: #EF4444; border-color: #EF4444; }
+  .dot-teal { background: #2DD4BF; border-color: #2DD4BF; }
   .dot-purple { background: #818CF8; border-color: #818CF8; }
 
   .c-red { color: #EF4444; }
   .c-amber { color: #F59E0B; }
   .c-green { color: #34D399; }
   .c-blue { color: #60A5FA; }
+  .c-teal { color: #2DD4BF; }
   .c-purple { color: #818CF8; }
   .c-dim { color: #6B7280; }
 
@@ -532,10 +535,124 @@
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 class="c-teal">Note Taker</h2>
+<p class="h2-desc">whisperX transcription + optional LLM summarization - lightweight VRAM footprint</p>
+
+<div class="workflow">
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Switch to Note Taker</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-teal"></div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">gpu-manager /acquire (notetaker)</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-red">&#10005;</span> Evict non-utility LLMs</div>
+          <div class="action"><span class="action-icon c-amber">&#9660;</span> Unload image-api, music-api, video-api</div>
+          <div class="action"><span class="action-icon c-green">&#9650;</span> Load whisperX model (e.g. base ~1GB)</div>
+        </div>
+        <div class="vram-state">
+          <div class="vram-state-label">VRAM Before (example: coming from Image Studio)</div>
+          <div class="vram-bar">
+            <span class="vram-chip chip-gone">stable-diffusion-3.5 <span class="vram-size">13.1G</span></span>
+          </div>
+        </div>
+        <div class="vram-state" style="border-top:none; padding-top:4px;">
+          <div class="vram-state-label">VRAM After (~1GB)</div>
+          <div class="vram-bar">
+            <span class="vram-chip chip-teal">whisperX base <span class="vram-size">~1G</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Transcribe</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-teal"></div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">notetaker-api /transcribe</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon" style="color:#2DD4BF;">&#9679;</span> ffmpeg converts audio to 16kHz WAV</div>
+          <div class="action"><span class="action-icon" style="color:#2DD4BF;">&#9679;</span> whisperX transcribes + aligns word timestamps</div>
+          <div class="action"><span class="action-icon" style="color:#2DD4BF;">&#9679;</span> pyannote diarizes speakers (if enabled)</div>
+        </div>
+        <div class="vram-state">
+          <div class="vram-state-label">VRAM During</div>
+          <div class="vram-bar">
+            <span class="vram-chip chip-teal">whisperX base <span class="vram-size">~1G</span></span>
+            <span class="vram-chip chip-teal">pyannote diarize <span class="vram-size">~0.5G</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Auto-Name</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-purple"></div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">media-api /notetaker/name</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-purple">&#9679;</span> qwen3:0.6b generates title from transcript</div>
+        </div>
+        <div class="vram-state">
+          <div class="vram-state-label">VRAM After</div>
+          <div class="vram-bar">
+            <span class="vram-chip chip-purple">qwen3:0.6b <span class="vram-size">0.4G</span></span>
+            <span class="vram-chip chip-teal">whisperX base <span class="vram-size">~1G</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Summarize (optional)</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-blue"></div>
+      <div class="step-line" style="background:transparent;"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">media-api /notetaker/summarize</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-blue">&#9679;</span> Uses full LLM (e.g. qwen2.5:14b) for quality summaries</div>
+          <div class="action"><span class="action-icon c-blue">&#9679;</span> Prompt selected by note type (professional, personal, etc.)</div>
+          <div class="action"><span class="action-icon c-dim">&#9888;</span> <span class="c-dim">whisperX stays loaded - coexists with LLM</span></div>
+        </div>
+        <div class="vram-state">
+          <div class="vram-state-label">VRAM During</div>
+          <div class="vram-bar">
+            <span class="vram-chip chip-blue">qwen2.5:14b <span class="vram-size">16.5G</span></span>
+            <span class="vram-chip chip-teal">whisperX base <span class="vram-size">~1G</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <p class="footnote">
   The utility model (qwen3:0.6b) loads on-demand in ~1s when inspire/naming is called.
   It's always evicted before actual inference via the pre_inference flag on /acquire.
   Cover art for video uses a separate /video/cover-art endpoint that loads SDXL Turbo after video generation completes.
+  Note Taker's whisperX model has a small VRAM footprint (~1GB for base) and coexists with the LLM during summarization.
 </p>
 
 </body>

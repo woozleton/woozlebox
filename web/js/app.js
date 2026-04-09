@@ -128,6 +128,8 @@ async function loadApp() {
     showMusicStudio();
   } else if (_savedView === "video") {
     showVideoStudio();
+  } else if (_savedView === "notetaker") {
+    showNotetaker();
   } else {
     setView("chat");
   }
@@ -206,12 +208,15 @@ function setView(view) {
   musicStudio.classList.toggle("active", view === "music");
   const _vs = document.getElementById("video-studio");
   if (_vs) _vs.classList.toggle("active", view === "video");
+  const _nt = document.getElementById("notetaker-view");
+  if (_nt) _nt.classList.toggle("active", view === "notetaker");
 
   // Sidebar nav buttons
   $("new-chat-btn").classList.toggle("active", view === "chat");
   $("studio-sidebar-btn").classList.toggle("active", view === "studio");
   $("music-sidebar-btn").classList.toggle("active", view === "music");
   $("video-sidebar-btn").classList.toggle("active", view === "video");
+  $("notetaker-sidebar-btn").classList.toggle("active", view === "notetaker");
 
   // Chat sections
   $("chat-folders-section").style.display = view === "chat" ? "" : "none";
@@ -238,6 +243,12 @@ function setView(view) {
   $("video-folders-divider").style.display = view === "video" ? "" : "none";
   $("video-sessions-header").style.display = view === "video" ? "" : "none";
   $("video-sessions-list").style.display = view === "video" ? "" : "none";
+
+  // Note Taker sections
+  $("notetaker-folders-section").style.display = view === "notetaker" ? "" : "none";
+  $("notetaker-folders-divider").style.display = view === "notetaker" ? "" : "none";
+  $("notetaker-sessions-header").style.display = view === "notetaker" ? "" : "none";
+  $("notetaker-sessions-list").style.display = view === "notetaker" ? "" : "none";
 
   // Mobile sidebar
   if (isMobile() && typeof closeMobileSidebar === "function") closeMobileSidebar();
@@ -487,6 +498,28 @@ async function hideVideoStudio() {
   if (!await _confirmViewSwitch()) return;
   setView("chat");
   prepareModelsForView("chat");
+}
+
+async function showNotetaker() {
+  if (!await _confirmViewSwitch()) return;
+  setView("notetaker");
+  if (typeof loadNotetakerFolders === "function") loadNotetakerFolders();
+  if (typeof renderNotetakerSessionsList === "function") renderNotetakerSessionsList();
+  if (typeof _ensureNotetakerSession === "function") _ensureNotetakerSession();
+  if (typeof restoreNotes === "function") restoreNotes();
+  if (typeof _refreshNotetakerTrashBadge === "function") _refreshNotetakerTrashBadge();
+  if (localStorage.getItem("wooz_notetaker_fav_open") === "1") {
+    const nfp = document.getElementById("notetaker-fav-panel");
+    const nft = document.getElementById("notetaker-fav-toggle");
+    if (nfp) nfp.classList.add("open");
+    if (nft) nft.classList.add("active");
+    if (typeof refreshNotetakerFavoritesPanel === "function") refreshNotetakerFavoritesPanel();
+  }
+}
+
+async function hideNotetaker() {
+  if (!await _confirmViewSwitch()) return;
+  setView("chat");
 }
 
 function toggleStudio() {

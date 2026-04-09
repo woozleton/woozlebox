@@ -125,6 +125,26 @@ services:
               capabilities: [gpu]
     restart: unless-stopped
 
+  notetaker-api:
+    build: ./notetaker-api
+    container_name: notetaker-api
+    ports:
+      - "${NOTETAKER_API_PORT:-8600}:8600"
+    volumes:
+      - hf_cache:/root/.cache/huggingface
+      - notetaker_data:/data
+    environment:
+      - HF_TOKEN=${HF_TOKEN}
+      - HF_HOME=/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+
   media-api:
     build: ./media-api
     container_name: media-api
@@ -138,6 +158,7 @@ services:
       - IMAGE_GEN_URL=${IMAGE_GEN_URL:-http://image-api:8100}
       - MUSIC_GEN_URL=${MUSIC_GEN_URL:-http://music-api:8200}
       - VIDEO_GEN_URL=${VIDEO_GEN_URL:-http://video-api:8300}
+      - NOTETAKER_API_URL=${NOTETAKER_API_URL:-http://notetaker-api:8600}
       - GPU_MANAGER_URL=${GPU_MANAGER_URL:-http://gpu-manager:8400}
     depends_on:
       - rag-api
@@ -153,6 +174,7 @@ services:
       - IMAGE_GEN_URL=${IMAGE_GEN_URL:-http://image-api:8100}
       - MUSIC_GEN_URL=${MUSIC_GEN_URL:-http://music-api:8200}
       - VIDEO_GEN_URL=${VIDEO_GEN_URL:-http://video-api:8300}
+      - NOTETAKER_API_URL=${NOTETAKER_API_URL:-http://notetaker-api:8600}
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
       - UTILITY_MODEL=${UTILITY_MODEL:-qwen3:0.6b}
       - LLM_MODEL=${LLM_MODEL:-qwen3:30b-a3b}
@@ -179,3 +201,4 @@ volumes:
   rag_data:
   ollama_data:
   hf_cache:
+  notetaker_data:

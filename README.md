@@ -8,6 +8,7 @@ A self-hosted AI toolbox that runs entirely on your own hardware. Chat with loca
 - **Image Studio** - Text-to-image generation with Stable Diffusion 3.5, Playground v2.5, SDXL Turbo, inpainting, and Real-ESRGAN upscaling
 - **Music Studio** - Text-to-music generation with ACE-Step 1.5, automatic cover art, AI songwriting
 - **Video Studio** - Text-to-video and image-to-video generation with Wan 2.1
+- **Note Taker** - Record meetings or upload audio/video files, transcribe with whisperX, speaker diarization, AI-powered summaries with 7 note types
 - **File Vault** - Upload PDFs, markdown, and text files for semantic search during chat
 - **Web Search** - Optional web search integration via Tavily for current information
 - **Text-to-Speech** - 50+ voices via Kokoro TTS
@@ -46,7 +47,7 @@ EMBED_MODEL=nomic-embed-text     # Embedding model for RAG
 
 # ── Optional API Keys ──
 TAVILY_API_KEY=tvly-...          # Enables web search (https://tavily.com)
-HF_TOKEN=hf_...                  # HuggingFace token (for gated models)
+HF_TOKEN=hf_...                  # HuggingFace token (for gated models + diarization)
 
 # ── Ports ──
 WEB_PORT=8080                    # Web UI
@@ -54,6 +55,7 @@ RAG_API_PORT=8000                # Chat/auth API
 IMAGE_GEN_PORT=8100              # Image generation
 MUSIC_GEN_PORT=8200              # Music generation
 VIDEO_GEN_PORT=8300              # Video generation
+NOTETAKER_API_PORT=8600          # Note taker (transcription + diarization)
 GPU_MANAGER_PORT=8400            # VRAM orchestration
 MEDIA_API_PORT=8500              # Media orchestration
 
@@ -64,25 +66,26 @@ TTS_VOICE=af_heart               # Default TTS voice
 
 ## Architecture
 
-Nine Docker containers on a single machine, sharing one GPU:
+Ten Docker containers on a single machine, sharing one GPU:
 
 ```
-┌─────────────────────────────────────────────────────┐
-│  web (nginx :8080)  ─  Static SPA frontend          │
-├─────────────────────────────────────────────────────┤
-│  rag-api (:8000)    ─  Chat, auth, vault, TTS       │
-│  media-api (:8500)  ─  Media orchestration proxy     │
-│  gpu-manager (:8400)─  VRAM orchestration            │
-├─────────────────────────────────────────────────────┤
-│  image-api (:8100)  ─  SD 3.5, SDXL Turbo, etc.     │
-│  music-api (:8200)  ─  ACE-Step 1.5                  │
-│  video-api (:8300)  ─  Wan 2.1 T2V 1.3B             │
-├─────────────────────────────────────────────────────┤
-│  Ollama (:11434)    ─  LLM inference                 │
-│  ChromaDB (:8001)   ─  Vector store for RAG          │
-│  Kokoro             ─  Text-to-speech                │
-│  SQLite             ─  Users, conversations, memory  │
-└─────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│  web (nginx :8080)     ─  Static SPA frontend            │
+├──────────────────────────────────────────────────────────┤
+│  rag-api (:8000)       ─  Chat, auth, vault, TTS        │
+│  media-api (:8500)     ─  Media orchestration proxy      │
+│  gpu-manager (:8400)   ─  VRAM orchestration             │
+├──────────────────────────────────────────────────────────┤
+│  image-api (:8100)     ─  SD 3.5, SDXL Turbo, etc.      │
+│  music-api (:8200)     ─  ACE-Step 1.5                   │
+│  video-api (:8300)     ─  Wan 2.1 T2V 1.3B              │
+│  notetaker-api (:8600) ─  whisperX transcription         │
+├──────────────────────────────────────────────────────────┤
+│  Ollama (:11434)       ─  LLM inference                  │
+│  ChromaDB (:8001)      ─  Vector store for RAG           │
+│  Kokoro                ─  Text-to-speech                 │
+│  SQLite                ─  Users, conversations, memory   │
+└──────────────────────────────────────────────────────────┘
 ```
 
 **GPU sharing** - Only one model occupies VRAM at a time. `gpu-manager` handles all loading/eviction automatically. When you switch from chat to image studio, it evicts the chat LLM and loads the diffusion model. No manual management needed.
@@ -95,10 +98,10 @@ See `docs/` for detailed architecture diagrams and VRAM workflow documentation.
 woozlebox/
 ├── docker-compose.yml          # All services, ports, volumes, GPU access
 ├── web/                        # Static SPA frontend (vanilla JS, no framework)
-│   ├── index.html              # Full app markup (1,668 lines)
-│   ├── icons.svg               # SVG sprite sheet (34 icons)
+│   ├── index.html              # Full app markup (1,985 lines)
+│   ├── icons.svg               # SVG sprite sheet (35 icons)
 │   ├── css/                    # 6 CSS modules (variables, base, studios, chat, ui, responsive)
-│   ├── js/                     # 18 JS modules (config, app, chat, studios, settings, avatar, etc.)
+│   ├── js/                     # 19 JS modules (config, app, chat, studios, notetaker, settings, avatar, etc.)
 │   ├── lib/                    # Vendored JS libraries (Three.js r170, TalkingHead, lamejs)
 │   └── models/                 # 3D avatar GLB files (brunette.glb)
 ├── rag-api/                    # Chat, auth, vault, memory, TTS (FastAPI)
@@ -115,6 +118,8 @@ woozlebox/
 │   └── main.py                 # ACE-Step 1.5
 ├── video-api/                  # Video generation (FastAPI + PyTorch)
 │   └── main.py                 # Wan 2.1 T2V 1.3B
+├── notetaker-api/              # Transcription + diarization (FastAPI + whisperX)
+│   └── main.py                 # whisperX pipeline, audio storage
 └── docs/                       # HTML reference documentation
 ```
 
@@ -125,7 +130,8 @@ woozlebox/
 | Chat | Selected LLM (e.g. qwen3:30b-a3b) | 3 – 17 GB |
 | Image Studio | Diffusion model + utility LLM | 7 – 13 GB |
 | Music Studio | ACE-Step + SDXL Turbo (cover art) | ~13 GB |
-| Video Studio | Wan 2.1 T2V 1.3B | ~5 – 10 GB |
+| Video Studio | Wan 2.1 T2V 1.3B | ~5 - 10 GB |
+| Note Taker | whisperX (base) + diarization | ~1 - 3 GB |
 
 The `gpu-manager` automatically evicts models from VRAM when switching between modes.
 
@@ -163,6 +169,19 @@ The `gpu-manager` automatically evicts models from VRAM when switching between m
 - Image-to-video (upload a starting frame)
 - Configurable resolution, frame count, and guidance
 - Session management, favorites, trash
+
+### Note Taker
+- Record meetings via microphone, capture system audio (virtual meetings), or upload audio/video files
+- Transcription via whisperX (faster-whisper + word-level alignment)
+- Speaker diarization via pyannote.audio - automatically identifies who said what
+- 7 note types (professional, personal, casual, training, interview, client, custom) with tailored AI summaries
+- Custom note type with user-defined summary focus instructions
+- Click-to-seek transcript viewer with color-coded speaker labels
+- Rename speakers (e.g., "Speaker 1" to "Alice")
+- Audio playback with speed controls (0.5x - 2x) synced to transcript
+- Markdown export (copy or download) with transcript and summary
+- Re-transcribe with different model/language/diarization settings without re-uploading
+- Session management, favorites, folders, trash
 
 ### 3D Avatar
 - TalkingHead library with Three.js WebGL rendering, fully vendored locally

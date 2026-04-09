@@ -1282,3 +1282,166 @@
     #video-trash-list { flex: 1; overflow-y: auto; padding: 8px; }
     .studio-trash-badge:empty { display: none; }
 
+    /* ══════════════════════════════════════════════════════════════
+       NOTE TAKER
+       ══════════════════════════════════════════════════════════════ */
+
+    /* Source tabs (mic / system / upload) */
+    .nt-source-tabs {
+      display: flex; gap: 0; border-bottom: 1px solid var(--border);
+      padding: 0 12px; flex-shrink: 0;
+    }
+    .nt-source-tab {
+      flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px;
+      padding: 8px 4px; font-size: 0.72rem; font-weight: 500;
+      background: none; border: none; border-bottom: 2px solid transparent;
+      color: var(--text-faint); cursor: pointer; transition: color 0.15s, border-color 0.15s;
+    }
+    .nt-source-tab:hover { color: var(--text-dim); }
+    .nt-source-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .nt-source-tab svg { width: 14px; height: 14px; }
+
+    /* Recording section */
+    .nt-record-section {
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      padding: 16px;
+    }
+    .nt-waveform {
+      width: 100%; height: 60px; border-radius: 8px;
+      background: var(--surface); border: 1px solid var(--border);
+    }
+    .nt-record-timer {
+      font-size: 1.4rem; font-weight: 600; color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+    .nt-record-btns { display: flex; gap: 8px; align-items: center; }
+    .nt-record-section .accent-btn { gap: 4px; }
+
+    /* Upload section */
+    .nt-upload-section { padding: 16px; }
+
+    /* Settings grid */
+    .nt-settings-grid {
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .nt-settings-grid label {
+      display: flex; flex-direction: column; gap: 3px;
+      font-size: 0.72rem; font-weight: 500; color: var(--text-dim);
+    }
+    .nt-settings-grid select,
+    .nt-settings-grid input[type="number"],
+    .nt-settings-grid textarea {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 6px; padding: 6px 8px; font-size: 0.78rem;
+      color: var(--text); outline: none; transition: border-color 0.15s;
+    }
+    .nt-settings-grid select:focus,
+    .nt-settings-grid input:focus,
+    .nt-settings-grid textarea:focus { border-color: var(--accent); }
+    .nt-settings-grid select option { background: var(--surface); color: var(--text); }
+    .nt-settings-grid textarea { resize: vertical; min-height: 40px; font-family: inherit; }
+    .nt-checkbox-label {
+      flex-direction: row !important; align-items: center; gap: 6px !important;
+    }
+    .nt-checkbox-label input[type="checkbox"] {
+      accent-color: var(--accent); width: 14px; height: 14px;
+    }
+
+    /* Audio player bar */
+    .nt-audio-player {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 16px; border-top: 1px solid var(--border);
+      background: var(--surface); flex-shrink: 0;
+    }
+    .nt-play-btn {
+      background: none; border: none; color: var(--text); cursor: pointer;
+      padding: 4px; border-radius: 4px; transition: background 0.15s;
+    }
+    .nt-play-btn:hover { background: var(--surface2); }
+    .nt-audio-player span {
+      font-size: 0.7rem; color: var(--text-dim); font-variant-numeric: tabular-nums;
+      min-width: 32px; text-align: center;
+    }
+    .nt-seek-bar {
+      flex: 1; height: 4px; -webkit-appearance: none; appearance: none;
+      background: var(--border); border-radius: 2px; outline: none; cursor: pointer;
+    }
+    .nt-seek-bar::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 12px; height: 12px;
+      background: var(--accent); border-radius: 50%; cursor: pointer;
+    }
+    .nt-speed-select {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 4px; padding: 2px 4px; font-size: 0.68rem;
+      color: var(--text-dim); cursor: pointer; outline: none;
+    }
+
+    /* Transcript segments */
+    .nt-segment {
+      display: flex; flex-direction: column; gap: 2px;
+      padding: 8px 12px; border-radius: 8px; cursor: pointer;
+      transition: background 0.15s;
+    }
+    .nt-segment:hover { background: var(--surface); }
+    .nt-segment.active { background: var(--accent-glow); }
+    .nt-segment-header {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .nt-speaker-label {
+      font-size: 0.72rem; font-weight: 600; padding: 1px 6px;
+      border-radius: 4px; white-space: nowrap; cursor: pointer;
+    }
+    .nt-segment-time {
+      font-size: 0.65rem; color: var(--text-faint);
+      font-variant-numeric: tabular-nums;
+    }
+    .nt-segment-text {
+      font-size: 0.82rem; color: var(--text); line-height: 1.5;
+      margin-left: 2px;
+    }
+
+    /* Speaker colors */
+    .nt-speaker-0 { background: rgba(99,102,241,0.15); color: #818cf8; }
+    .nt-speaker-1 { background: rgba(244,114,182,0.15); color: #f472b6; }
+    .nt-speaker-2 { background: rgba(52,211,153,0.15); color: #34d399; }
+    .nt-speaker-3 { background: rgba(251,191,36,0.15); color: #fbbf24; }
+    .nt-speaker-4 { background: rgba(248,113,113,0.15); color: #f87171; }
+    .nt-speaker-5 { background: rgba(96,165,250,0.15); color: #60a5fa; }
+    .nt-speaker-6 { background: rgba(167,139,250,0.15); color: #a78bfa; }
+    .nt-speaker-7 { background: rgba(45,212,191,0.15); color: #2dd4bf; }
+
+    /* Summary panel */
+    .nt-summary-section {
+      border-top: 1px solid var(--border); flex-shrink: 0;
+    }
+    .nt-summary-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 16px; font-size: 0.75rem; font-weight: 600;
+      color: var(--text-dim);
+    }
+    .nt-summary-header .fav-toggle-btn { padding: 2px 4px; }
+    .nt-summary-text {
+      padding: 0 16px 12px; font-size: 0.82rem; color: var(--text);
+      line-height: 1.6; white-space: pre-wrap; max-height: 300px; overflow-y: auto;
+    }
+
+    /* Note sidebar items */
+    .nt-sidebar-item {
+      display: flex; align-items: center; gap: 8px; padding: 6px 10px;
+      font-size: 0.78rem; color: var(--text); cursor: pointer;
+      border-radius: 6px; transition: background 0.15s;
+    }
+    .nt-sidebar-item:hover { background: var(--surface2); }
+    .nt-sidebar-item.active { background: var(--accent-glow); color: var(--accent); }
+    .nt-sidebar-item svg { width: 14px; height: 14px; opacity: 0.5; flex-shrink: 0; }
+    .nt-sidebar-item .nt-item-title {
+      flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .nt-sidebar-item .nt-item-duration {
+      font-size: 0.65rem; color: var(--text-faint); flex-shrink: 0;
+    }
+
+    /* Notetaker fav/trash lists */
+    #notetaker-fav-content { flex: 1; min-height: 0; overflow-y: auto; padding: 8px; }
+    #notetaker-trash-list { flex: 1; overflow-y: auto; padding: 8px; }
+

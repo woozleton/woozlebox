@@ -30,6 +30,7 @@ logger = logging.getLogger(__name__)
 IMAGE_GEN_URL = os.environ.get("IMAGE_GEN_URL", "http://image-api:8100")
 MUSIC_GEN_URL = os.environ.get("MUSIC_GEN_URL", "http://music-api:8200")
 VIDEO_GEN_URL = os.environ.get("VIDEO_GEN_URL", "http://video-api:8300")
+NOTETAKER_API_URL = os.environ.get("NOTETAKER_API_URL", "http://notetaker-api:8600")
 OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://ollama:11434")
 UTILITY_MODEL = os.environ.get("UTILITY_MODEL", "qwen3:0.6b")
 DEFAULT_LLM = os.environ.get("LLM_MODEL", "qwen3:30b-a3b")
@@ -63,6 +64,7 @@ SERVICES = {
     "image": IMAGE_GEN_URL,
     "music": MUSIC_GEN_URL,
     "video": VIDEO_GEN_URL,
+    "notetaker": NOTETAKER_API_URL,
 }
 
 app = FastAPI(title="gpu-manager")
