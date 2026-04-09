@@ -327,7 +327,7 @@ async function prepareModelsForView(view) {
       _modelReady.studio = true;
       _setModelLoading("studio", false);
       // Evict other models in background if loaded
-      if (loaded.some(m => m.type === "music") || loaded.some(m => m.type === "video")) {
+      if (loaded.some(m => m.type === "music") || loaded.some(m => m.type === "video") || loaded.some(m => m.type === "notetaker")) {
         const _savedImgModel = localStorage.getItem("wooz_image_model") || null;
         fetch(GPU_API + "/acquire", {
           method: "POST",
@@ -340,7 +340,7 @@ async function prepareModelsForView(view) {
     if (view === "music" && loaded.some(m => m.type === "music")) {
       _modelReady.music = true;
       _setModelLoading("music", false);
-      if (loaded.some(m => m.type === "image") || loaded.some(m => m.type === "video")) {
+      if (loaded.some(m => m.type === "image") || loaded.some(m => m.type === "video") || loaded.some(m => m.type === "notetaker")) {
         fetch(GPU_API + "/acquire", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -352,7 +352,7 @@ async function prepareModelsForView(view) {
     if (view === "video" && loaded.some(m => m.type === "video")) {
       _modelReady.video = true;
       _setModelLoading("video", false);
-      if (loaded.some(m => m.type === "image") || loaded.some(m => m.type === "music")) {
+      if (loaded.some(m => m.type === "image") || loaded.some(m => m.type === "music") || loaded.some(m => m.type === "notetaker")) {
         fetch(GPU_API + "/acquire", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
