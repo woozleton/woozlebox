@@ -44,26 +44,7 @@ Generate multi-speaker audio discussions from documents or topics - the "Noteboo
 
 ---
 
-### 3. Vision Module (Image Understanding)
-
-Upload or paste images and ask questions about them. OCR, description, visual Q&A.
-
-**What it does:**
-- Drag-and-drop or paste images into a panel
-- "Describe this image" - detailed natural language description
-- "Extract text" - OCR with layout awareness
-- Visual Q&A - "What brand is on the sign?", "How many people are in this photo?"
-- Batch processing - describe/OCR a folder of images
-- Feed results into Chat or Vault for further processing
-- Screenshot analysis - paste a screenshot, get structured data back
-
-**Backend:** Ollama already supports multimodal models (LLaVA, Llama 3.2 Vision, moondream). Just needs a new endpoint that sends base64 images with the prompt. Could live in rag-api as a new route or a small `vision-api`.
-
-**Why it fits:** Multimodal understanding is a natural complement to multimodal generation. The Image Studio creates images - the Vision module understands them. Extremely practical for document digitization, accessibility, and analysis.
-
----
-
-### 4. Document Writer
+### 3. Document Writer
 
 AI-assisted long-form writing with structure, not just chat responses.
 
@@ -85,7 +66,7 @@ AI-assisted long-form writing with structure, not just chat responses.
 
 ## Tier 2 - Solid Additions
 
-### 5. Workflow Builder (Pipeline Chaining)
+### 4. Workflow Builder (Pipeline Chaining)
 
 Visually connect existing modules into automated pipelines.
 
@@ -103,7 +84,7 @@ Visually connect existing modules into automated pipelines.
 
 ---
 
-### 6. Sound Design Studio (SFX Generation)
+### 5. Sound Design Studio (SFX Generation)
 
 Generate sound effects and ambient audio from text descriptions.
 
@@ -120,7 +101,7 @@ Generate sound effects and ambient audio from text descriptions.
 
 ---
 
-### 7. Translation Hub
+### 6. Translation Hub
 
 Real-time document and text translation with LLM-quality output.
 
@@ -139,7 +120,7 @@ Real-time document and text translation with LLM-quality output.
 
 ---
 
-### 8. Presentation Generator
+### 7. Presentation Generator
 
 Generate slide decks from prompts or documents.
 
@@ -160,7 +141,7 @@ Generate slide decks from prompts or documents.
 
 ## Tier 3 - Ambitious / Experimental
 
-### 9. 3D Asset Generator
+### 8. 3D Asset Generator
 
 Text or image to 3D model generation.
 
@@ -178,7 +159,7 @@ Text or image to 3D model generation.
 
 ---
 
-### 10. Fine-tuning Lab
+### 9. Fine-tuning Lab
 
 Create custom LoRA adapters for the image models or fine-tune small LLMs on your data.
 
@@ -196,7 +177,7 @@ Create custom LoRA adapters for the image models or fine-tune small LLMs on your
 
 ---
 
-### 11. Comic / Storyboard Creator
+### 10. Comic / Storyboard Creator
 
 Generate visual narratives by combining sequential image generation with text.
 
@@ -221,7 +202,6 @@ Generate visual narratives by combining sequential image generation with text.
 |--------|-------------|-------------|-------------------|------------|
 | Code Studio | Optional | LLM only | Ollama, Vault | Medium |
 | Podcast Studio | Yes (thin) | LLM only | Kokoro, Vault, SDXL | Medium |
-| Vision Module | No | LLM only | Ollama (multimodal) | Low |
 | Document Writer | No | LLM only | Ollama, Vault | Medium |
 | Workflow Builder | Yes (thin) | None (orchestration) | All modules | Medium-High |
 | Sound Design Studio | Yes | New model | gpu-manager | Medium |
@@ -233,4 +213,4 @@ Generate visual narratives by combining sequential image generation with text.
 
 ---
 
-*Easiest wins: Vision Module and Translation Hub - both mostly need frontend UI and specialized prompts, with minimal backend work. Biggest "wow factor": Podcast Studio and Presentation Generator - they produce polished, shareable outputs by combining things that already exist.*
+*Easiest win: Translation Hub - mostly frontend UI and specialized prompts, minimal backend work. Biggest "wow factor": Podcast Studio and Presentation Generator - they produce polished, shareable outputs by combining things that already exist.*
