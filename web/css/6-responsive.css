@@ -97,11 +97,19 @@
       .studio-settings-grid { grid-template-columns: repeat(2, 1fr); }
       .studio-settings-bottom { flex-direction: column; }
       #studio-canvas { padding: 12px; }
-      #studio-fav-panel.open, #music-fav-panel.open, #video-fav-panel.open {
+      #studio-fav-panel.open, #music-fav-panel.open, #video-fav-panel.open, #notetaker-fav-panel.open {
         position: fixed; inset: 0; z-index: 999; width: 100% !important; min-width: 0 !important; max-width: 100vw;
         border-left: none; transition: none;
       }
       #fav-resize-handle, #music-fav-resize-handle, #video-fav-resize-handle { display: none !important; }
+
+      /* Note Taker mobile: stack vertically */
+      #notetaker-view .studio-body-layout { flex-direction: column; }
+      #notetaker-view .studio-col[style*="max-width"] {
+        max-width: 100% !important; min-width: 0 !important;
+        border-left: none !important; border-top: 1px solid var(--border);
+      }
+      .nt-summary-text { max-height: 200px; }
 
       /* Vault panel: full screen on mobile */
       #vault-panel.open {

@@ -32,6 +32,7 @@ CHAT_API_URL      = os.environ.get("CHAT_API_URL", "http://rag-api:8000")
 IMAGE_GEN_URL     = os.environ.get("IMAGE_GEN_URL", "http://image-api:8100")
 MUSIC_GEN_URL     = os.environ.get("MUSIC_GEN_URL", "http://music-api:8200")
 VIDEO_GEN_URL     = os.environ.get("VIDEO_GEN_URL", "http://video-api:8300")
+NOTETAKER_API_URL = os.environ.get("NOTETAKER_API_URL", "http://notetaker-api:8600")
 GPU_MANAGER_URL   = os.environ.get("GPU_MANAGER_URL", "http://gpu-manager:8400")
 
 # ── LLM Prompt Templates ──
@@ -104,6 +105,70 @@ PROMPTS = {
         "Describe the key moment, composition, lighting, and cinematic feel. "
         "Do NOT include text or words in the image. "
         "Output ONLY the image prompt, 1-2 sentences, no quotes or explanation."
+    ),
+    # -- Note Taker summary prompts (one per note type) --
+    "notetaker_summary_professional": (
+        "You are a professional meeting note-taker. Given a meeting transcript with speaker labels, "
+        "generate a structured summary with these sections:\n\n"
+        "SUMMARY: A concise 2-3 paragraph overview of the meeting.\n\n"
+        "KEY DECISIONS: Bullet list of decisions made.\n\n"
+        "ACTION ITEMS: Bullet list with owner and deadline if mentioned.\n\n"
+        "FOLLOW-UPS: Items that need further discussion or resolution.\n\n"
+        "Be concise and factual. Use the speaker labels from the transcript. "
+        "Output in plain text with the section headers above."
+    ),
+    "notetaker_summary_personal": (
+        "You are a helpful personal assistant. Given a transcript of a personal appointment or consultation "
+        "(e.g., doctor visit, legal consult, financial planning), generate a structured summary:\n\n"
+        "KEY TAKEAWAYS: The most important points discussed.\n\n"
+        "RECOMMENDATIONS: Any advice, prescriptions, or suggestions given.\n\n"
+        "FOLLOW-UPS: Next steps, future appointments, or things to research.\n\n"
+        "Be clear and practical. Use the speaker labels from the transcript."
+    ),
+    "notetaker_summary_casual": (
+        "You are a friendly note-taker. Given a transcript of a casual discussion or brainstorming session, "
+        "generate a light structured summary:\n\n"
+        "HIGHLIGHTS: Key ideas and interesting points raised.\n\n"
+        "IDEAS: Creative suggestions or brainstorms worth remembering.\n\n"
+        "NEXT STEPS: Any loose plans or things people agreed to explore.\n\n"
+        "Keep the tone relaxed and concise."
+    ),
+    "notetaker_summary_training": (
+        "You are an educational note-taker. Given a transcript of a training session, lecture, or workshop, "
+        "generate a structured summary:\n\n"
+        "KEY CONCEPTS: Main topics and concepts covered.\n\n"
+        "LEARNING POINTS: Important details, techniques, or facts to remember.\n\n"
+        "Q&A RECAP: Questions asked and answers given (if any).\n\n"
+        "RESOURCES: Any tools, links, or references mentioned.\n\n"
+        "Be thorough but concise. Focus on what a learner would need to retain."
+    ),
+    "notetaker_summary_interview": (
+        "You are a professional interview note-taker. Given a transcript of an interview "
+        "(job interview, user research, etc.), generate a structured summary:\n\n"
+        "OVERVIEW: Brief context of the interview.\n\n"
+        "KEY QUESTIONS & RESPONSES: The most important questions and summarized answers.\n\n"
+        "STRENGTHS: Notable positive points or insights.\n\n"
+        "CONCERNS: Any flags, gaps, or areas needing follow-up.\n\n"
+        "ASSESSMENT: Brief overall impression.\n\n"
+        "Be objective and factual. Use the speaker labels from the transcript."
+    ),
+    "notetaker_summary_client": (
+        "You are a professional client meeting note-taker. Given a transcript of a client call, "
+        "sales meeting, or vendor discussion, generate a structured summary:\n\n"
+        "SUMMARY: Brief overview of the meeting purpose and outcome.\n\n"
+        "CLIENT REQUIREMENTS: What the client needs or requested.\n\n"
+        "COMMITMENTS: Promises made by either side, with owners.\n\n"
+        "NEXT STEPS: Agreed follow-up actions and timeline.\n\n"
+        "Be professional and precise. Use the speaker labels from the transcript."
+    ),
+    "notetaker_summary_custom": (
+        "You are a professional note-taker. Given a meeting transcript with speaker labels, "
+        "generate a structured, useful summary. {custom_instructions}\n\n"
+        "Be concise and factual. Use the speaker labels from the transcript."
+    ),
+    "notetaker_title": (
+        "Generate a short, descriptive title (3-7 words) for a meeting based on the transcript. "
+        "Capture the main topic discussed. Output ONLY the title - no quotes, no explanation."
     ),
 }
 
@@ -742,6 +807,219 @@ async def video_cover_art(req: VideoCoverArtRequest, user: dict = Depends(get_cu
 
 
 # ══════════════════════════════════════════════════════════════
+#  NOTE TAKER ENDPOINTS
+# ══════════════════════════════════════════════════════════════
+
+class NotetakerSummarizeRequest(BaseModel):
+    transcript: str
+    note_type: str = "professional"
+    custom_instructions: str = ""
+
+class NotetakerNameRequest(BaseModel):
+    transcript: str
+
+
+@app.post("/notetaker/transcribe")
+async def notetaker_transcribe(request: Request, user: dict = Depends(get_current_user)):
+    """Proxy file upload to notetaker-api for transcription."""
+    await _acquire_gpu("notetaker", pre_inference=True)
+    try:
+        body = await request.body()
+        content_type = request.headers.get("content-type", "")
+        async with httpx.AsyncClient(timeout=1800.0) as client:
+            resp = await client.post(
+                f"{NOTETAKER_API_URL}/transcribe",
+                content=body,
+                headers={"content-type": content_type},
+            )
+            resp.raise_for_status()
+            return resp.json()
+    except httpx.ConnectError:
+        raise HTTPException(status_code=503, detail="Notetaker service is not available")
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="Transcription timed out")
+    except httpx.HTTPStatusError as e:
+        detail = e.response.json().get("detail", str(e)) if e.response.content else str(e)
+        raise HTTPException(status_code=e.response.status_code, detail=detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Transcription failed: {e}")
+
+
+@app.post("/notetaker/retranscribe/{note_id}")
+async def notetaker_retranscribe(note_id: str, request: Request, user: dict = Depends(get_current_user)):
+    """Proxy re-transcription request to notetaker-api."""
+    await _acquire_gpu("notetaker", pre_inference=True)
+    try:
+        body = await request.body()
+        content_type = request.headers.get("content-type", "")
+        async with httpx.AsyncClient(timeout=1800.0) as client:
+            resp = await client.post(
+                f"{NOTETAKER_API_URL}/retranscribe/{note_id}",
+                content=body,
+                headers={"content-type": content_type},
+            )
+            resp.raise_for_status()
+            return resp.json()
+    except httpx.ConnectError:
+        raise HTTPException(status_code=503, detail="Notetaker service is not available")
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="Re-transcription timed out")
+    except httpx.HTTPStatusError as e:
+        detail = e.response.json().get("detail", str(e)) if e.response.content else str(e)
+        raise HTTPException(status_code=e.response.status_code, detail=detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Re-transcription failed: {e}")
+
+
+@app.get("/notetaker/progress")
+async def notetaker_progress(user: dict = Depends(get_current_user)):
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(f"{NOTETAKER_API_URL}/progress")
+            return resp.json()
+    except Exception:
+        return {"running": False, "phase": "", "step": 0, "total_steps": 0, "elapsed_s": 0.0, "message": ""}
+
+
+@app.post("/notetaker/cancel")
+async def notetaker_cancel(user: dict = Depends(get_current_user)):
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.post(f"{NOTETAKER_API_URL}/cancel")
+            return resp.json()
+    except Exception:
+        return {"ok": False}
+
+
+@app.get("/notetaker/models")
+async def notetaker_models(user: dict = Depends(get_current_user)):
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(f"{NOTETAKER_API_URL}/models")
+            return resp.json()
+    except Exception:
+        return {"models": [], "current": None, "loaded": False}
+
+
+@app.post("/notetaker/models/load")
+async def notetaker_models_load(request: Request, user: dict = Depends(get_current_user)):
+    await _acquire_gpu("notetaker")
+    try:
+        body = await request.json()
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            resp = await client.post(f"{NOTETAKER_API_URL}/models/load", json=body)
+            resp.raise_for_status()
+            return resp.json()
+    except httpx.HTTPStatusError as e:
+        detail = e.response.json().get("detail", str(e)) if e.response.content else str(e)
+        raise HTTPException(status_code=e.response.status_code, detail=detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Model loading failed: {e}")
+
+
+@app.post("/notetaker/models/unload")
+async def notetaker_models_unload(user: dict = Depends(get_current_user)):
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(f"{NOTETAKER_API_URL}/models/unload")
+            return resp.json()
+    except Exception:
+        return {"ok": False}
+
+
+@app.get("/notetaker/audio/{note_id}")
+async def notetaker_audio(note_id: str, user: dict = Depends(get_current_user)):
+    """Proxy audio file streaming from notetaker-api."""
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.get(f"{NOTETAKER_API_URL}/audio/{note_id}")
+            resp.raise_for_status()
+            from fastapi.responses import Response
+            return Response(
+                content=resp.content,
+                media_type=resp.headers.get("content-type", "audio/wav"),
+                headers={"Content-Disposition": resp.headers.get("content-disposition", "")},
+            )
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=e.response.status_code, detail="Audio file not found")
+    except Exception:
+        raise HTTPException(status_code=503, detail="Notetaker service is not available")
+
+
+@app.delete("/notetaker/audio/{note_id}")
+async def notetaker_audio_delete(note_id: str, user: dict = Depends(get_current_user)):
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.delete(f"{NOTETAKER_API_URL}/audio/{note_id}")
+            return resp.json()
+    except Exception:
+        return {"ok": False}
+
+
+@app.get("/notetaker/health")
+async def notetaker_health(user: dict = Depends(get_current_user)):
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(f"{NOTETAKER_API_URL}/health")
+            return resp.json()
+    except Exception:
+        return {"ok": False, "model_loaded": False}
+
+
+@app.post("/notetaker/summarize")
+async def notetaker_summarize(req: NotetakerSummarizeRequest, user: dict = Depends(get_current_user)):
+    """Generate AI summary from transcript using the full LLM."""
+    if not req.transcript.strip():
+        raise HTTPException(status_code=400, detail="transcript is required")
+
+    prompt_key = f"notetaker_summary_{req.note_type}"
+    system = PROMPTS.get(prompt_key, PROMPTS["notetaker_summary_professional"])
+
+    if req.note_type == "custom" and req.custom_instructions:
+        system = system.replace("{custom_instructions}", req.custom_instructions)
+
+    await _report_vram("call", LLM_MODEL, detail="notetaker_summary")
+
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            resp = await client.post(f"{OLLAMA_BASE_URL}/api/generate", json={
+                "model": LLM_MODEL,
+                "system": system,
+                "prompt": req.transcript,
+                "stream": False,
+                "think": False,
+                "options": {"temperature": 0.3, "num_predict": 2000},
+            })
+            resp.raise_for_status()
+            text = resp.json().get("response", "").strip()
+            text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
+            return {"summary": text}
+    except httpx.ConnectError:
+        raise HTTPException(status_code=503, detail="LLM service is not available")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Summary generation failed: {e}")
+
+
+@app.post("/notetaker/name")
+async def notetaker_name(req: NotetakerNameRequest, user: dict = Depends(get_current_user)):
+    """Auto-generate a meeting title from transcript."""
+    if not req.transcript.strip():
+        return {"name": ""}
+    # Use first ~500 chars of transcript for naming
+    snippet = req.transcript[:500]
+    try:
+        name = await _utility_llm(
+            PROMPTS["notetaker_title"], snippet,
+            temperature=0.5, num_predict=30, user=user,
+            force_default=True, caller="notetaker title",
+        )
+        return {"name": name.strip('"').strip("'").split("\n")[0].strip().title()[:60]}
+    except Exception as e:
+        logger.warning(f"Notetaker naming failed: {e}")
+        return {"name": ""}
+
+
+# ══════════════════════════════════════════════════════════════
 #  HEALTH
 # ══════════════════════════════════════════════════════════════
 
@@ -749,7 +1027,7 @@ async def video_cover_art(req: VideoCoverArtRequest, user: dict = Depends(get_cu
 async def health():
     """Health check with dependency connectivity."""
     checks = {}
-    for name, url in [("image-api", IMAGE_GEN_URL), ("music-api", MUSIC_GEN_URL), ("video-api", VIDEO_GEN_URL), ("gpu-manager", GPU_MANAGER_URL)]:
+    for name, url in [("image-api", IMAGE_GEN_URL), ("music-api", MUSIC_GEN_URL), ("video-api", VIDEO_GEN_URL), ("notetaker-api", NOTETAKER_API_URL), ("gpu-manager", GPU_MANAGER_URL)]:
         try:
             async with httpx.AsyncClient(timeout=3.0) as c:
                 resp = await c.get(f"{url}/health" if name != "gpu-manager" else f"{url}/status")
