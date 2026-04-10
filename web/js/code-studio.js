@@ -293,7 +293,7 @@ if (codeLanguageSelect) {
 
 function updateCodeSettingsSummary() {
   const summary = document.getElementById("code-settings-summary");
-  if (!summary) return;
+  if (!summary || !codeLanguageSelect) return;
   const lang = codeLanguageSelect.options[codeLanguageSelect.selectedIndex]?.textContent || "Python";
   const mode = _codeMode.charAt(0).toUpperCase() + _codeMode.slice(1);
   summary.textContent = `${lang} - ${mode}`;
