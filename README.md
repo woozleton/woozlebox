@@ -68,7 +68,7 @@ TTS_VOICE=af_heart               # Default TTS voice
 
 ## Architecture
 
-Eleven Docker containers on a single machine, sharing one GPU:
+Twelve Docker containers on a single machine, sharing one GPU:
 
 ```
 ┌──────────────────────────────────────────────────────────┐

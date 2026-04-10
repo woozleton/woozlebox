@@ -55,7 +55,7 @@ AI-assisted long-form writing with structure, not just chat responses.
 
 ## Tier 2 - Solid Additions
 
-### 4. Workflow Builder (Pipeline Chaining)
+### 3. Workflow Builder (Pipeline Chaining)
 
 Visually connect existing modules into automated pipelines.
 
@@ -73,7 +73,7 @@ Visually connect existing modules into automated pipelines.
 
 ---
 
-### 5. Sound Design Studio (SFX Generation)
+### 4. Sound Design Studio (SFX Generation)
 
 Generate sound effects and ambient audio from text descriptions.
 
@@ -90,7 +90,7 @@ Generate sound effects and ambient audio from text descriptions.
 
 ---
 
-### 6. Translation Hub
+### 5. Translation Hub
 
 Real-time document and text translation with LLM-quality output.
 
@@ -109,7 +109,7 @@ Real-time document and text translation with LLM-quality output.
 
 ---
 
-### 7. Presentation Generator
+### 6. Presentation Generator
 
 Generate slide decks from prompts or documents.
 
@@ -130,7 +130,7 @@ Generate slide decks from prompts or documents.
 
 ## Tier 3 - Ambitious / Experimental
 
-### 8. 3D Asset Generator
+### 7. 3D Asset Generator
 
 Text or image to 3D model generation.
 
@@ -148,7 +148,7 @@ Text or image to 3D model generation.
 
 ---
 
-### 9. Fine-tuning Lab
+### 8. Fine-tuning Lab
 
 Create custom LoRA adapters for the image models or fine-tune small LLMs on your data.
 
@@ -166,7 +166,7 @@ Create custom LoRA adapters for the image models or fine-tune small LLMs on your
 
 ---
 
-### 10. Comic / Storyboard Creator
+### 9. Comic / Storyboard Creator
 
 Generate visual narratives by combining sequential image generation with text.
 
