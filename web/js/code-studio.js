@@ -112,6 +112,10 @@ async function renderCodeSessionsList() {
     const label = s.title || s.snippets[0]?.rawPrompt?.slice(0, 40) || "Untitled";
     const count = s.snippets.length;
     row.innerHTML = `<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.82rem;">${esc(label)}</span><span style="font-size:0.68rem;color:var(--text-dim);flex-shrink:0;">${count}</span>`;
+    row.draggable = true;
+    row.addEventListener("dragstart", e => {
+      e.dataTransfer.setData("text/code-session", s.id);
+    });
     row.addEventListener("click", () => {
       activeCodeSessionId = s.id;
       localStorage.setItem("wooz_code_session", s.id);
@@ -146,21 +150,31 @@ function _renderCodeFoldersSidebar() {
     const row = document.createElement("div");
     row.className = "sidebar-row sb-folder-row" + (f.id === activeCodeFolderId ? " active" : "");
     row.dataset.folderId = f.id;
-    row.innerHTML = `<svg width="14" height="14"><use href="#i-folder"/></svg><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.82rem;">${esc(f.name)}</span>`;
-    row.addEventListener("click", () => {
+    row.innerHTML = `<svg width="14" height="14"><use href="#i-folder"/></svg><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.82rem;">${esc(f.name)}</span><button class="sb-folder-menu" title="Options" style="background:none;border:none;color:var(--text-dim);cursor:pointer;padding:2px 4px;font-size:0.9rem;flex-shrink:0;opacity:0.5;">&#x22EF;</button>`;
+    row.addEventListener("click", e => {
+      if (e.target.classList.contains("sb-folder-menu")) return;
+      if (f.id === activeCodeFolderId) return;
       activeCodeFolderId = f.id;
       localStorage.setItem("wooz_code_folder", f.id);
       _renderCodeFoldersSidebar();
       renderCodeSessionsList();
       restoreCodeSnippets();
     });
-    // Drag-drop target
-    row.addEventListener("dragover", e => { e.preventDefault(); row.classList.add("drag-over"); });
+    row.querySelector(".sb-folder-menu").addEventListener("click", e => {
+      e.stopPropagation();
+      _showCodeFolderCtxMenu(f, e);
+    });
+    // Drag-drop target for code sessions
+    row.addEventListener("dragover", e => {
+      if (!e.dataTransfer.types.includes("text/code-session")) return;
+      e.preventDefault();
+      row.classList.add("drag-over");
+    });
     row.addEventListener("dragleave", () => row.classList.remove("drag-over"));
     row.addEventListener("drop", async e => {
       e.preventDefault();
       row.classList.remove("drag-over");
-      const sessionId = e.dataTransfer.getData("text/plain");
+      const sessionId = e.dataTransfer.getData("text/code-session");
       if (!sessionId) return;
       const all = await loadAllCodeSnippets();
       for (const s of all) {
@@ -173,6 +187,55 @@ function _renderCodeFoldersSidebar() {
     });
     container.appendChild(row);
   }
+}
+
+function _showCodeFolderCtxMenu(f, e) {
+  document.querySelectorAll(".code-folder-ctx-menu").forEach(el => el.remove());
+  const menu = document.createElement("div");
+  menu.className = "code-folder-ctx-menu";
+  menu.style.cssText = `position:fixed;z-index:999;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:4px;box-shadow:0 8px 24px rgba(0,0,0,0.4);min-width:120px;`;
+  menu.innerHTML = `
+    <div class="code-folder-ctx-item" data-action="rename" style="padding:6px 12px;cursor:pointer;font-size:0.8rem;border-radius:6px;color:var(--text-dim);">Edit</div>
+    <div class="code-folder-ctx-item" data-action="delete" style="padding:6px 12px;cursor:pointer;font-size:0.8rem;border-radius:6px;color:var(--danger);">Delete</div>
+  `;
+  menu.style.left = e.clientX + "px";
+  menu.style.top = Math.min(e.clientY, window.innerHeight - 80) + "px";
+  document.body.appendChild(menu);
+  menu.querySelector('[data-action="rename"]').addEventListener("click", () => {
+    menu.remove();
+    const newName = prompt("Rename folder:", f.name);
+    if (!newName?.trim()) return;
+    f.name = newName.trim();
+    saveCodeFolder(f).then(() => _renderCodeFoldersSidebar());
+  });
+  menu.querySelector('[data-action="delete"]').addEventListener("click", async () => {
+    menu.remove();
+    if (codeFolders.length <= 1) { showToast("At least one folder must exist."); return; }
+    const confirmed = await showConfirm({ title: "Delete Folder", message: `Delete "${f.name}"? All code snippets will be deleted.` });
+    if (!confirmed) return;
+    const allSnippets = await loadAllCodeSnippets();
+    const toDelete = allSnippets.filter(r => r.folder_id === f.id);
+    for (const s of toDelete) { await deleteCodeSnippet(s.id); }
+    await deleteCodeFolder(f.id);
+    codeFolders = codeFolders.filter(c => c.id !== f.id);
+    if (activeCodeFolderId === f.id) {
+      activeCodeFolderId = codeFolders[0].id;
+      localStorage.setItem("wooz_code_folder", activeCodeFolderId);
+    }
+    _renderCodeFoldersSidebar();
+    activeCodeSessionId = null;
+    localStorage.removeItem("wooz_code_session");
+    restoreCodeSnippets();
+    renderCodeSessionsList();
+  });
+  menu.querySelectorAll(".code-folder-ctx-item").forEach(item => {
+    item.addEventListener("mouseenter", () => item.style.background = "var(--surface2)");
+    item.addEventListener("mouseleave", () => item.style.background = "");
+  });
+  setTimeout(() => {
+    const handler = (ev) => { if (!menu.contains(ev.target)) { menu.remove(); document.removeEventListener("click", handler); } };
+    document.addEventListener("click", handler);
+  });
 }
 
 document.getElementById("code-folder-new-btn").addEventListener("click", async () => {
@@ -693,7 +756,8 @@ async function openCodeTrashModal() {
   document.getElementById("shared-trash-empty-btn").onclick = async () => {
     const count = document.querySelectorAll("#shared-trash-content .studio-trash-card").length;
     if (!count) return;
-    if (!confirm(`Permanently delete ${count} snippet${count !== 1 ? "s" : ""} from trash?`)) return;
+    const confirmed = await showConfirm({ title: "Empty Trash", message: `Permanently delete ${count} snippet${count !== 1 ? "s" : ""} from trash?` });
+    if (!confirmed) return;
     await emptyCodeTrash();
     _updateCodeTrashBadge(0);
     document.getElementById("shared-trash-modal").classList.remove("open");
