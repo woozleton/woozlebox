@@ -20,6 +20,7 @@
   <link rel="stylesheet" href="css/4-chat.css?v=1">
   <link rel="stylesheet" href="css/5-ui.css?v=1">
   <link rel="stylesheet" href="css/6-responsive.css?v=1">
+  <link rel="stylesheet" href="lib/highlight.css">
 </head>
 <body>
 <script>
@@ -260,6 +261,10 @@
         <svg width="15" height="15"><use href="#i-mic"/></svg>
         Note Taker
       </button>
+      <button class="sidebar-row sidebar-studio-btn" id="code-sidebar-btn">
+        <svg width="15" height="15"><use href="#i-code"/></svg>
+        Code Studio
+      </button>
     </div>
     <button id="sidebar-toggle" title="Collapse sidebar">
       <svg width="15" height="15"><use href="#i-sidebar"/></svg>
@@ -284,6 +289,9 @@
       </button>
       <button class="strip-btn" id="strip-notetaker-btn" title="Note Taker">
         <svg width="16" height="16"><use href="#i-mic"/></svg>
+      </button>
+      <button class="strip-btn" id="strip-code-btn" title="Code Studio">
+        <svg width="16" height="16"><use href="#i-code"/></svg>
       </button>
       <button class="strip-btn" id="strip-search-btn" title="Search chats">
         <svg width="16" height="16"><use href="#i-search"/></svg>
@@ -369,6 +377,21 @@
       <button id="notetaker-new-session-btn" title="New session">+</button>
     </div>
     <div id="notetaker-sessions-list" class="sb-list" style="display:none;"></div>
+
+    <!-- Code Studio: Folders + Sessions -->
+    <div id="code-folders-section" class="sb-section" style="display:none;">
+      <div id="code-folders-header" class="sb-section-header">
+        <span>Folders</span>
+        <button id="code-folder-new-btn" title="New folder">+</button>
+      </div>
+      <div id="code-folders-list"></div>
+    </div>
+    <div id="code-folders-divider" class="sb-divider" style="display:none;"></div>
+    <div id="code-sessions-header" class="sb-section-header" style="display:none;">
+      <span>Sessions</span>
+      <button id="code-new-session-btn" title="New session">+</button>
+    </div>
+    <div id="code-sessions-list" class="sb-list" style="display:none;"></div>
 
     <!-- Sidebar bottom -->
     <div id="sidebar-bottom">
@@ -1110,6 +1133,98 @@
         <svg width="32" height="32" style="opacity:0.3"><use href="#i-heart"/></svg>
         <p>Click the heart on any note to add it to your favorites.</p>
       </div>
+    </div>
+    </div>
+  </div>
+
+  <!-- Code Studio -->
+  <div id="code-studio" class="studio-view">
+    <div class="studio-col">
+    <div id="code-studio-header" class="studio-header">
+      <button id="code-trash-btn" class="studio-trash-btn" title="Trash">
+        <svg width="14" height="14"><use href="#i-trash-lines"/></svg>
+        <span id="code-trash-badge" class="studio-trash-badge"></span>
+      </button>
+      <button id="code-fav-toggle" class="fav-toggle-btn" title="Favorites">
+        <svg viewBox="0 0 24 24"><use href="#i-heart"/></svg>
+        <span id="code-fav-badge" style="display:none">0</span>
+      </button>
+    </div>
+    <div id="code-body" class="studio-body-layout">
+      <div id="code-main" class="studio-main-area">
+        <div id="code-canvas" class="studio-canvas">
+          <div id="code-canvas-empty" class="studio-canvas-empty">
+            <svg width="64" height="64"><use href="#i-code"/></svg>
+            <p>Describe what you want to build and press <strong>Generate</strong> to create code.</p>
+          </div>
+        </div>
+
+        <div id="code-controls" class="studio-controls">
+          <div id="code-settings-crumb" class="settings-crumb">
+            <span id="code-settings-trigger" class="settings-trigger">
+              <svg width="13" height="13"><use href="#i-sliders"/></svg>
+              <span id="code-settings-summary">Python - Generate</span>
+              <svg class="chevron-icon" width="9" height="9" style="opacity:0.5;"><use href="#i-chevron-down"/></svg>
+            </span>
+          </div>
+          <div id="code-settings-panel" class="settings-panel">
+            <div class="code-settings-grid">
+              <div class="ss-group">
+                <div class="ss-group-label">Model</div>
+                <div class="studio-prompt-model-row">
+                  <select id="code-model-select"></select>
+                </div>
+              </div>
+              <div class="ss-group">
+                <div class="ss-group-label">Language</div>
+                <select id="code-language-select" class="setting-input" style="padding:4px 8px;font-size:0.78rem;border-radius:6px;background:var(--surface2);color:var(--text);border:1px solid var(--border);width:100%;">
+                  <option value="python" selected>Python</option>
+                  <option value="javascript">JavaScript</option>
+                  <option value="typescript">TypeScript</option>
+                  <option value="bash">Bash</option>
+                  <option value="html">HTML/CSS</option>
+                  <option value="sql">SQL</option>
+                  <option value="go">Go</option>
+                  <option value="rust">Rust</option>
+                  <option value="json">JSON</option>
+                  <option value="auto">Auto-detect</option>
+                </select>
+              </div>
+              <div class="ss-group" style="grid-column: 1 / -1;">
+                <div class="ss-group-label">Mode</div>
+                <div class="sc-row" id="code-mode-row">
+                  <button class="studio-count-btn active" data-mode="generate" title="Generate new code">Generate</button>
+                  <button class="studio-count-btn" data-mode="refactor" title="Refactor selected code">Refactor</button>
+                  <button class="studio-count-btn" data-mode="explain" title="Explain code">Explain</button>
+                  <button class="studio-count-btn" data-mode="debug" title="Debug code">Debug</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="code-prompt-box" class="prompt-box">
+            <textarea id="code-prompt" placeholder="Describe the code you want to generate..." rows="1"></textarea>
+            <button id="code-suggest-btn" class="prompt-action-btn" title="Suggest a coding task">
+              <svg width="16" height="16"><use href="#i-bulb"/></svg>
+            </button>
+            <button id="code-generate-btn" class="generate-btn" title="Generate (Enter)">
+              <svg width="16" height="16"><use href="#i-bolt"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    <!-- Favorites panel -->
+    <div id="code-fav-panel" class="fav-panel">
+      <div class="fav-panel-header">
+        <h3><svg width="14" height="14"><use href="#i-heart"/></svg> Favorites <span id="code-fav-count" class="fav-count"></span></h3>
+      </div>
+      <div id="code-fav-list" class="fav-panel-list"></div>
+      <div id="code-fav-empty" class="fav-panel-empty">
+        <svg width="32" height="32" style="opacity:0.3"><use href="#i-heart"/></svg>
+        <p>Click the heart on any code snippet to add it to your favorites.</p>
+      </div>
+    </div>
     </div>
     </div>
   </div>
@@ -1966,6 +2081,9 @@
 <script src="lib/lamejs.min.js"></script>
 <script src="js/music-studio.js"></script>
 <script src="js/video-studio.js"></script>
+<script src="lib/highlight.min.js"></script>
+<script src="lib/highlight-languages.min.js"></script>
+<script src="js/code-studio.js"></script>
 <script src="js/notetaker.js"></script>
 <script src="js/chat.js"></script>
 <script>
