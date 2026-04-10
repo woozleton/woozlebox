@@ -407,6 +407,7 @@ async function prepareModelsForView(view) {
   _modelReady[view] = false;
   const modelName = view === "studio"
     ? (studioModelSelect.options[studioModelSelect.selectedIndex]?.textContent || "image model")
+    : view === "code" ? "code model"
     : view === "notetaker" ? "Whisper"
     : view === "video" ? "Wan 2.2" : "ACE-Step";
   _setModelLoading(view, true, modelName);
@@ -461,6 +462,18 @@ async function prepareModelsForView(view) {
       });
       if (!abort.signal.aborted) {
         _modelReady.notetaker = true;
+      }
+    } else if (view === "code") {
+      const _codeModel = localStorage.getItem("wooz_code_model") || selectedModel || null;
+      await fetch(GPU_API + "/acquire", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ service: "code", model: _codeModel }),
+        signal: abort.signal,
+      });
+      if (!abort.signal.aborted) {
+        _modelReady.code = true;
+        _setModelLoading("code", false);
       }
     }
   } catch (e) {

@@ -282,7 +282,7 @@ async def _wait_vram_clear(exclude: str = None, timeout_s: int = 30):
             healths = dict(zip(checks.keys(), results))
             if all(not h.get("model_loaded") for h in healths.values()):
                 # Also check Ollama if we're not acquiring chat
-                if exclude != "chat":
+                if exclude not in ("chat", "code"):
                     try:
                         ps = await _http.get(f"{OLLAMA_BASE_URL}/api/ps", timeout=5.0)
                         remaining = [

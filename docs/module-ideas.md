@@ -33,7 +33,7 @@ Generate multi-speaker audio discussions from documents or topics - the "Noteboo
 
 ---
 
-### 3. Document Writer
+### 2. Document Writer
 
 AI-assisted long-form writing with structure, not just chat responses.
 

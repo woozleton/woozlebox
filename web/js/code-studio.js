@@ -283,11 +283,13 @@ codeModeRow.querySelectorAll(".studio-count-btn").forEach(btn => {
   if (saved && codeLanguageSelect) codeLanguageSelect.value = saved;
 })();
 
-codeLanguageSelect.addEventListener("change", () => {
-  localStorage.setItem("wooz_code_language", codeLanguageSelect.value);
-  if (typeof scheduleSettingsSync === "function") scheduleSettingsSync();
-  updateCodeSettingsSummary();
-});
+if (codeLanguageSelect) {
+  codeLanguageSelect.addEventListener("change", () => {
+    localStorage.setItem("wooz_code_language", codeLanguageSelect.value);
+    if (typeof scheduleSettingsSync === "function") scheduleSettingsSync();
+    updateCodeSettingsSummary();
+  });
+}
 
 function updateCodeSettingsSummary() {
   const summary = document.getElementById("code-settings-summary");
