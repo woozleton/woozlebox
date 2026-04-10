@@ -2,7 +2,7 @@
 
 ## Project: WoozleBox (WoozleBox)
 
-Self-hosted AI toolbox - chat, image/music/video generation. Monorepo with Docker Compose, one directory per service, vanilla JS frontend.
+Self-hosted AI toolbox - chat, image/music/video/code generation. Monorepo with Docker Compose, one directory per service, vanilla JS frontend.
 
 ## Style Rules
 

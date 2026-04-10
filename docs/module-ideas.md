@@ -1,31 +1,20 @@
 # Module Ideas for WoozleBox
 
-Brainstormed additions that complement the existing Chat, Image Studio, Music Studio, Video Studio, Note Taker, and Vault modules. Each idea is designed to fit the current architecture: a single-file FastAPI service, vanilla JS frontend panel, and shared GPU via gpu-manager.
+Brainstormed additions that complement the existing Chat, Image Studio, Music Studio, Video Studio, Code Studio, Note Taker, and Vault modules. Each idea is designed to fit the current architecture: a single-file FastAPI service, vanilla JS frontend panel, and shared GPU via gpu-manager.
+
+---
+
+## Shipped
+
+### Code Studio - IMPLEMENTED
+
+Shipped as part of the core platform. AI-powered code generation, refactoring, debugging, and sandboxed execution with user-selectable coding models. See README.md for details.
 
 ---
 
 ## Tier 1 - High Impact, Natural Fits
 
-### 1. Code Studio
-
-An AI-powered code editor and generator. The Chat module already handles code questions, but a dedicated studio would provide a proper editing experience.
-
-**What it does:**
-- Syntax-highlighted code editor panel (CodeMirror or Monaco, vendored)
-- Generate scripts/functions from natural language prompts
-- Explain, refactor, debug, or translate existing code
-- Run Python/Bash snippets in a sandboxed container and display output
-- "Iterate" button - describe what to change, LLM rewrites the code
-- Export/download generated files
-- Session history like the other studios
-
-**Backend:** Mostly just Ollama calls routed through rag-api or a thin new `code-api`. The sandbox runner would be a lightweight Docker container with Python/Node. Could also let users pull in Vault documents as context (e.g., "write a parser for this spec I uploaded").
-
-**Why it fits:** Code generation is one of the highest-value LLM use cases and currently lives awkwardly inside the chat module. A dedicated studio with a real editor, output panel, and iteration loop would be a big upgrade.
-
----
-
-### 2. Podcast Studio (NotebookLM-style)
+### 1. Podcast Studio (NotebookLM-style)
 
 Generate multi-speaker audio discussions from documents or topics - the "NotebookLM podcast" feature but self-hosted.
 
@@ -200,7 +189,7 @@ Generate visual narratives by combining sequential image generation with text.
 
 | Module | New Service? | GPU Needed? | Leverages Existing | Complexity |
 |--------|-------------|-------------|-------------------|------------|
-| Code Studio | Optional | LLM only | Ollama, Vault | Medium |
+| ~~Code Studio~~ | ~~Optional~~ | ~~LLM only~~ | ~~Ollama, Vault~~ | ~~SHIPPED~~ |
 | Podcast Studio | Yes (thin) | LLM only | Kokoro, Vault, SDXL | Medium |
 | Document Writer | No | LLM only | Ollama, Vault | Medium |
 | Workflow Builder | Yes (thin) | None (orchestration) | All modules | Medium-High |

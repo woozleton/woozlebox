@@ -392,6 +392,12 @@ VRAM_PROFILES = {
         "keep_utility_llm": False,
         "evict_all_llms": True,
     },
+    "code": {
+        # Code Studio: only the selected coding LLM, nothing else
+        "keep_services": [],
+        "keep_utility_llm": False,
+        "evict_all_llms": True,
+    },
 }
 
 # SDXL Turbo is the small/fast model used for cover art
@@ -401,7 +407,7 @@ COVER_ART_MODEL = "sdxl-turbo"
 @app.post("/acquire")
 async def acquire(req: AcquireRequest):
     """Acquire VRAM for a service using per-service VRAM profiles."""
-    if req.service not in list(SERVICES.keys()) + ["chat"]:
+    if req.service not in list(SERVICES.keys()) + ["chat", "code"]:
         raise HTTPException(status_code=400, detail=f"Unknown service: {req.service}")
 
     profile = VRAM_PROFILES[req.service]
@@ -413,7 +419,7 @@ async def acquire(req: AcquireRequest):
         # ── Fast path: skip if pre_inference (need to evict Ollama regardless) ──
         if not req.pre_inference:
             try:
-                if req.service == "chat":
+                if req.service in ("chat", "code"):
                     target_llm = req.model or DEFAULT_LLM
                     ps = await _http.get(f"{OLLAMA_BASE_URL}/api/ps", timeout=5.0)
                     loaded_llms = [m.get("name", "") for m in ps.json().get("models", []) if m.get("name")]
@@ -520,7 +526,7 @@ async def acquire(req: AcquireRequest):
         await _broadcast("acquiring", {"service": req.service, "model": model_label, "phase": "loading"})
         result = {}
 
-        if req.service == "chat":
+        if req.service in ("chat", "code"):
             await _warmup_llm(req.model)
             result = {"model": req.model or "default", "vram_mb": 0}
         else:
@@ -581,11 +587,11 @@ async def release(req: ReleaseRequest):
     logger.info(f"[VRAM] RELEASE: service={req.service}")
     await _log_vram_state("before release")
 
-    if req.service == "chat":
+    if req.service in ("chat", "code"):
         await _evict_ollama(keep_utility=False)
-        await _log_vram_state("after release chat")
+        await _log_vram_state(f"after release {req.service}")
         await _broadcast_status()
-        return {"ok": True, "service": "chat"}
+        return {"ok": True, "service": req.service}
 
     if req.service not in SERVICES:
         raise HTTPException(status_code=400, detail=f"Unknown service: {req.service}")

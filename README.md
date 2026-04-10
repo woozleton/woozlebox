@@ -8,6 +8,7 @@ A self-hosted AI toolbox that runs entirely on your own hardware. Chat with loca
 - **Image Studio** - Text-to-image generation with Stable Diffusion 3.5, Playground v2.5, SDXL Turbo, inpainting, and Real-ESRGAN upscaling
 - **Music Studio** - Text-to-music generation with ACE-Step 1.5, automatic cover art, AI songwriting
 - **Video Studio** - Text-to-video and image-to-video generation with Wan 2.1
+- **Code Studio** - AI-powered code generation, refactoring, debugging, and sandboxed execution with user-selectable coding models
 - **Note Taker** - Record meetings or upload audio/video files, transcribe with whisperX, speaker diarization, AI-powered summaries with 7 note types
 - **File Vault** - Upload PDFs, markdown, and text files for semantic search during chat
 - **Web Search** - Optional web search integration via Tavily for current information
@@ -58,6 +59,7 @@ VIDEO_GEN_PORT=8300              # Video generation
 NOTETAKER_API_PORT=8600          # Note taker (transcription + diarization)
 GPU_MANAGER_PORT=8400            # VRAM orchestration
 MEDIA_API_PORT=8500              # Media orchestration
+CODE_RUNNER_PORT=8700            # Code execution sandbox
 
 # ── Tuning ──
 SIMILARITY_THRESHOLD=0.45        # RAG retrieval threshold (lower = more results)
@@ -66,7 +68,7 @@ TTS_VOICE=af_heart               # Default TTS voice
 
 ## Architecture
 
-Ten Docker containers on a single machine, sharing one GPU:
+Eleven Docker containers on a single machine, sharing one GPU:
 
 ```
 ┌──────────────────────────────────────────────────────────┐
@@ -80,6 +82,7 @@ Ten Docker containers on a single machine, sharing one GPU:
 │  music-api (:8200)     ─  ACE-Step 1.5                   │
 │  video-api (:8300)     ─  Wan 2.1 T2V 1.3B              │
 │  notetaker-api (:8600) ─  whisperX transcription         │
+│  code-runner (:8700)   ─  Sandboxed code execution       │
 ├──────────────────────────────────────────────────────────┤
 │  Ollama (:11434)       ─  LLM inference                  │
 │  ChromaDB (:8001)      ─  Vector store for RAG           │
@@ -101,8 +104,8 @@ woozlebox/
 │   ├── index.html              # Full app markup (1,985 lines)
 │   ├── icons.svg               # SVG sprite sheet (35 icons)
 │   ├── css/                    # 6 CSS modules (variables, base, studios, chat, ui, responsive)
-│   ├── js/                     # 19 JS modules (config, app, chat, studios, notetaker, settings, avatar, etc.)
-│   ├── lib/                    # Vendored JS libraries (Three.js r170, TalkingHead, lamejs)
+│   ├── js/                     # 20 JS modules (config, app, chat, studios, code-studio, notetaker, settings, avatar, etc.)
+│   ├── lib/                    # Vendored JS libraries (Three.js r170, TalkingHead, lamejs, highlight.js)
 │   └── models/                 # 3D avatar GLB files (brunette.glb)
 ├── rag-api/                    # Chat, auth, vault, memory, TTS (FastAPI)
 │   ├── main.py                 # API endpoints
@@ -120,6 +123,8 @@ woozlebox/
 │   └── main.py                 # Wan 2.1 T2V 1.3B
 ├── notetaker-api/              # Transcription + diarization (FastAPI + whisperX)
 │   └── main.py                 # whisperX pipeline, audio storage
+├── code-runner/                # Sandboxed code execution (FastAPI)
+│   └── main.py                 # Python, JavaScript, Bash runner
 └── docs/                       # HTML reference documentation
 ```
 
@@ -131,6 +136,7 @@ woozlebox/
 | Image Studio | Diffusion model + utility LLM | 7 – 13 GB |
 | Music Studio | ACE-Step + SDXL Turbo (cover art) | ~13 GB |
 | Video Studio | Wan 2.1 T2V 1.3B | ~5 - 10 GB |
+| Code Studio | Selected coding LLM via Ollama | 3 - 17 GB |
 | Note Taker | whisperX (base) + diarization | ~1 - 3 GB |
 
 The `gpu-manager` automatically evicts models from VRAM when switching between modes.
@@ -182,6 +188,17 @@ The `gpu-manager` automatically evicts models from VRAM when switching between m
 - Markdown export (copy or download) with transcript and summary
 - Re-transcribe with different model/language/diarization settings without re-uploading
 - Session management, favorites, folders, trash
+
+### Code Studio
+- AI code generation with streaming token-by-token output
+- User-selectable coding models (deepseek-coder, qwen2.5-coder, etc.) independent from chat model
+- Four modes: Generate, Refactor, Explain, Debug
+- Sandboxed code execution for Python, JavaScript, and Bash
+- Syntax-highlighted output via highlight.js
+- Multiple language support (Python, JS, TypeScript, Bash, HTML/CSS, SQL, Go, Rust)
+- Session management, favorites, folders, trash
+- Download/export generated code files
+- "Inspire" button for coding task ideas
 
 ### 3D Avatar
 - TalkingHead library with Three.js WebGL rendering, fully vendored locally

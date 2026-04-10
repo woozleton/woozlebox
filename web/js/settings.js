@@ -913,6 +913,23 @@ async function loadModels() {
     const utilPick = savedUtil && data.models.includes(savedUtil) ? savedUtil : (data.models.find(m => m.includes("0.6b") || m.includes("0.5b")) || data.models[data.models.length - 1] || "");
     utilSel.value = utilPick;
     localStorage.setItem("wooz_utility_model", utilPick);
+
+    // Populate code model dropdown from same list
+    const codeSel = document.getElementById("code-model-select");
+    if (codeSel) {
+      codeSel.innerHTML = "";
+      data.models.forEach(m => {
+        const opt = document.createElement("option");
+        opt.value = m; opt.textContent = m;
+        codeSel.appendChild(opt);
+      });
+      const savedCode = localStorage.getItem("wooz_code_model");
+      const codePick = savedCode && data.models.includes(savedCode)
+        ? savedCode
+        : (data.models.find(m => /code|coder/i.test(m)) || data.default);
+      codeSel.value = codePick;
+      localStorage.setItem("wooz_code_model", codePick);
+    }
   } catch { modelSelect.innerHTML = `<option value="">Unavailable</option>`; }
   loadSuggestions();
   const wa = document.getElementById("welcome-avatar");
@@ -940,6 +957,12 @@ document.getElementById("songwrite-model-select").addEventListener("change", () 
 document.getElementById("utility-model-select").addEventListener("change", () => {
   const v = document.getElementById("utility-model-select").value;
   if (v) { localStorage.setItem("wooz_utility_model", v); scheduleSettingsSync(); }
+});
+const _codeModelSel = document.getElementById("code-model-select");
+if (_codeModelSel) _codeModelSel.addEventListener("change", () => {
+  const v = _codeModelSel.value;
+  if (v) { localStorage.setItem("wooz_code_model", v); scheduleSettingsSync(); }
+  if (typeof updateCodeSettingsSummary === "function") updateCodeSettingsSummary();
 });
 // loadModels() is called from loadApp()
 

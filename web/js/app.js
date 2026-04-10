@@ -130,6 +130,8 @@ async function loadApp() {
     showVideoStudio();
   } else if (_savedView === "notetaker") {
     showNotetaker();
+  } else if (_savedView === "code") {
+    showCodeStudio();
   } else {
     setView("chat");
   }
@@ -195,7 +197,7 @@ let historyIndex   = -1;
 
 
 // ── Centralized view switching ──
-const _modelReady = { chat: false, studio: false, music: false, video: false, notetaker: false };
+const _modelReady = { chat: false, studio: false, music: false, video: false, notetaker: false, code: false };
 let _prepareAbort = null;
 
 function setView(view) {
@@ -250,6 +252,15 @@ function setView(view) {
   $("notetaker-sessions-header").style.display = view === "notetaker" ? "" : "none";
   $("notetaker-sessions-list").style.display = view === "notetaker" ? "" : "none";
 
+  // Code Studio sections
+  const _cds = document.getElementById("code-studio");
+  if (_cds) _cds.classList.toggle("active", view === "code");
+  $("code-sidebar-btn").classList.toggle("active", view === "code");
+  $("code-folders-section").style.display = view === "code" ? "" : "none";
+  $("code-folders-divider").style.display = view === "code" ? "" : "none";
+  $("code-sessions-header").style.display = view === "code" ? "" : "none";
+  $("code-sessions-list").style.display = view === "code" ? "" : "none";
+
   // Mobile sidebar
   if (isMobile() && typeof closeMobileSidebar === "function") closeMobileSidebar();
 
@@ -257,6 +268,7 @@ function setView(view) {
   if (view === "studio") studioPrompt.focus();
   else if (view === "music") musicPrompt.focus();
   else if (view === "video") { const vp = document.getElementById("video-prompt"); if (vp) vp.focus(); }
+  else if (view === "code") { const cp = document.getElementById("code-prompt"); if (cp) cp.focus(); }
   else input.focus();
 }
 
@@ -265,12 +277,13 @@ const _defaultPlaceholders = {
   studio: "Describe the image you want to create...",
   music: "Describe a song idea, or use the pen to have AI write it for you...",
   video: "Describe the video you want to create...",
+  code: "Describe the code you want to generate...",
 };
 
 function _setModelLoading(view, loading, modelName) {
-  const prompt = view === "studio" ? studioPrompt : view === "music" ? musicPrompt : view === "video" ? document.getElementById("video-prompt") : view === "chat" ? input : null;
-  const btn = view === "studio" ? studioGenerateBtn : view === "music" ? musicGenerateBtn : view === "video" ? document.getElementById("video-generate-btn") : view === "chat" ? sendBtn : null;
-  const box = prompt?.closest("#studio-prompt-box, #music-prompt-box, #video-prompt-box, #input-box");
+  const prompt = view === "studio" ? studioPrompt : view === "music" ? musicPrompt : view === "video" ? document.getElementById("video-prompt") : view === "code" ? document.getElementById("code-prompt") : view === "chat" ? input : null;
+  const btn = view === "studio" ? studioGenerateBtn : view === "music" ? musicGenerateBtn : view === "video" ? document.getElementById("video-generate-btn") : view === "code" ? document.getElementById("code-generate-btn") : view === "chat" ? sendBtn : null;
+  const box = prompt?.closest("#studio-prompt-box, #music-prompt-box, #video-prompt-box, #code-prompt-box, #input-box");
   if (prompt) {
     if (loading) {
       prompt.dataset.prevPlaceholder = prompt.placeholder;
@@ -316,7 +329,7 @@ async function prepareModelsForView(view) {
   }
 
   // Don't evict models if a generation is actively running
-  if (studioGenerating || _musicGenerating || _videoGenerating || _ntTranscribing || isLoading) return;
+  if (studioGenerating || _musicGenerating || _videoGenerating || _ntTranscribing || _codeGenerating || isLoading) return;
 
   // Check if target model already loaded
   try {
@@ -327,7 +340,7 @@ async function prepareModelsForView(view) {
       _modelReady.studio = true;
       _setModelLoading("studio", false);
       // Evict other models in background if loaded
-      if (loaded.some(m => m.type === "music") || loaded.some(m => m.type === "video") || loaded.some(m => m.type === "notetaker")) {
+      if (loaded.some(m => m.type === "music") || loaded.some(m => m.type === "video") || loaded.some(m => m.type === "notetaker") || loaded.some(m => m.type === "code")) {
         const _savedImgModel = localStorage.getItem("wooz_image_model") || null;
         fetch(GPU_API + "/acquire", {
           method: "POST",
@@ -340,7 +353,7 @@ async function prepareModelsForView(view) {
     if (view === "music" && loaded.some(m => m.type === "music")) {
       _modelReady.music = true;
       _setModelLoading("music", false);
-      if (loaded.some(m => m.type === "image") || loaded.some(m => m.type === "video") || loaded.some(m => m.type === "notetaker")) {
+      if (loaded.some(m => m.type === "image") || loaded.some(m => m.type === "video") || loaded.some(m => m.type === "notetaker") || loaded.some(m => m.type === "code")) {
         fetch(GPU_API + "/acquire", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -352,7 +365,7 @@ async function prepareModelsForView(view) {
     if (view === "video" && loaded.some(m => m.type === "video")) {
       _modelReady.video = true;
       _setModelLoading("video", false);
-      if (loaded.some(m => m.type === "image") || loaded.some(m => m.type === "music") || loaded.some(m => m.type === "notetaker")) {
+      if (loaded.some(m => m.type === "image") || loaded.some(m => m.type === "music") || loaded.some(m => m.type === "notetaker") || loaded.some(m => m.type === "code")) {
         fetch(GPU_API + "/acquire", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -363,13 +376,29 @@ async function prepareModelsForView(view) {
     }
     if (view === "notetaker" && loaded.some(m => m.type === "notetaker")) {
       _modelReady.notetaker = true;
-      if (loaded.some(m => m.type === "image") || loaded.some(m => m.type === "music") || loaded.some(m => m.type === "video")) {
+      if (loaded.some(m => m.type === "image") || loaded.some(m => m.type === "music") || loaded.some(m => m.type === "video") || loaded.some(m => m.type === "code")) {
         fetch(GPU_API + "/acquire", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ service: "notetaker" }),
         }).catch(() => {});
       }
+      return;
+    }
+    if (view === "code") {
+      // Code Studio uses Ollama LLM - handle like chat
+      _modelReady.code = false;
+      _setModelLoading("code", true, "code model");
+      const _codeModel = localStorage.getItem("wooz_code_model") || selectedModel || null;
+      try {
+        await fetch(GPU_API + "/acquire", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ service: "code", model: _codeModel }),
+        });
+      } catch {}
+      _modelReady.code = true;
+      _setModelLoading("code", false);
       return;
     }
   } catch {}
@@ -446,7 +475,7 @@ async function prepareModelsForView(view) {
 
 // View switching wrappers
 function _isGenerating() {
-  return studioGenerating || _musicGenerating || _videoGenerating || _ntTranscribing;
+  return studioGenerating || _musicGenerating || _videoGenerating || _ntTranscribing || _codeGenerating;
 }
 
 async function _confirmViewSwitch() {
@@ -545,6 +574,38 @@ async function hideNotetaker() {
   setView("chat");
   prepareModelsForView("chat");
 }
+
+async function showCodeStudio() {
+  if (!await _confirmViewSwitch()) return;
+  setView("code");
+  if (typeof loadCodeFolders === "function") loadCodeFolders();
+  if (typeof renderCodeSessionsList === "function") renderCodeSessionsList();
+  if (typeof _ensureCodeSession === "function") _ensureCodeSession();
+  if (typeof restoreCodeSnippets === "function") restoreCodeSnippets();
+  if (typeof _refreshCodeTrashBadge === "function") _refreshCodeTrashBadge();
+  if (localStorage.getItem("wooz_code_fav_open") === "1") {
+    const cfp = document.getElementById("code-fav-panel");
+    const cft = document.getElementById("code-fav-toggle");
+    if (cfp) cfp.classList.add("open");
+    if (cft) cft.classList.add("active");
+    if (typeof refreshCodeFavoritesPanel === "function") refreshCodeFavoritesPanel();
+  }
+  prepareModelsForView("code");
+}
+
+async function hideCodeStudio() {
+  if (!await _confirmViewSwitch()) return;
+  setView("chat");
+  prepareModelsForView("chat");
+}
+
+function toggleCodeStudio() {
+  const cs = document.getElementById("code-studio");
+  if (cs && cs.classList.contains("active")) return;
+  showCodeStudio();
+}
+document.getElementById("code-sidebar-btn").addEventListener("click", toggleCodeStudio);
+document.getElementById("strip-code-btn").addEventListener("click", toggleCodeStudio);
 
 function toggleStudio() {
   if (imageStudio.classList.contains("active")) return;

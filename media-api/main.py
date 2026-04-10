@@ -19,6 +19,7 @@ from typing import Optional
 import httpx
 from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.responses import StreamingResponse
 from pydantic import BaseModel
 
 logging.basicConfig(level=logging.INFO)
@@ -34,6 +35,7 @@ MUSIC_GEN_URL     = os.environ.get("MUSIC_GEN_URL", "http://music-api:8200")
 VIDEO_GEN_URL     = os.environ.get("VIDEO_GEN_URL", "http://video-api:8300")
 NOTETAKER_API_URL = os.environ.get("NOTETAKER_API_URL", "http://notetaker-api:8600")
 GPU_MANAGER_URL   = os.environ.get("GPU_MANAGER_URL", "http://gpu-manager:8400")
+CODE_RUNNER_URL   = os.environ.get("CODE_RUNNER_URL", "http://code-runner:8700")
 
 # ── LLM Prompt Templates ──
 # All system prompts in one place for easy editing.
@@ -169,6 +171,38 @@ PROMPTS = {
     "notetaker_title": (
         "Generate a short, descriptive title (3-7 words) for a meeting based on the transcript. "
         "Capture the main topic discussed. Output ONLY the title - no quotes, no explanation."
+    ),
+    # -- Code Studio prompts --
+    "code_generate": (
+        "You are an expert programmer. Generate code based on the user's request. "
+        "Output ONLY the code - no markdown fences, no explanation, no comments unless "
+        "they clarify complex logic. Write clean, idiomatic, production-quality code."
+    ),
+    "code_refactor": (
+        "You are an expert code reviewer. Refactor the provided code for readability, "
+        "best practices, and efficiency. Output ONLY the refactored code - no markdown fences, "
+        "no explanation before or after the code."
+    ),
+    "code_explain": (
+        "You are an expert programming teacher. Explain the provided code clearly and concisely. "
+        "Use section headers and bullet points where appropriate. Focus on what the code does, "
+        "why it's structured that way, and any important patterns or gotchas."
+    ),
+    "code_debug": (
+        "You are an expert debugger. Analyze the provided code for bugs, logic errors, "
+        "edge cases, and potential issues. Explain each problem found, then output the "
+        "corrected code. Format: first explain issues briefly, then provide the fixed code."
+    ),
+    "code_inspire": (
+        "You are a programming mentor. Suggest a practical, interesting coding task that "
+        "someone could build to practice their skills. Vary widely between topics: algorithms, "
+        "web development, data processing, CLI tools, automation, APIs, etc. "
+        "Output ONLY the task description in 1-2 sentences - no quotes, no explanation."
+    ),
+    "code_session_title": (
+        "Generate a short, descriptive title (3-6 words) for a coding session based on the "
+        "prompt. Capture the main task or concept. "
+        "Output ONLY the title text, no quotes, no explanation."
     ),
 }
 
@@ -356,6 +390,21 @@ class VideoNameRequest(BaseModel):
 class VideoCoverArtRequest(BaseModel):
     prompt: str
     title: Optional[str] = None
+
+class CodeGenerateRequest(BaseModel):
+    prompt: str
+    language: str = "python"
+    mode: str = "generate"
+    code: Optional[str] = None
+    model: Optional[str] = None
+
+class CodeExecuteRequest(BaseModel):
+    code: str
+    language: str = "python"
+    timeout: int = 30
+
+class CodeNameRequest(BaseModel):
+    prompt: str
 
 
 # ══════════════════════════════════════════════════════════════
@@ -1017,6 +1066,127 @@ async def notetaker_name(req: NotetakerNameRequest, user: dict = Depends(get_cur
     except Exception as e:
         logger.warning(f"Notetaker naming failed: {e}")
         return {"name": ""}
+
+
+# ══════════════════════════════════════════════════════════════
+#  CODE STUDIO ENDPOINTS
+# ══════════════════════════════════════════════════════════════
+
+
+def _get_code_model(user: dict = None, requested: str = None) -> str:
+    """Return the code model: requested > user setting > LLM_MODEL."""
+    if requested:
+        return requested
+    if user:
+        try:
+            settings = json.loads(user.get("settings") or "{}")
+            cm = settings.get("wooz_code_model", "")
+            if cm:
+                return cm
+        except Exception:
+            pass
+    return LLM_MODEL
+
+
+@app.post("/code/generate")
+async def code_generate(req: CodeGenerateRequest, user: dict = Depends(get_current_user)):
+    """Stream code generation via Ollama."""
+    mode_prompts = {
+        "generate": PROMPTS["code_generate"],
+        "refactor": PROMPTS["code_refactor"],
+        "explain": PROMPTS["code_explain"],
+        "debug": PROMPTS["code_debug"],
+    }
+    system = mode_prompts.get(req.mode, PROMPTS["code_generate"])
+    if req.language and req.language != "auto":
+        system += f"\nTarget language: {req.language}."
+
+    prompt = req.prompt
+    if req.code and req.mode in ("refactor", "explain", "debug"):
+        prompt = f"Code:\n```\n{req.code}\n```\n\n{req.prompt}"
+
+    model = _get_code_model(user, req.model)
+
+    async def stream():
+        try:
+            async with httpx.AsyncClient(timeout=300.0) as client:
+                async with client.stream(
+                    "POST",
+                    f"{OLLAMA_BASE_URL}/api/generate",
+                    json={
+                        "model": model,
+                        "system": system,
+                        "prompt": prompt,
+                        "stream": True,
+                        "think": False,
+                        "options": {"temperature": 0.3, "num_predict": 4096},
+                    },
+                ) as resp:
+                    resp.raise_for_status()
+                    async for line in resp.aiter_lines():
+                        if not line.strip():
+                            continue
+                        try:
+                            chunk = json.loads(line)
+                        except json.JSONDecodeError:
+                            continue
+                        token = chunk.get("response", "")
+                        if token:
+                            yield f"data: {json.dumps({'type': 'token', 'text': token})}\n\n"
+                        if chunk.get("done"):
+                            yield f"data: {json.dumps({'type': 'done', 'model': model})}\n\n"
+        except Exception as e:
+            logger.error(f"Code generation streaming error: {e}")
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+
+    return StreamingResponse(stream(), media_type="text/event-stream")
+
+
+@app.get("/code/inspire")
+async def code_inspire(user: dict = Depends(get_current_user)):
+    try:
+        text = await _utility_llm(
+            PROMPTS["code_inspire"],
+            "Give me a fresh, practical coding task idea.",
+            temperature=1.2, num_predict=100, user=user,
+            force_default=True, caller="code inspire",
+        )
+        return {"prompt": text.strip('"').strip("'")}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Could not generate idea: {e}")
+
+
+@app.post("/code/name-session")
+async def code_name_session(req: CodeNameRequest, user: dict = Depends(get_current_user)):
+    try:
+        name = await _utility_llm(
+            PROMPTS["code_session_title"],
+            req.prompt[:200], temperature=0.5, num_predict=15, user=user,
+            force_default=True, caller="code name-session",
+        )
+        return {"name": name.strip('"').strip("'").split("\n")[0].strip().title()[:60]}
+    except Exception as e:
+        logger.warning(f"Code session naming failed: {e}")
+        return {"name": ""}
+
+
+@app.post("/code/execute")
+async def code_execute(req: CodeExecuteRequest, user: dict = Depends(get_current_user)):
+    """Proxy code execution to the code-runner service."""
+    try:
+        async with httpx.AsyncClient(timeout=max(req.timeout + 5, 65)) as client:
+            resp = await client.post(
+                f"{CODE_RUNNER_URL}/run",
+                json={"code": req.code, "language": req.language, "timeout": min(req.timeout, 60)},
+            )
+            resp.raise_for_status()
+            return resp.json()
+    except httpx.ConnectError:
+        raise HTTPException(status_code=503, detail="Code runner service is not available")
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="Code execution timed out")
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
 
 
 # ══════════════════════════════════════════════════════════════

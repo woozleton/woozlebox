@@ -160,9 +160,17 @@ services:
       - VIDEO_GEN_URL=${VIDEO_GEN_URL:-http://video-api:8300}
       - NOTETAKER_API_URL=${NOTETAKER_API_URL:-http://notetaker-api:8600}
       - GPU_MANAGER_URL=${GPU_MANAGER_URL:-http://gpu-manager:8400}
+      - CODE_RUNNER_URL=${CODE_RUNNER_URL:-http://code-runner:8700}
     depends_on:
       - rag-api
       - ollama
+    restart: unless-stopped
+
+  code-runner:
+    build: ./code-runner
+    container_name: code-runner
+    ports:
+      - "${CODE_RUNNER_PORT:-8700}:8700"
     restart: unless-stopped
 
   gpu-manager:

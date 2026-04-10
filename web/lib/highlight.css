@@ -1,0 +1,34 @@
+/*! highlight.js tokyo-night-dark theme - stub for offline development.
+    Replace with the real theme from:
+    https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/tokyo-night-dark.min.css
+*/
+.hljs {
+  color: #d4d4d4;
+  background: transparent;
+}
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-title,
+.hljs-section,
+.hljs-doctag,
+.hljs-name,
+.hljs-strong { color: #bb9af7; font-weight: bold; }
+.hljs-comment,
+.hljs-quote { color: #565f89; font-style: italic; }
+.hljs-string,
+.hljs-title.class_,
+.hljs-addition { color: #9ece6a; }
+.hljs-number,
+.hljs-literal { color: #ff9e64; }
+.hljs-built_in,
+.hljs-type { color: #7aa2f7; }
+.hljs-attr,
+.hljs-variable,
+.hljs-template-variable { color: #e0af68; }
+.hljs-params { color: #d4d4d4; }
+.hljs-meta { color: #73daca; }
+.hljs-deletion { color: #f7768e; }
+.hljs-symbol,
+.hljs-bullet,
+.hljs-link { color: #2ac3de; }
+.hljs-emphasis { font-style: italic; }
