@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WoozleBox Installation</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0F1117; color: #E4E4E7; font-family: 'Segoe UI', Calibri, sans-serif; padding: 40px; min-height: 100vh; }
+  h1 { font-size: 34px; font-weight: 700; margin-bottom: 6px; }
+  h2 { font-size: 26px; font-weight: 700; margin: 44px 0 20px; color: #E4E4E7; }
+  h3 { font-size: 18px; font-weight: 700; margin: 20px 0 10px; color: #E4E4E7; }
+  .subtitle { font-size: 18px; color: #9CA3AF; margin-bottom: 32px; }
+  .section-desc { font-size: 16px; color: #9CA3AF; margin-bottom: 20px; line-height: 1.5; max-width: 1100px; }
+
+  /* Step cards */
+  .steps { max-width: 1100px; }
+  .step { background: #1A1D27; border: 1px solid #2A2D3A; border-radius: 10px; padding: 20px 24px; margin-bottom: 14px; position: relative; }
+  .step-num { position: absolute; top: 20px; left: 24px; width: 32px; height: 32px; border-radius: 50%; background: #60A5FA22; color: #60A5FA; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; }
+  .step-body { margin-left: 48px; }
+  .step-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+  .step-desc { font-size: 15px; color: #9CA3AF; line-height: 1.55; margin-bottom: 10px; }
+
+  /* Code blocks */
+  pre { background: #0A0C12; border: 1px solid #2A2D3A; border-radius: 6px; padding: 14px 16px; font-family: 'Cascadia Code', Consolas, monospace; font-size: 13px; color: #E4E4E7; overflow-x: auto; line-height: 1.5; margin: 6px 0; }
+  code { font-family: 'Cascadia Code', Consolas, monospace; font-size: 13px; background: #0A0C12; padding: 2px 6px; border-radius: 3px; color: #60A5FA; }
+
+  /* Requirements table */
+  .req-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; max-width: 1100px; margin-bottom: 14px; }
+  .req-card { background: #1A1D27; border: 1px solid #2A2D3A; border-radius: 8px; padding: 16px 18px; }
+  .req-card .label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #6B7280; margin-bottom: 8px; }
+  .req-card .val { font-size: 15px; color: #E4E4E7; line-height: 1.4; }
+  .req-accent { height: 3px; border-radius: 3px 3px 0 0; margin: -16px -18px 12px; }
+
+  /* Service table */
+  .svc-table { max-width: 1100px; background: #1A1D27; border: 1px solid #2A2D3A; border-radius: 10px; overflow: hidden; }
+  .svc-row { display: grid; grid-template-columns: 200px 120px 1fr; padding: 12px 20px; border-bottom: 1px dotted #2A2D3A; font-size: 14px; }
+  .svc-row:last-child { border-bottom: none; }
+  .svc-row.header { background: #0A0C12; font-weight: 700; color: #6B7280; text-transform: uppercase; font-size: 12px; letter-spacing: 0.08em; }
+  .svc-name { font-family: monospace; color: #60A5FA; }
+  .svc-port { font-family: monospace; color: #9CA3AF; }
+  .svc-desc { color: #9CA3AF; }
+
+  /* Callout */
+  .callout { max-width: 1100px; background: #F59E0B11; border: 1px solid #F59E0B44; border-left: 4px solid #F59E0B; border-radius: 6px; padding: 14px 18px; margin: 12px 0; font-size: 14px; color: #E4E4E7; line-height: 1.55; }
+  .callout .tag { font-weight: 700; color: #F59E0B; margin-right: 6px; }
+  .callout.info { background: #60A5FA11; border-color: #60A5FA44; border-left-color: #60A5FA; }
+  .callout.info .tag { color: #60A5FA; }
+  .callout.warn { background: #EF444411; border-color: #EF444444; border-left-color: #EF4444; }
+  .callout.warn .tag { color: #EF4444; }
+
+  /* Colors */
+  .accent-sys { background: #60A5FA; }
+  .accent-docker { background: #34D399; }
+  .accent-gpu { background: #F97316; }
+  .accent-disk { background: #A78BFA; }
+
+  .footnote { margin-top: 24px; font-size: 14px; color: #6B7280; font-style: italic; max-width: 1100px; line-height: 1.6; }
+  ul { margin-left: 20px; color: #9CA3AF; font-size: 15px; line-height: 1.6; }
+  li { margin-bottom: 4px; }
+</style>
+</head>
+<body>
+
+<h1>WoozleBox Installation</h1>
+<p class="subtitle">Prerequisites, first-run setup, and model pre-warm</p>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Requirements</h2>
+<p class="section-desc">WoozleBox is a self-hosted AI toolbox built on Docker Compose. Every GPU-bound service expects a single CUDA-capable NVIDIA card and the NVIDIA Container Toolkit. Testing is done on Windows 11 with an RTX 4090.</p>
+
+<div class="req-grid">
+  <div class="req-card">
+    <div class="req-accent accent-sys"></div>
+    <div class="label">Operating System</div>
+    <div class="val">Windows 11 (WSL2), Linux, or macOS (CPU-only)</div>
+  </div>
+  <div class="req-card">
+    <div class="req-accent accent-docker"></div>
+    <div class="label">Docker</div>
+    <div class="val">Docker Desktop 4.30+ with Compose v2</div>
+  </div>
+  <div class="req-card">
+    <div class="req-accent accent-gpu"></div>
+    <div class="label">GPU</div>
+    <div class="val">NVIDIA, 24 GB VRAM required (tested on RTX 4090). Smaller cards must pick smaller models and expect swap delays.</div>
+  </div>
+  <div class="req-card">
+    <div class="req-accent accent-disk"></div>
+    <div class="label">Disk</div>
+    <div class="val">~100 GB free for first-run model downloads + volumes</div>
+  </div>
+</div>
+
+<div class="callout info">
+  <span class="tag">NOTE</span>
+  WSL2 users need the NVIDIA Container Toolkit installed inside the WSL distribution, and Docker Desktop's "Use the WSL 2 based engine" setting enabled. Verify GPU passthrough with <code>docker run --rm --gpus all nvidia/cuda:12.3.0-base-ubuntu22.04 nvidia-smi</code>.
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Install Steps</h2>
+
+<div class="steps">
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <div class="step-title">Clone the repo</div>
+      <div class="step-desc">Grab the source tree and enter the project directory.</div>
+<pre>git clone https://github.com/woozleton/woozlebox.git
+cd woozlebox</pre>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <div class="step-title">Clone the Orpheus FastAPI upstream</div>
+      <div class="step-desc">The <code>tts-api</code> service builds from <code>./orpheus/</code>, which is gitignored so each install brings its own copy. Run this from the repo root - without it, <code>docker compose up</code> will fail at the tts-api build step.</div>
+<pre>git clone https://github.com/Lex-au/Orpheus-FastAPI.git orpheus</pre>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <div class="step-title">Create your <code>.env</code> file</div>
+      <div class="step-desc">Create a <code>.env</code> file in the project root and fill in any secrets. The HuggingFace token is required for gated repos (pyannote diarization and SD 3.5 medium). The Tavily key is optional and only used for web search in chat. Defaults for every other env var live in <code>docker-compose.yml</code> and do not need to be set.</div>
+<pre># .env
+HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TAVILY_API_KEY=tvly-xxxxxxxxxxxxxxxxxxxx</pre>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-body">
+      <div class="step-title">Accept gated-model licenses</div>
+      <div class="step-desc">Before the first pre-warm, visit each gated repo's HuggingFace page while logged in as the account that owns your <code>HF_TOKEN</code>, and click "Agree and access repository". Skipping this means those models fail to download and the corresponding features (diarization, SD 3.5) will be unavailable.</div>
+      <ul>
+        <li>huggingface.co/pyannote/segmentation-3.0</li>
+        <li>huggingface.co/pyannote/speaker-diarization-3.1</li>
+        <li>huggingface.co/pyannote/speaker-diarization-community-1</li>
+        <li>huggingface.co/stabilityai/stable-diffusion-3.5-medium</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">5</div>
+    <div class="step-body">
+      <div class="step-title">Bring the stack up</div>
+      <div class="step-desc">The first <code>docker compose up -d</code> builds every service image (image-api, music-api, video-api, notetaker-api, tts-api are the slow ones) and pulls the pre-built ones (Ollama, ChromaDB, nginx, llama.cpp). The <code>tts-init</code> service downloads the Orpheus GGUF (~2 GB) into the <code>tts_models</code> volume once on first start and then exits.</div>
+<pre>docker compose up -d</pre>
+      <div class="callout info">
+        <span class="tag">TIP</span>
+        You can start using chat immediately - chat only needs Ollama, which pulls the default LLM (<code>qwen3:30b-a3b</code>, ~18 GB) the first time you open chat. Image / music / video / notetaker each download their weights into the shared <code>hf_cache</code> volume the first time you use them, so expect the first generation in each studio to take several minutes. Subsequent uses are instant.
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">6</div>
+    <div class="step-body">
+      <div class="step-title">Open the web UI and create the admin account</div>
+      <div class="step-desc">Open <code>http://localhost:8080</code> in your browser. On first visit you'll see an <b>admin setup screen</b> - create the first account there and you'll be logged in as admin. Subsequent visits show the login screen.</div>
+<pre>http://localhost:8080</pre>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">7</div>
+    <div class="step-body">
+      <div class="step-title">(Optional) Pre-pull Ollama models</div>
+      <div class="step-desc">Ollama pulls <code>qwen3:30b-a3b</code> (main chat, ~18 GB), <code>qwen3:0.6b</code> (utility), and <code>nomic-embed-text</code> (embeddings) on demand the first time each is needed. If you'd rather front-load the download instead of waiting on first use, pull them inside the running Ollama container:</div>
+<pre>docker exec ollama ollama pull qwen3:30b-a3b
+docker exec ollama ollama pull qwen3:0.6b
+docker exec ollama ollama pull nomic-embed-text</pre>
+      <div class="step-desc">Once the admin account is created, additional models can also be pulled from the web UI at <b>Settings -&gt; Assistants -&gt; Pull New Model</b>. The UI suggests names from <code>ollama.com/library</code>, accepts any custom Ollama-compatible name, and shows live download progress.</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Services &amp; Ports</h2>
+<p class="section-desc">Every container exposes its port on <code>localhost</code> for direct API access. Override any port via the matching <code>*_PORT</code> variable in <code>.env</code>.</p>
+
+<div class="svc-table">
+  <div class="svc-row header"><div>Service</div><div>Port</div><div>Purpose</div></div>
+  <div class="svc-row"><div class="svc-name">web</div><div class="svc-port">8080</div><div class="svc-desc">Vanilla JS frontend (nginx)</div></div>
+  <div class="svc-row"><div class="svc-name">rag-api</div><div class="svc-port">8000</div><div class="svc-desc">Chat, RAG, memory, TTS proxy, settings sync</div></div>
+  <div class="svc-row"><div class="svc-name">chromadb</div><div class="svc-port">8001</div><div class="svc-desc">Vector store for RAG embeddings</div></div>
+  <div class="svc-row"><div class="svc-name">image-api</div><div class="svc-port">8100</div><div class="svc-desc">Image generation (SDXL Turbo, Playground v2.5, SD 3.5, SD inpaint) + upscaling</div></div>
+  <div class="svc-row"><div class="svc-name">music-api</div><div class="svc-port">8200</div><div class="svc-desc">Music generation (ACE-Step 1.5)</div></div>
+  <div class="svc-row"><div class="svc-name">video-api</div><div class="svc-port">8300</div><div class="svc-desc">Text-to-video (Wan 2.1 T2V 1.3B)</div></div>
+  <div class="svc-row"><div class="svc-name">gpu-manager</div><div class="svc-port">8400</div><div class="svc-desc">Single-GPU load/unload coordinator</div></div>
+  <div class="svc-row"><div class="svc-name">media-api</div><div class="svc-port">8500</div><div class="svc-desc">Studio orchestration + routing</div></div>
+  <div class="svc-row"><div class="svc-name">notetaker-api</div><div class="svc-port">8600</div><div class="svc-desc">Whisper transcription + pyannote diarization</div></div>
+  <div class="svc-row"><div class="svc-name">code-runner</div><div class="svc-port">8700</div><div class="svc-desc">Sandboxed code execution</div></div>
+  <div class="svc-row"><div class="svc-name">tts-api</div><div class="svc-port">5005</div><div class="svc-desc">Orpheus TTS HTTP wrapper (SNAC decoder)</div></div>
+  <div class="svc-row"><div class="svc-name">tts-llm</div><div class="svc-port">5006 / 5007</div><div class="svc-desc">Orpheus GGUF on llama.cpp (5006) wrapped by a FastAPI supervisor (5007) that spawns/kills llama-server on demand</div></div>
+  <div class="svc-row"><div class="svc-name">ollama</div><div class="svc-port">11434</div><div class="svc-desc">Local LLM host (chat, utility, embeddings)</div></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Disk Footprint</h2>
+<p class="section-desc">After a successful pre-warm, the <code>hf_cache</code> Docker volume holds every image / music / video / notetaker model. Other volumes hold LLMs, vector store, transcription state, and the TTS GGUF.</p>
+
+<div class="svc-table">
+  <div class="svc-row header"><div>Volume</div><div>Size</div><div>Contents</div></div>
+  <div class="svc-row"><div class="svc-name">hf_cache</div><div class="svc-port">~62 GB</div><div class="svc-desc">Diffusers repos, faster-whisper, pyannote, ESRGAN</div></div>
+  <div class="svc-row"><div class="svc-name">ollama_data</div><div class="svc-port">~20 GB</div><div class="svc-desc">Pulled Ollama models (varies by selection)</div></div>
+  <div class="svc-row"><div class="svc-name">tts_models</div><div class="svc-port">~2 GB</div><div class="svc-desc">Orpheus-3b-FT-Q4_K_M.gguf</div></div>
+  <div class="svc-row"><div class="svc-name">chroma_data</div><div class="svc-port">&lt; 1 GB</div><div class="svc-desc">Vector store (grows with your RAG corpus)</div></div>
+  <div class="svc-row"><div class="svc-name">rag_data</div><div class="svc-port">&lt; 1 GB</div><div class="svc-desc">SQLite app state (users, chats, studio items, settings)</div></div>
+  <div class="svc-row"><div class="svc-name">notetaker_data</div><div class="svc-port">varies</div><div class="svc-desc">Transcripts and uploaded audio</div></div>
+</div>
+
+<div class="callout warn">
+  <span class="tag">WARN</span>
+  Do not <code>docker volume rm hf_cache</code> unless you are prepared to re-download the full ~60 GB on next start. If you need to reclaim space temporarily, consider stopping unused services instead.
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Updating</h2>
+<p class="section-desc">To pull new code and rebuild only the services that changed:</p>
+<pre>git pull
+docker compose up -d --build</pre>
+
+<p class="section-desc">Compose only rebuilds services whose <code>build</code> context changed. Model weights in the <code>hf_cache</code> volume are preserved across rebuilds, so you never re-download what you already have.</p>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Troubleshooting</h2>
+
+<h3>tts-api build fails with "./orpheus does not exist"</h3>
+<p class="section-desc">You skipped step 2 of Install Steps. The Orpheus FastAPI upstream is gitignored so each install brings its own copy. Run <code>git clone https://github.com/Lex-au/Orpheus-FastAPI.git orpheus</code> from the repo root, then re-run <code>docker compose up -d</code>.</p>
+
+<h3>GPU not detected</h3>
+<p class="section-desc">If <code>docker compose logs image-api</code> shows <code>CUDA unavailable</code>, verify the NVIDIA Container Toolkit is installed and Docker can see your GPU with <code>docker run --rm --gpus all nvidia/cuda:12.3.0-base-ubuntu22.04 nvidia-smi</code>. On WSL2, make sure you installed the toolkit inside WSL, not on Windows.</p>
+
+<h3>Gated repo 403 on first use</h3>
+<p class="section-desc">If a studio shows a "HuggingFace license not accepted" toast with a repo link, open the link, click "Agree and access repository" while logged into the HuggingFace account that owns your <code>HF_TOKEN</code>, then retry the generation.</p>
+
+<h3>Out of VRAM</h3>
+<p class="section-desc">The <code>gpu-manager</code> service unloads idle models before loading a new one, so you should never hit OOM on a 24 GB card. On smaller cards you may need to avoid Playground v2.5 (the heaviest image model) and stick to SDXL Turbo and SD inpaint.</p>
+
+<h3>VRAM orchestration env vars</h3>
+<p class="section-desc">Three env vars on the <code>gpu-manager</code> service tune VRAM accounting. Defaults suit a 24 GB RTX 4090 running on Windows 11.</p>
+<div class="svc-table">
+  <div class="svc-row header"><div>Variable</div><div>Default</div><div>Purpose</div></div>
+  <div class="svc-row"><div class="svc-name">VRAM_RESERVED_MB</div><div class="svc-port">2500</div><div class="svc-desc">Subtracted from nvidia-smi total VRAM before budgeting. Covers the Windows desktop compositor, browser, and other background GPU consumers. Raise this on Windows if you run other GPU apps alongside WoozleBox.</div></div>
+  <div class="svc-row"><div class="svc-name">IDLE_UNLOAD_MIN</div><div class="svc-port">15</div><div class="svc-desc">Minutes of inactivity before a loaded image / music / video / notetaker / tts service is evicted by the idle-unload timer. Set to 0 to disable.</div></div>
+  <div class="svc-row"><div class="svc-name">TTS_FIT_HEADROOM_MB</div><div class="svc-port">1500</div><div class="svc-desc">Extra VRAM reserved for KV cache when deciding whether the selected chat / code LLM can coexist with Orpheus. If chat_llm + tts + headroom &gt; budget, TTS is evicted and new TTS requests return HTTP 409 until the user picks a smaller chat model.</div></div>
+</div>
+
+<h3>First use of a feature is slow</h3>
+<p class="section-desc">The first time you use image / music / video / notetaker, the backend downloads its model weights from HuggingFace into the <code>hf_cache</code> volume. This can take several minutes per model on a fast connection. The web UI shows a download indicator in the prompt bar while this is happening. Subsequent uses are instant.</p>
+
+<p class="footnote">For the service layout and data flow, see <code>woozbox-architecture.html</code>. For the repo tree, see <code>woozbox-file-structure.html</code>. For end-to-end request flows, see <code>woozbox-workflows.html</code>.</p>
+
+</body>
+</html>

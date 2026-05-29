@@ -1,0 +1,2597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>WoozleBox</title>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "/lib/three/three.module.min.js",
+      "three/addons/": "/lib/three/addons/"
+    }
+  }
+  </script>
+  <link rel="preload" href="fonts/InterVariable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/1-variables.css?v=3">
+  <link rel="stylesheet" href="css/2-base.css?v=19">
+  <link rel="stylesheet" href="css/3-studios.css?v=17">
+  <link rel="stylesheet" href="css/4-chat.css?v=12">
+  <link rel="stylesheet" href="css/5-ui.css?v=26">
+  <link rel="stylesheet" href="css/6-responsive.css?v=3">
+  <link rel="stylesheet" href="lib/highlight.css">
+  <script>
+    // Apply persisted color mode before first paint to avoid a flash.
+    // Orthogonal to the existing wooz_theme preset picker.
+    (function(){
+      var m = localStorage.getItem("wooz_color_mode");
+      if (m === "light" || m === "auto") {
+        document.documentElement.setAttribute("data-theme", m);
+      } else {
+        document.documentElement.setAttribute("data-theme", "dark");
+      }
+    })();
+  </script>
+</head>
+<body>
+<script>
+  if(localStorage.getItem("wooz_view")==="studio"){
+    document.documentElement.classList.add("studio-preload");
+  } else if(localStorage.getItem("wooz_view")==="music"){
+    document.documentElement.classList.add("music-preload");
+  } else if(localStorage.getItem("wooz_view")==="video"){
+    document.documentElement.classList.add("video-preload");
+  }
+</script>
+
+<!-- SVG icon sprite sheet -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <symbol id="i-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></symbol>
+  <symbol id="i-heart-filled" viewBox="0 0 24 24" fill="#f472b6" stroke="#f472b6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></symbol>
+  <symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
+  <symbol id="i-chevron-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></symbol>
+  <symbol id="i-wrap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><path d="M3 12h15a3 3 0 1 1 0 6h-4"/><polyline points="16 16 14 18 16 20"/><line x1="3" y1="18" x2="10" y2="18"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+  <symbol id="i-trash-simple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-maximize" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 18 4 13"/></symbol>
+  <symbol id="i-music" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
+  <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.5 3.5L17 8l-3.5 1.5L12 13l-1.5-3.5L7 8l3.5-1.5z"/><path d="M5 17l.75 1.75L7.5 19.5l-1.75.75L5 22l-.75-1.75L2.5 19.5l1.75-.75z"/><path d="M18 13l.75 1.75 1.75.75-1.75.75L18 18l-.75-1.75-1.75-.75 1.75-.75z"/></symbol>
+  <symbol id="i-bulb" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 1 7 7c0 3-1.86 5.1-4 6.32V17a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-1.68C6.86 14.1 5 12 5 9a7 7 0 0 1 7-7z"/><line x1="9" y1="21" x2="15" y2="21"/><line x1="10" y1="17" x2="14" y2="17"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+  <symbol id="i-trash-lines" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></symbol>
+  <symbol id="i-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></symbol>
+  <symbol id="i-redo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></symbol>
+  <symbol id="i-scissors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="i-chat-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="12" y1="8" x2="12" y2="14"/><line x1="9" y1="11" x2="15" y2="11"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></symbol>
+  <symbol id="i-edit-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+  <symbol id="i-sidebar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></symbol>
+  <symbol id="i-record" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="currentColor"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></symbol>
+  <symbol id="i-paperclip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></symbol>
+  <symbol id="i-database" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4.03 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/></symbol>
+  <symbol id="i-trim" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></symbol>
+  <symbol id="i-fade-in" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 20 21 20 21 4" fill="currentColor" opacity="0.2" stroke="none"/><path d="M3 20 L21 20 L21 4 Z"/></symbol>
+  <symbol id="i-fade-out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 4 3 20 21 20" fill="currentColor" opacity="0.2" stroke="none"/><path d="M3 4 L3 20 L21 20 Z"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+  <symbol id="i-diff" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="10" y2="6"/><line x1="7" y1="3" x2="7" y2="9"/><line x1="14" y1="18" x2="20" y2="18"/><rect x="2" y="2" width="20" height="20" rx="3"/><line x1="12" y1="2" x2="12" y2="22"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+</svg>
+
+<!-- hidden TTS btn kept for JS -->
+<button id="tts-btn" style="display:none">🔊</button>
+
+<!-- Mobile hamburger menu button -->
+<button id="mobile-menu-btn" aria-label="Open menu">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+</button>
+<!-- Mobile sidebar backdrop -->
+<div id="mobile-sidebar-backdrop"></div>
+<!-- Inpaint Editor -->
+<div id="inpaint-editor">
+  <div id="inpaint-card">
+    <div id="inpaint-header">
+      <div id="inpaint-header-left">
+        <span id="inpaint-header-title">Edit Image</span>
+        <span id="inpaint-header-desc">Paint the area to change, then describe the replacement</span>
+      </div>
+      <div id="inpaint-tools">
+        <label>Brush <input type="range" id="inpaint-brush-size" min="5" max="80" value="30"><span id="inpaint-brush-val">30</span></label>
+        <button class="inpaint-tool-btn" id="inpaint-eraser" title="Eraser (E)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20H7L3 16c-.8-.8-.8-2 0-2.8L14.6 1.6c.8-.8 2-.8 2.8 0L21 5.2c.8.8.8 2 0 2.8L11 18"/><path d="M6 12l5.4 5.4"/></svg>
+        </button>
+        <button class="inpaint-tool-btn" id="inpaint-undo" title="Undo (Ctrl+Z)">
+          <svg width="14" height="14"><use href="#i-refresh"/></svg>
+        </button>
+        <button class="inpaint-tool-btn" id="inpaint-clear" title="Clear mask">
+          <svg width="14" height="14"><use href="#i-trash-simple"/></svg>
+        </button>
+        <div class="inpaint-sep"></div>
+        <div class="inpaint-zoom-group">
+          <button class="inpaint-zoom-btn" id="inpaint-zoom-out">&minus;</button>
+          <input type="range" id="inpaint-zoom-range" min="25" max="300" value="100">
+          <button class="inpaint-zoom-btn" id="inpaint-zoom-in">+</button>
+          <span id="inpaint-zoom-val">100%</span>
+        </div>
+      </div>
+      <button id="inpaint-close">&times;</button>
+    </div>
+    <div id="inpaint-canvas-wrap">
+      <div id="inpaint-canvas-inner">
+        <img id="inpaint-source-img" />
+        <canvas id="inpaint-canvas"></canvas>
+        <div id="inpaint-loading">
+          <div class="enhance-overlay-spinner"></div>
+          <div id="inpaint-loading-text">Inpainting...</div>
+        </div>
+      </div>
+    </div>
+    <button id="inpaint-settings-toggle">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M9 6l6 6-6 6z"/></svg>
+      Settings
+    </button>
+    <div id="inpaint-settings-panel">
+      <div class="inpaint-setting-row">
+        <span class="inpaint-setting-label" title="Number of denoising iterations. More steps = higher quality but slower.">Steps</span>
+        <input type="range" class="inpaint-setting-range" id="inpaint-set-steps" min="10" max="50" value="35" title="Number of denoising iterations. More steps = higher quality but slower.">
+        <span class="inpaint-setting-val" id="inpaint-set-steps-val">35</span>
+      </div>
+      <div class="inpaint-setting-row">
+        <span class="inpaint-setting-label" title="How strongly the result follows your prompt. Higher = more literal, lower = more creative.">Guidance</span>
+        <input type="range" class="inpaint-setting-range" id="inpaint-set-guidance" min="1" max="20" step="0.5" value="12" title="How strongly the result follows your prompt. Higher = more literal, lower = more creative.">
+        <span class="inpaint-setting-val" id="inpaint-set-guidance-val">12.0</span>
+      </div>
+      <div class="inpaint-setting-row">
+        <span class="inpaint-setting-label" title="How much of the masked area to regenerate. 1.0 = fully replace, lower values blend more with the original image.">Strength</span>
+        <input type="range" class="inpaint-setting-range" id="inpaint-set-strength" min="0.1" max="1.0" step="0.05" value="0.75" title="How much of the masked area to regenerate. 1.0 = fully replace, lower values blend more with the original image.">
+        <span class="inpaint-setting-val" id="inpaint-set-strength-val">0.75</span>
+      </div>
+    </div>
+    <div id="inpaint-prompt-bar">
+      <input type="text" id="inpaint-prompt" placeholder="Describe what should appear in the painted area..." />
+      <button id="inpaint-submit" title="Run inpainting on the painted area">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      </button>
+      <button id="inpaint-save" title="Save result to Image Studio">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      </button>
+      <button id="inpaint-reset" title="Reset to original image">
+        <svg width="16" height="16"><use href="#i-refresh"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MUSIC EDITOR MODAL -->
+<div id="music-editor">
+  <div id="music-editor-card">
+    <div id="music-editor-header">
+      <div id="music-editor-header-left">
+        <span id="music-editor-title">Edit Audio</span>
+        <span id="music-editor-desc">Select a region to trim, cut, or apply effects</span>
+      </div>
+      <div id="music-editor-tools">
+        <button class="inpaint-tool-btn" id="me-trim" title="Trim to selection">
+          <svg width="14" height="14"><use href="#i-trim"/></svg>
+        </button>
+        <button class="inpaint-tool-btn" id="me-cut" title="Cut selection">
+          <svg width="14" height="14"><use href="#i-scissors"/></svg>
+        </button>
+        <div class="inpaint-sep"></div>
+        <button class="inpaint-tool-btn" id="me-fade-in" title="Fade in">
+          <svg width="14" height="14"><use href="#i-fade-in"/></svg>
+        </button>
+        <button class="inpaint-tool-btn" id="me-fade-out" title="Fade out">
+          <svg width="14" height="14"><use href="#i-fade-out"/></svg>
+        </button>
+        <div class="inpaint-sep"></div>
+        <div id="me-speed-group">
+          <svg width="12" height="12"><use href="#i-clock"/></svg>
+          <input type="range" id="me-speed" min="0.25" max="2" step="0.25" value="1" title="Playback speed">
+          <span id="me-speed-val">1x</span>
+        </div>
+        <div class="inpaint-sep"></div>
+        <button class="inpaint-tool-btn" id="me-undo" title="Undo (Ctrl+Z)">
+          <svg width="14" height="14"><use href="#i-refresh"/></svg>
+        </button>
+        <button class="inpaint-tool-btn" id="me-redo" title="Redo (Ctrl+Y)">
+          <svg width="14" height="14"><use href="#i-redo"/></svg>
+        </button>
+      </div>
+      <button id="music-editor-close">&times;</button>
+    </div>
+    <div id="me-wave-container">
+      <div id="me-waveform-wrap">
+        <canvas id="me-waveform-canvas"></canvas>
+        <div id="me-selection-overlay"></div>
+        <div id="me-playhead"></div>
+      </div>
+      <canvas id="me-timeline-canvas"></canvas>
+    </div>
+    <div id="me-scrollbar">
+      <div id="me-scrollbar-thumb"></div>
+    </div>
+    <div id="me-transport">
+      <button class="inpaint-tool-btn" id="me-play" title="Play/Pause">
+        <svg width="14" height="14"><use href="#i-play"/></svg>
+      </button>
+      <span id="me-time">0:00 / 0:00</span>
+      <span id="me-selection-info"></span>
+      <div id="me-zoom-group">
+        <button class="inpaint-tool-btn" id="me-zoom-out" title="Zoom out (-)">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <span id="me-zoom-val">100%</span>
+        <button class="inpaint-tool-btn" id="me-zoom-in" title="Zoom in (+)">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="me-footer">
+      <div id="me-export-group">
+        <label id="me-format-label">Format</label>
+        <select id="me-format">
+          <option value="mp3">MP3</option>
+          <option value="wav">WAV</option>
+        </select>
+      </div>
+      <button class="accent-btn" id="me-export" title="Download edited audio">
+        <svg width="14" height="14"><use href="#i-download"/></svg> Export
+      </button>
+      <button class="accent-btn" id="me-save" title="Save changes back to studio">
+        <svg width="14" height="14"><use href="#i-check"/></svg> Save
+      </button>
+      <button class="accent-btn" id="me-reset" title="Reset to original">
+        <svg width="14" height="14"><use href="#i-refresh"/></svg> Reset
+      </button>
+    </div>
+    <div class="modal-resize-handle" id="me-resize-handle"></div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div id="sidebar-resize-handle"></div>
+    <!-- Logo -->
+    <div id="sidebar-logo">
+      <div class="logo" id="logo-letter">D</div>
+      <img id="logo-img" style="display:none;max-width:280px;max-height:32px;width:auto;height:auto;object-fit:contain;border-radius:4px;" />
+      <span id="sidebar-title">WoozleBox</span>
+      <button id="search-open-btn" class="sidebar-search-btn" title="Search">
+        <svg width="15" height="15"><use href="#i-search"/></svg>
+      </button>
+    </div>
+
+    <!-- Expanded sidebar top -->
+    <div id="sidebar-top">
+      <button id="new-chat-btn">
+        <svg width="15" height="15"><use href="#i-chat-plus"/></svg>
+        Chat
+      </button>
+      <button class="sidebar-row sidebar-studio-btn" id="studio-sidebar-btn">
+        <svg width="15" height="15"><use href="#i-image"/></svg>
+        Image Studio
+      </button>
+      <button class="sidebar-row sidebar-studio-btn" id="music-sidebar-btn">
+        <svg width="15" height="15"><use href="#i-music"/></svg>
+        Music Studio
+      </button>
+      <button class="sidebar-row sidebar-studio-btn" id="video-sidebar-btn">
+        <svg width="15" height="15"><use href="#i-video"/></svg>
+        Video Studio
+      </button>
+      <button class="sidebar-row sidebar-studio-btn" id="notetaker-sidebar-btn">
+        <svg width="15" height="15"><use href="#i-mic"/></svg>
+        Note Taker
+      </button>
+      <button class="sidebar-row sidebar-studio-btn" id="code-sidebar-btn">
+        <svg width="15" height="15"><use href="#i-code"/></svg>
+        Code Studio
+      </button>
+    </div>
+    <button id="sidebar-toggle" title="Collapse sidebar">
+      <svg width="15" height="15"><use href="#i-sidebar"/></svg>
+    </button>
+
+    <!-- Collapsed icon strip -->
+    <div id="sidebar-icon-strip">
+      <button class="strip-btn" id="strip-expand-btn" title="Expand sidebar">
+        <svg width="16" height="16"><use href="#i-sidebar"/></svg>
+      </button>
+      <button class="strip-btn" id="strip-new-chat-btn" title="Chat">
+        <svg width="16" height="16"><use href="#i-chat-plus"/></svg>
+      </button>
+      <button class="strip-btn" id="strip-studio-btn" title="Image Studio">
+        <svg width="16" height="16"><use href="#i-image"/></svg>
+      </button>
+      <button class="strip-btn" id="strip-music-btn" title="Music Studio">
+        <svg width="16" height="16"><use href="#i-music"/></svg>
+      </button>
+      <button class="strip-btn" id="strip-video-btn" title="Video Studio">
+        <svg width="16" height="16"><use href="#i-video"/></svg>
+      </button>
+      <button class="strip-btn" id="strip-notetaker-btn" title="Note Taker">
+        <svg width="16" height="16"><use href="#i-mic"/></svg>
+      </button>
+      <button class="strip-btn" id="strip-code-btn" title="Code Studio">
+        <svg width="16" height="16"><use href="#i-code"/></svg>
+      </button>
+      <button class="strip-btn" id="strip-search-btn" title="Search chats">
+        <svg width="16" height="16"><use href="#i-search"/></svg>
+      </button>
+      <button class="strip-btn" id="strip-settings-btn" title="Settings">
+        <svg width="16" height="16"><use href="#i-gear"/></svg>
+      </button>
+    </div>
+
+    <!-- Folders section -->
+    <!-- Chat: Folders + Sessions -->
+    <div id="chat-folders-top-divider" class="sb-divider"></div>
+    <div id="chat-folders-section" class="sb-section">
+      <div id="chat-folders-header" class="sb-section-header">
+        <span>Folders</span>
+        <button id="folder-new-btn" title="New folder">+</button>
+      </div>
+      <div id="chat-folders-list"></div>
+    </div>
+    <div id="chat-folders-divider" class="sb-divider"></div>
+    <div id="conv-header" class="sb-section-header">
+      <span>Sessions</span>
+      <button id="conv-new-btn" title="New conversation">+</button>
+    </div>
+    <div id="conv-search-wrap" style="display:none"></div>
+    <div id="conv-list" class="sb-list"></div>
+
+    <!-- Image Studio: Folders + Sessions -->
+    <div id="image-folders-top-divider" class="sb-divider" style="display:none;"></div>
+    <div id="image-folders-section" class="sb-section" style="display:none;">
+      <div id="image-folders-header" class="sb-section-header">
+        <span>Folders</span>
+        <button id="image-folder-new-btn" title="New folder">+</button>
+      </div>
+      <div id="image-folders-list"></div>
+    </div>
+    <div id="image-folders-divider" class="sb-divider" style="display:none;"></div>
+    <div id="studio-sessions-header" class="sb-section-header" style="display:none;">
+      <span>Sessions</span>
+      <button id="studio-new-session-btn" title="New session">+</button>
+    </div>
+    <div id="studio-sessions-list" class="sb-list" style="display:none;"></div>
+
+    <!-- Music Studio: Folders + Sessions -->
+    <div id="music-folders-top-divider" class="sb-divider" style="display:none;"></div>
+    <div id="music-folders-section" class="sb-section" style="display:none;">
+      <div id="music-folders-header" class="sb-section-header">
+        <span>Folders</span>
+        <button id="music-folder-new-btn" title="New folder">+</button>
+      </div>
+      <div id="music-folders-list"></div>
+    </div>
+    <div id="music-folders-divider" class="sb-divider" style="display:none;"></div>
+    <div id="music-sessions-header" class="sb-section-header" style="display:none;">
+      <span>Sessions</span>
+      <button id="music-new-session-btn" title="New session">+</button>
+    </div>
+    <div id="music-sessions-list" class="sb-list" style="display:none;"></div>
+
+    <!-- Video Studio: Folders + Sessions -->
+    <div id="video-folders-top-divider" class="sb-divider" style="display:none;"></div>
+    <div id="video-folders-section" class="sb-section" style="display:none;">
+      <div id="video-folders-header" class="sb-section-header">
+        <span>Folders</span>
+        <button id="video-folder-new-btn" title="New folder">+</button>
+      </div>
+      <div id="video-folders-list"></div>
+    </div>
+    <div id="video-folders-divider" class="sb-divider" style="display:none;"></div>
+    <div id="video-sessions-header" class="sb-section-header" style="display:none;">
+      <span>Sessions</span>
+      <button id="video-new-session-btn" title="New session">+</button>
+    </div>
+    <div id="video-sessions-list" class="sb-list" style="display:none;"></div>
+
+    <!-- Note Taker: Folders + Sessions -->
+    <div id="notetaker-folders-top-divider" class="sb-divider" style="display:none;"></div>
+    <div id="notetaker-folders-section" class="sb-section" style="display:none;">
+      <div id="notetaker-folders-header" class="sb-section-header">
+        <span>Folders</span>
+        <button id="notetaker-folder-new-btn" title="New folder">+</button>
+      </div>
+      <div id="notetaker-folders-list"></div>
+    </div>
+    <div id="notetaker-folders-divider" class="sb-divider" style="display:none;"></div>
+    <div id="notetaker-sessions-header" class="sb-section-header" style="display:none;">
+      <span>Sessions</span>
+      <button id="notetaker-new-session-btn" title="New session">+</button>
+    </div>
+    <div id="notetaker-sessions-list" class="sb-list" style="display:none;"></div>
+
+    <!-- Code Studio: Folders + Sessions -->
+    <div id="code-folders-top-divider" class="sb-divider" style="display:none;"></div>
+    <div id="code-folders-section" class="sb-section" style="display:none;">
+      <div id="code-folders-header" class="sb-section-header">
+        <span>Folders</span>
+        <button id="code-folder-new-btn" title="New folder">+</button>
+      </div>
+      <div id="code-folders-list"></div>
+    </div>
+    <div id="code-folders-divider" class="sb-divider" style="display:none;"></div>
+    <div id="code-sessions-header" class="sb-section-header" style="display:none;">
+      <span>Sessions</span>
+      <button id="code-new-session-btn" title="New session">+</button>
+    </div>
+    <div id="code-sessions-list" class="sb-list" style="display:none;"></div>
+
+    <!-- Sidebar bottom -->
+    <div id="sidebar-bottom">
+      <button class="sidebar-row" id="settings-btn" title="Settings">
+        <svg width="20" height="20"><use href="#i-gear"/></svg>
+      </button>
+      <button class="sidebar-row" id="logout-btn" style="display:none;" title="Log out">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+      </button>
+    </div>
+    <div id="vram-status" style="display:none;"></div>
+  </div>
+
+  <!-- CHAT AREA -->
+  <div id="chat-area">
+    <div id="chat-col">
+    <div id="chat-header">
+      <button id="vault-toggle-btn" title="File Vault">
+        <svg width="16" height="16"><use href="#i-database"/></svg>
+        File Vault
+      </button>
+    </div>
+    <div id="chat-body">
+    <div id="chat-content">
+    <div id="chat-window" class="welcome-only">
+      <div class="welcome" id="welcome-msg">
+        <div class="welcome-avatar" id="welcome-avatar"></div>
+        <h2 id="welcome-title"></h2>
+        <p class="welcome-sub">Your AI-powered creative studio. Chat, generate, explore.</p>
+        <div id="chat-suggestions"></div>
+      </div>
+    </div>
+
+    <div id="input-area">
+      <div id="ctx-bar-wrap" style="display:none;align-items:center;gap:5px;padding:0 4px 8px;font-size:0.7rem;color:var(--text-faint);">
+        <svg id="ctx-pie" width="14" height="14" viewBox="0 0 16 16" style="flex-shrink:0;transform:rotate(-90deg);">
+          <circle cx="8" cy="8" r="6" fill="none" stroke="var(--surface3)" stroke-width="3"/>
+          <circle id="ctx-pie-arc" cx="8" cy="8" r="6" fill="none" stroke="var(--accent)" stroke-width="3"
+            stroke-dasharray="0 37.7" stroke-linecap="round" style="transition:stroke-dasharray 0.4s,stroke 0.4s;"/>
+        </svg>
+        <span id="ctx-label">0%</span>
+      </div>
+      <div id="image-preview-bar" class="attach-preview-bar"></div>
+      <div id="file-preview-bar" class="file-preview-bar"></div>
+      <div id="queue-tray"></div>
+      <div id="chat-settings-crumb" class="settings-crumb">
+        <span id="chat-settings-trigger" class="settings-trigger">
+          <svg width="13" height="13"><use href="#i-sliders"/></svg>
+          <span id="chat-settings-summary">Model</span>
+          <svg class="chevron-icon" width="9" height="9" style="opacity:0.5;"><use href="#i-chevron-down"/></svg>
+        </span>
+      </div>
+      <div id="chat-settings-panel" class="settings-panel">
+        <div class="settings-prominent-grid">
+          <div class="ss-group" title="LLM model used for chat and vault-powered answers">
+            <div class="ss-group-label">Model</div>
+            <select id="chat-model-select"><option value="">Loading…</option></select>
+          </div>
+          <div class="ss-group" title="Enable model reasoning/thinking tokens (requires compatible model)">
+            <div class="ss-group-label">Thinking</div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="chat-think-toggle">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+        <div class="settings-section">
+          <div class="advanced-toggle" id="chat-advanced-toggle">
+            <svg class="chevron-icon" width="9" height="9" style="opacity:0.5;"><use href="#i-chevron-right"/></svg>
+            Advanced
+          </div>
+          <div class="advanced-body" id="chat-advanced-body">
+            <div class="settings-prominent-grid">
+              <div class="ss-group" title="Controls randomness of the model's word choice. 0.0 is deterministic (same answer every time), 0.2 is focused and factual, 0.7 is conversational, 1.0 is creative and unpredictable. Lower values for code and Q&A, higher for brainstorming.">
+                <div class="ss-group-label">Temperature</div>
+                <div class="sc-slider">
+                  <input type="range" id="chat-temp-slider" min="0" max="1" step="0.05" value="0.2">
+                  <span class="field-val" id="chat-temp-val">0.20</span>
+                </div>
+              </div>
+              <div class="ss-group" title="At each step the model only considers the K most likely next words. Lower K (10-20) keeps output tight and on-topic; higher K (60-100) allows more variety. Works alongside Top-P as a hard cap on the candidate pool.">
+                <div class="ss-group-label">Top-K</div>
+                <div class="sc-slider">
+                  <input type="range" id="chat-topk-slider" min="5" max="100" step="5" value="30">
+                  <span class="field-val" id="chat-topk-val">30</span>
+                </div>
+              </div>
+              <div class="ss-group" title="Nucleus sampling: the model picks from the smallest set of words whose combined probability reaches P. 0.9 means 'consider the top 90% of likelihood mass'. Lower = safer, higher = more surprising. Tune instead of Temperature when you want predictable style.">
+                <div class="ss-group-label">Top-P</div>
+                <div class="sc-slider">
+                  <input type="range" id="chat-topp-slider" min="0.1" max="1.0" step="0.05" value="0.9">
+                  <span class="field-val" id="chat-topp-val">0.90</span>
+                </div>
+              </div>
+              <div class="ss-group" title="When File Vault is on, only passages whose semantic similarity to your question exceeds this score are included as context. Lower (0.2-0.4) casts a wide net, higher (0.6-0.8) only includes very close matches. Raise if the model cites irrelevant files.">
+                <div class="ss-group-label">Similarity</div>
+                <div class="sc-slider">
+                  <input type="range" id="chat-thresh-slider" min="0.1" max="1.0" step="0.05" value="0.45">
+                  <span class="field-val" id="chat-thresh-val">0.45</span>
+                </div>
+              </div>
+              <div class="ss-group" title="How many previous messages in this conversation the model sees when replying. 0 = no memory, 10 = typical, 40 = long running chats. More history gives better continuity but costs context tokens and slows generation.">
+                <div class="ss-group-label">History Limit</div>
+                <div class="sc-slider">
+                  <input type="range" id="chat-history-slider" min="0" max="40" step="2" value="10">
+                  <span class="field-val" id="chat-history-val">10</span>
+                </div>
+              </div>
+              <div class="ss-group" title="When the context window fills past this percentage, the oldest turns are automatically summarized and compressed to free up room. 0 disables compaction (hard-stops at context limit). 75% is a sensible default.">
+                <div class="ss-group-label">Auto-Compact</div>
+                <div class="sc-slider">
+                  <input type="range" id="chat-compact-slider" min="0" max="95" step="5" value="75">
+                  <span class="field-val" id="chat-compact-val">75%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="settings-section">
+          <div class="advanced-toggle" id="chat-voice-toggle">
+            <svg class="chevron-icon" width="9" height="9" style="opacity:0.5;"><use href="#i-chevron-right"/></svg>
+            Voice
+          </div>
+          <div class="advanced-body" id="chat-voice-body">
+            <div class="settings-prominent-grid">
+              <div class="ss-group" title="Which Orpheus speaker voice is used to read responses aloud. Each voice has its own accent, gender, and tone - see the description next to the label.">
+                <div class="ss-group-label voice-label-row">
+                  <span>Voice</span>
+                  <span class="voice-desc" id="chat-voice-desc"></span>
+                </div>
+                <select id="chat-voice-select"><option value="tara">tara (loading…)</option></select>
+              </div>
+              <div class="ss-group" title="Playback rate multiplier. 1.0 is natural speed, 0.8 is slower/clearer for dense material, 1.3 is faster for skimming. Does not retrain the voice - just time-stretches the audio buffer.">
+                <div class="ss-group-label">Speed</div>
+                <div class="sc-slider">
+                  <input type="range" id="chat-tts-speed-slider" min="0.7" max="1.5" step="0.05" value="1.0">
+                  <span class="field-val" id="chat-tts-speed-val">1.00x</span>
+                </div>
+              </div>
+              <div class="ss-group" title="Randomness of the Orpheus audio-token sampler. Lower (0.4-0.5) produces tighter, more consistent delivery - same sentence sounds the same every time. Higher (0.7-0.9) adds natural prosody variation but occasionally mispronounces. 0.6 is the recommended default.">
+                <div class="ss-group-label">TTS Temp</div>
+                <div class="sc-slider">
+                  <input type="range" id="chat-tts-temp-slider" min="0.4" max="0.9" step="0.05" value="0.6">
+                  <span class="field-val" id="chat-tts-temp-val">0.60</span>
+                </div>
+              </div>
+              <div class="ss-group" title="Nucleus sampling for Orpheus audio tokens. Limits each step to the most probable tokens that together make up this fraction of likelihood. Lower (0.5-0.7) produces safer, more stable speech; higher (0.9-1.0) allows more expressive but riskier output.">
+                <div class="ss-group-label">TTS Top-P</div>
+                <div class="sc-slider">
+                  <input type="range" id="chat-tts-topp-slider" min="0.5" max="1.0" step="0.05" value="0.9">
+                  <span class="field-val" id="chat-tts-topp-val">0.90</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="input-box" class="prompt-box">
+        <textarea id="message-input" placeholder="Ask something…" rows="1" autocomplete="off"></textarea>
+        <div id="chat-input-actions">
+          <input type="file" id="file-input" accept="image/*,.csv,.txt,.pdf,.md,.json,.xml,.log,.py,.js,.ts,.html,.css,.yaml,.yml,.toml,.ini,.sql,.sh,.r,.c,.cpp,.h,.java,.go,.rs,.rb" multiple style="display:none;" />
+          <button class="prompt-action-btn attach-btn" id="attach-btn" title="Attach file to this message (not File Vault)">
+            <svg width="16" height="16"><use href="#i-paperclip"/></svg>
+          </button>
+          <button class="prompt-action-btn" id="rag-toggle-btn" title="File Vault off">
+            <svg width="16" height="16"><use href="#i-database"/></svg>
+          </button>
+          <button class="prompt-action-btn" id="voice-mode-btn" title="Voice conversation mode">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="8" x2="4" y2="16"/><line x1="8" y1="5" x2="8" y2="19"/><line x1="12" y1="2" x2="12" y2="22"/><line x1="16" y1="5" x2="16" y2="19"/><line x1="20" y1="8" x2="20" y2="16"/></svg>
+          </button>
+          <button class="prompt-action-btn" id="web-btn" title="Toggle web search">
+            <svg width="14" height="14"><use href="#i-globe"/></svg>
+          </button>
+          <button class="generate-btn" id="send-btn" title="Send (Enter)">
+            <svg width="16" height="16"><use href="#i-send"/></svg>
+          </button>
+        </div>
+        <div id="web-caution">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          CAUTION: Your query will be sent to the Internet
+        </div>
+      </div>
+    </div>
+    </div><!-- /chat-content -->
+    </div><!-- /chat-body -->
+    </div><!-- /chat-col -->
+
+    <!-- VAULT PANEL (full-height side panel) -->
+    <div id="vault-panel">
+      <div class="panel-resize-handle" id="vault-resize-handle"></div>
+      <div class="vault-header">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <svg width="15" height="15" style="color:var(--accent);"><use href="#i-database"/></svg>
+          <span style="font-weight:600;">File Vault</span>
+        </div>
+        <button id="vault-close" class="panel-close-btn" title="Close vault">
+          <svg width="14" height="14"><use href="#i-x"/></svg>
+        </button>
+      </div>
+      <div id="vault-meta"></div>
+      <div id="vault-file-list"></div>
+      <div id="vault-upload-area">
+        <div id="vault-drop-zone">
+          <div id="vault-drop-hint"><svg width="14" height="14" style="vertical-align:-2px;opacity:0.5;margin-right:4px;"><use href="#i-upload"/></svg>Drop files here or <label for="vault-file-input">browse</label> <span style="opacity:0.4;margin-left:4px;">.md .txt .pdf</span></div>
+          <input type="file" id="vault-file-input" accept=".md,.txt,.pdf" multiple />
+        </div>
+      </div>
+      <div id="vault-banner"></div>
+    </div>
+  </div>
+
+  <!-- IMAGE STUDIO (lives in #main, toggles with chat-area) -->
+  <div id="image-studio" class="studio-view">
+    <div class="studio-col">
+    <div id="image-studio-header" class="studio-header">
+      <button id="studio-trash-btn" class="studio-trash-btn" title="Trash">
+        <svg width="14" height="14"><use href="#i-trash-lines"/></svg>
+        <span id="studio-trash-badge" class="studio-trash-badge"></span>
+      </button>
+      <button id="studio-fav-toggle" class="fav-toggle-btn" title="Favorites">
+        <svg viewBox="0 0 24 24"><use class="heart-outline" href="#i-heart"/><use class="heart-filled" href="#i-heart-filled"/></svg>
+        <span id="studio-fav-badge" style="display:none">0</span>
+      </button>
+    </div>
+    <div id="studio-body" class="studio-body-layout">
+      <div id="studio-main" class="studio-main-area">
+      <!-- Gallery / canvas area -->
+      <div id="studio-canvas" class="studio-canvas">
+        <div id="studio-canvas-empty" class="studio-canvas-empty">
+          <svg width="64" height="64"><use href="#i-image"/></svg>
+          <p>Describe your image below and press <strong>Generate</strong> to create.</p>
+        </div>
+      </div>
+
+      <!-- Bottom prompt area -->
+      <div id="studio-controls" class="studio-controls">
+        <!-- Settings summary crumb -->
+        <div id="studio-settings-crumb" class="settings-crumb">
+          <span id="studio-settings-trigger" class="settings-trigger">
+            <svg width="13" height="13"><use href="#i-sliders"/></svg>
+            <span id="studio-settings-summary">Loading...</span>
+            <svg class="chevron-icon" width="9" height="9" style="opacity:0.5;"><use href="#i-chevron-down"/></svg>
+          </span>
+        </div>
+
+        <!-- Expandable settings panel -->
+        <div id="studio-settings-panel" class="settings-panel">
+          <div class="settings-prominent-grid">
+            <div class="ss-group" title="Image aspect ratio and resolution">
+              <div class="ss-group-label">Aspect</div>
+              <div class="sc-row">
+                <button class="studio-aspect-btn active" data-aspect="square" title="Square (1:1)">
+                  <div class="aspect-icon" style="width:14px;height:14px;"></div>
+                </button>
+                <button class="studio-aspect-btn" data-aspect="landscape" title="Landscape (16:9)">
+                  <div class="aspect-icon" style="width:18px;height:11px;"></div>
+                </button>
+                <button class="studio-aspect-btn" data-aspect="portrait" title="Portrait (9:16)">
+                  <div class="aspect-icon" style="width:11px;height:18px;"></div>
+                </button>
+                <select id="studio-resolution" title="Resolution"></select>
+              </div>
+            </div>
+            <div class="ss-group" title="Number of images to generate per request - each uses a different random seed">
+              <div class="ss-group-label">Count</div>
+              <div class="sc-count-row">
+                <button class="studio-count-btn active" data-count="1" title="Generate 1 image">1</button>
+                <button class="studio-count-btn" data-count="2" title="Generate 2 images">2</button>
+                <button class="studio-count-btn" data-count="3" title="Generate 3 images">3</button>
+                <button class="studio-count-btn" data-count="4" title="Generate 4 images">4</button>
+              </div>
+            </div>
+          </div>
+          <div class="settings-section">
+            <div class="ss-group" title="Style presets - quickly apply common image generation settings">
+              <div class="ss-group-label">Presets</div>
+              <div class="studio-preset-grid" id="studio-preset-grid"></div>
+              <div class="studio-preset-add">
+                <input type="text" id="studio-custom-preset-name" placeholder="Add new..." />
+                <button id="studio-save-preset-btn" title="Save current settings as a preset">Save</button>
+              </div>
+            </div>
+          </div>
+          <div class="settings-section">
+            <div class="advanced-toggle" id="studio-advanced-toggle">
+              <svg class="chevron-icon" width="9" height="9" style="opacity:0.5;"><use href="#i-chevron-right"/></svg>
+              Advanced
+            </div>
+            <div class="advanced-body" id="studio-advanced-body">
+              <div class="studio-settings-grid">
+                <div class="ss-group" title="Image generation model - different models have different styles and capabilities">
+                  <div class="ss-group-label">Model</div>
+                  <div class="studio-prompt-model-row">
+                    <select id="studio-model-select"><option value="">Loading...</option></select>
+                    <div id="studio-model-loading" style="display:none;">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"><animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite"/></path></svg>
+                      <span style="font-size:0.72rem;">Loading...</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="ss-group" title="Number of diffusion inference steps - more steps = higher quality but slower generation">
+                  <div class="ss-group-label">Steps</div>
+                  <div class="sc-slider">
+                    <input type="range" id="studio-steps" min="1" max="50" value="25" />
+                    <span class="field-val" id="studio-steps-val">25</span>
+                  </div>
+                </div>
+                <div class="ss-group" title="How closely the output follows the prompt - higher values = stronger adherence, lower = more creative freedom">
+                  <div class="ss-group-label">Guidance</div>
+                  <div class="sc-slider">
+                    <input type="range" id="studio-guidance" min="0" max="20" step="0.5" value="3.0" />
+                    <span class="field-val" id="studio-guidance-val">3.0</span>
+                  </div>
+                </div>
+                <div class="ss-group" title="Fixed seed for reproducible results - leave empty for a random seed each time">
+                  <div class="ss-group-label">Seed</div>
+                  <div class="sc-seed-row">
+                    <input type="number" id="studio-seed" placeholder="Random" />
+                    <button id="studio-random-seed" title="Random seed">&#x1f3b2;</button>
+                  </div>
+                </div>
+              </div>
+              <div class="studio-settings-bottom">
+                <div class="ss-group" title="Describe what to avoid in the image - helps steer the model away from unwanted elements">
+                  <div class="ss-group-label">Negative Prompt</div>
+                  <textarea id="studio-negative" placeholder="Things to avoid: blurry, low quality, distorted..." rows="1"></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="studio-queue-tray"></div>
+        <div id="studio-prompt-box" class="prompt-box">
+          <textarea id="studio-prompt" placeholder="Describe the image you want to create..." rows="1"></textarea>
+          <button id="studio-suggest-btn" class="prompt-action-btn" title="Suggest a prompt">
+            <svg width="16" height="16"><use href="#i-bulb"/></svg>
+          </button>
+          <button id="studio-generate-btn" class="generate-btn" title="Generate (Enter)">
+            <svg width="16" height="16"><use href="#i-bolt"/></svg>
+          </button>
+        </div>
+      </div>
+      </div><!-- /studio-main -->
+    </div><!-- /studio-body -->
+    </div><!-- /studio-col -->
+
+    <!-- Favorites panel (full height) -->
+    <div id="studio-fav-panel" class="fav-panel">
+      <div class="panel-resize-handle" id="fav-resize-handle"></div>
+      <div id="studio-fav-header" class="fav-panel-header">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="#f472b6" stroke="#f472b6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        <h3>Favorites</h3>
+        <span class="fav-count" id="studio-fav-count-label" style="display:none"></span>
+        <div class="fav-zoom-controls">
+          <button id="fav-zoom-out" title="Smaller thumbnails">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+          </button>
+          <button id="fav-zoom-in" title="Larger thumbnails">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+          </button>
+        </div>
+        <button id="studio-fav-close" title="Close favorites">
+          <svg width="16" height="16"><use href="#i-x"/></svg>
+        </button>
+      </div>
+      <div id="studio-fav-content">
+        <div id="studio-fav-empty" class="fav-panel-empty">
+          <svg width="40" height="40" style="opacity:0.3"><use href="#i-heart"/></svg>
+          <p>Click the heart on any image to add it to your favorites.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Music Studio ═══ -->
+  <div id="music-studio" class="studio-view">
+    <div class="studio-col">
+    <div id="music-studio-header" class="studio-header">
+      <button id="music-trash-btn" class="studio-trash-btn" title="Trash">
+        <svg width="14" height="14"><use href="#i-trash-lines"/></svg>
+        <span id="music-trash-badge" class="studio-trash-badge"></span>
+      </button>
+      <button id="music-fav-toggle" class="fav-toggle-btn" title="Favorites">
+        <svg viewBox="0 0 24 24"><use class="heart-outline" href="#i-heart"/><use class="heart-filled" href="#i-heart-filled"/></svg>
+        <span id="music-fav-badge" style="display:none">0</span>
+      </button>
+    </div>
+    <div id="music-body" class="studio-body-layout">
+      <div id="music-main" class="studio-main-area">
+        <div id="music-canvas" class="studio-canvas">
+          <div id="music-canvas-empty" class="studio-canvas-empty">
+            <svg width="64" height="64"><use href="#i-music"/></svg>
+            <p>Describe your music below and press <strong>Generate</strong> to create.</p>
+          </div>
+        </div>
+
+        <div id="music-controls" class="studio-controls">
+          <!-- Single settings panel -->
+          <div id="music-settings-crumb" class="settings-crumb">
+            <span id="music-settings-trigger" class="settings-trigger">
+              <svg width="13" height="13"><use href="#i-sliders"/></svg>
+              <span id="music-settings-summary">1m30s · 120 bpm</span>
+              <svg class="chevron-icon" width="9" height="9" style="opacity:0.5;"><use href="#i-chevron-down"/></svg>
+            </span>
+          </div>
+          <div id="music-settings-panel" class="settings-panel">
+            <!-- Lyrics -->
+            <div class="ss-group" title="Lyrics for the vocal track - use [verse], [chorus], [bridge] tags to structure sections. Leave empty for instrumental.">
+              <div class="ss-group-label">Lyrics</div>
+              <textarea id="music-lyrics" placeholder="[verse]&#10;Write lyrics here or let AI generate them...&#10;&#10;[chorus]&#10;Leave empty for instrumental" rows="8"></textarea>
+            </div>
+            <!-- Style Presets -->
+            <div class="settings-section">
+              <div class="ss-group" title="Genre and style presets - select a preset to set the musical direction">
+                <div class="ss-group-label">Style Presets</div>
+                <div class="studio-preset-grid" id="music-preset-grid"></div>
+                <div class="studio-preset-add">
+                  <input type="text" id="music-custom-preset-name" placeholder="Add new..." />
+                  <button id="music-save-preset-btn" title="Save current style as a preset">Save</button>
+                </div>
+              </div>
+            </div>
+            <!-- Duration + BPM -->
+            <div class="settings-section">
+              <div class="settings-prominent-grid">
+                <div class="ss-group" title="Length of the generated audio, from 10 seconds up to 10 minutes">
+                  <div class="ss-group-label">Duration</div>
+                  <div class="sc-slider">
+                    <input type="range" id="music-duration" min="10" max="600" value="90" step="5">
+                    <span class="field-val" id="music-duration-val">1m30s</span>
+                  </div>
+                </div>
+                <div class="ss-group" title="Tempo in beats per minute - common tempos for popular music genres">
+                  <div class="ss-group-label">BPM</div>
+                  <div class="sc-slider">
+                    <input type="range" id="music-bpm" min="0" max="5" value="3" step="1" list="music-bpm-ticks">
+                    <span class="field-val" id="music-bpm-val">120</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Advanced (collapsed) -->
+            <div class="settings-section">
+              <div class="advanced-toggle" id="music-advanced-toggle">
+                <svg class="chevron-icon" width="9" height="9" style="opacity:0.5;"><use href="#i-chevron-right"/></svg>
+                Advanced
+              </div>
+              <div class="advanced-body" id="music-advanced-body">
+                <div class="music-settings-grid">
+                  <div class="ss-group" title="Number of diffusion inference steps - more steps = higher quality but slower generation">
+                    <div class="ss-group-label">Steps</div>
+                    <div class="sc-slider">
+                      <input type="range" id="music-steps" min="8" max="50" value="40" step="1">
+                      <span class="field-val" id="music-steps-val">40</span>
+                    </div>
+                  </div>
+                  <div class="ss-group" title="How closely the output follows the prompt - higher values = stronger adherence, lower = more creative freedom">
+                    <div class="ss-group-label">Guidance</div>
+                    <div class="sc-slider">
+                      <input type="range" id="music-guidance" min="1" max="15" value="7" step="0.5">
+                      <span class="field-val" id="music-guidance-val">7.0</span>
+                    </div>
+                  </div>
+                  <div class="ss-group" title="Number of variations to generate per request - each uses a different random seed">
+                    <div class="ss-group-label">Count</div>
+                    <div class="sc-count-row" id="music-count-row">
+                      <button class="studio-count-btn active" data-count="1" title="Generate 1 track">1</button>
+                      <button class="studio-count-btn" data-count="2" title="Generate 2 tracks">2</button>
+                      <button class="studio-count-btn" data-count="3" title="Generate 3 tracks">3</button>
+                      <button class="studio-count-btn" data-count="4" title="Generate 4 tracks">4</button>
+                    </div>
+                  </div>
+                  <div class="ss-group" title="Fixed seed for reproducible results - leave empty for a random seed each time">
+                    <div class="ss-group-label">Seed</div>
+                    <div class="sc-seed-row">
+                      <input type="number" id="music-seed" placeholder="Random">
+                      <button id="music-random-seed" title="Random seed">&#x1f3b2;</button>
+                    </div>
+                  </div>
+                  <div class="ss-group" title="Language for singing vocals - auto detects from lyrics, or select a specific language">
+                    <div class="ss-group-label">Language</div>
+                    <select id="music-vocal-language" title="Language for singing vocals - auto detects from lyrics" class="setting-input" style="padding:4px 8px;font-size:0.78rem;border-radius:6px;background:var(--surface2);color:var(--text);border:1px solid var(--border);width:100%;">
+                      <option value="">Auto-detect</option>
+                      <option value="en">English</option>
+                      <option value="zh">Chinese</option>
+                      <option value="ja">Japanese</option>
+                      <option value="ko">Korean</option>
+                      <option value="es">Spanish</option>
+                      <option value="fr">French</option>
+                      <option value="de">German</option>
+                      <option value="it">Italian</option>
+                      <option value="pt">Portuguese</option>
+                      <option value="ru">Russian</option>
+                      <option value="ar">Arabic</option>
+                      <option value="hi">Hindi</option>
+                      <option value="tr">Turkish</option>
+                      <option value="nl">Dutch</option>
+                      <option value="pl">Polish</option>
+                      <option value="sv">Swedish</option>
+                      <option value="th">Thai</option>
+                      <option value="vi">Vietnamese</option>
+                      <option value="id">Indonesian</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="music-prompt-box" class="prompt-box">
+            <textarea id="music-prompt" placeholder="Describe a song idea..." rows="1"></textarea>
+            <button id="music-write-song-btn" class="prompt-action-btn" title="AI Songwrite - describe your song idea and AI writes the lyrics &amp; style">
+              <svg width="16" height="16"><use href="#i-edit"/></svg>
+            </button>
+            <button id="music-suggest-btn" class="prompt-action-btn" title="Suggest a prompt">
+              <svg width="16" height="16"><use href="#i-bulb"/></svg>
+            </button>
+            <button id="music-generate-btn" class="generate-btn" title="Generate (Enter)">
+              <svg width="16" height="16"><use href="#i-bolt"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /music-body -->
+    </div><!-- /studio-col -->
+
+    <!-- Favorites panel (full height) -->
+    <div id="music-fav-panel" class="fav-panel">
+      <div class="panel-resize-handle" id="music-fav-resize-handle"></div>
+      <div id="music-fav-header" class="fav-panel-header">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="#f472b6" stroke="#f472b6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        <h3>Favorites</h3>
+        <span class="fav-count" id="music-fav-count-label" style="display:none"></span>
+        <button id="music-fav-close" title="Close favorites" style="background:none;border:none;color:var(--text-dim);cursor:pointer;padding:4px;display:flex;align-items:center;margin-left:auto;">
+          <svg width="16" height="16"><use href="#i-x"/></svg>
+        </button>
+      </div>
+      <div id="music-fav-content">
+        <div id="music-fav-empty" class="fav-panel-empty">
+          <svg width="32" height="32" style="opacity:0.3"><use href="#i-heart"/></svg>
+          <p>Click the heart on any track to add it to your favorites.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Video Studio ═══ -->
+  <div id="video-studio" class="studio-view">
+    <div class="studio-col">
+    <div id="video-studio-header" class="studio-header">
+      <button id="video-trash-btn" class="studio-trash-btn" title="Trash">
+        <svg width="14" height="14"><use href="#i-trash-lines"/></svg>
+        <span id="video-trash-badge" class="studio-trash-badge"></span>
+      </button>
+      <button id="video-fav-toggle" class="fav-toggle-btn" title="Favorites">
+        <svg viewBox="0 0 24 24"><use class="heart-outline" href="#i-heart"/><use class="heart-filled" href="#i-heart-filled"/></svg>
+        <span id="video-fav-badge" style="display:none">0</span>
+      </button>
+    </div>
+    <div id="video-body" class="studio-body-layout">
+      <div id="video-main" class="studio-main-area">
+        <div id="video-canvas" class="studio-canvas">
+          <div id="video-canvas-empty" class="studio-canvas-empty">
+            <svg width="64" height="64"><use href="#i-video"/></svg>
+            <p>Describe your video below and press <strong>Generate</strong> to create.</p>
+          </div>
+        </div>
+
+        <div id="video-controls" class="studio-controls">
+          <div id="video-settings-crumb" class="settings-crumb">
+            <span id="video-settings-trigger" class="settings-trigger">
+              <svg width="13" height="13"><use href="#i-sliders"/></svg>
+              <span id="video-settings-summary">832x480 · 81 frames · ~3.4s</span>
+              <svg class="chevron-icon" width="9" height="9" style="opacity:0.5;"><use href="#i-chevron-down"/></svg>
+            </span>
+          </div>
+          <div id="video-settings-panel" class="settings-panel">
+            <!-- Resolution + Frames -->
+            <div class="settings-prominent-grid">
+              <div class="ss-group" title="Output video resolution">
+                <div class="ss-group-label">Resolution</div>
+                <select id="video-resolution" title="Output video resolution" class="setting-input" style="padding:4px 8px;font-size:0.78rem;border-radius:6px;background:var(--surface2);color:var(--text);border:1px solid var(--border);width:100%;">
+                  <option value="1280x704">1280 x 704 (720p)</option>
+                  <option value="832x480" selected>832 x 480 (480p)</option>
+                  <option value="704x1280">704 x 1280 (Portrait)</option>
+                  <option value="512x512">512 x 512</option>
+                </select>
+              </div>
+              <div class="ss-group" title="Number of frames to generate">
+                <div class="ss-group-label">Frames</div>
+                <div class="sc-slider">
+                  <input type="range" id="video-frames" min="5" max="257" value="81" step="4">
+                  <span class="field-val" id="video-frames-val">81 (~3.4s)</span>
+                </div>
+              </div>
+            </div>
+            <!-- Advanced (collapsed) -->
+            <div class="settings-section">
+              <div class="advanced-toggle" id="video-advanced-toggle">
+                <svg class="chevron-icon" width="9" height="9" style="opacity:0.5;"><use href="#i-chevron-right"/></svg>
+                Advanced
+              </div>
+              <div class="advanced-body" id="video-advanced-body">
+                <div class="video-settings-grid">
+                  <div class="ss-group" title="Number of diffusion inference steps">
+                    <div class="ss-group-label">Steps</div>
+                    <div class="sc-slider">
+                      <input type="range" id="video-steps" min="10" max="50" value="30" step="1">
+                      <span class="field-val" id="video-steps-val">30</span>
+                    </div>
+                  </div>
+                  <div class="ss-group" title="How closely the output follows the prompt">
+                    <div class="ss-group-label">Guidance</div>
+                    <div class="sc-slider">
+                      <input type="range" id="video-guidance" min="1" max="15" value="6" step="0.5">
+                      <span class="field-val" id="video-guidance-val">6.0</span>
+                    </div>
+                  </div>
+                  <div class="ss-group" title="Frames per second">
+                    <div class="ss-group-label">FPS</div>
+                    <select id="video-fps" title="Frames per second - higher FPS = smoother motion" class="setting-input" style="padding:4px 8px;font-size:0.78rem;border-radius:6px;background:var(--surface2);color:var(--text);border:1px solid var(--border);width:100%;">
+                      <option value="8">8</option>
+                      <option value="16">16</option>
+                      <option value="24" selected>24</option>
+                    </select>
+                  </div>
+                  <div class="ss-group" title="Fixed seed for reproducible results">
+                    <div class="ss-group-label">Seed</div>
+                    <div class="sc-seed-row">
+                      <input type="number" id="video-seed" placeholder="Random">
+                      <button id="video-random-seed" title="Random seed">&#x1f3b2;</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="video-prompt-box" class="prompt-box">
+            <textarea id="video-prompt" placeholder="Describe the video you want to create..." rows="1"></textarea>
+            <button id="video-suggest-btn" class="prompt-action-btn" title="Suggest a prompt">
+              <svg width="16" height="16"><use href="#i-bulb"/></svg>
+            </button>
+            <button id="video-generate-btn" class="generate-btn" title="Generate (Enter)">
+              <svg width="16" height="16"><use href="#i-bolt"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /video-body -->
+    </div><!-- /studio-col -->
+
+    <!-- Favorites panel (full height) -->
+    <div id="video-fav-panel" class="fav-panel">
+      <div class="panel-resize-handle" id="video-fav-resize-handle"></div>
+      <div id="video-fav-header" class="fav-panel-header">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="#f472b6" stroke="#f472b6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        <h3>Favorites</h3>
+        <span class="fav-count" id="video-fav-count-label" style="display:none"></span>
+        <button id="video-fav-close" title="Close favorites" style="background:none;border:none;color:var(--text-dim);cursor:pointer;padding:4px;display:flex;align-items:center;margin-left:auto;">
+          <svg width="16" height="16"><use href="#i-x"/></svg>
+        </button>
+      </div>
+      <div id="video-fav-content">
+        <div id="video-fav-empty" class="fav-panel-empty">
+          <svg width="32" height="32" style="opacity:0.3"><use href="#i-heart"/></svg>
+          <p>Click the heart on any video to add it to your favorites.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Note Taker ═══ -->
+  <div id="notetaker-view" class="studio-view">
+    <div class="studio-col">
+    <div id="notetaker-header" class="studio-header">
+      <button id="notetaker-copy-md-btn" class="studio-trash-btn" title="Copy as Markdown" style="display:none;">
+        <svg width="14" height="14"><use href="#i-copy"/></svg>
+      </button>
+      <button id="notetaker-export-md-btn" class="studio-trash-btn" title="Export Markdown" style="display:none;">
+        <svg width="14" height="14"><use href="#i-download"/></svg>
+      </button>
+      <button id="notetaker-summarize-btn" class="panel-toggle-btn" title="Summary Panel" style="display:none;">
+        <svg width="14" height="14"><use href="#i-bolt"/></svg>
+        Summary
+      </button>
+    </div>
+    <div class="studio-body-layout">
+      <div class="studio-main-area">
+        <!-- Transcript canvas -->
+        <div id="notetaker-canvas" class="studio-canvas" style="display:none;">
+        </div>
+        <div id="notetaker-canvas-empty" class="studio-canvas-empty">
+          <svg width="48" height="48"><use href="#i-mic"/></svg>
+          <p>Record a meeting or upload an audio file to get started.</p>
+        </div>
+        <!-- Audio player bar -->
+        <div id="notetaker-player" class="nt-audio-player" style="display:none;">
+          <audio id="notetaker-audio" preload="metadata"></audio>
+          <button id="notetaker-play-btn" class="nt-play-btn" title="Play">
+            <svg width="14" height="14"><use href="#i-play"/></svg>
+          </button>
+          <span id="notetaker-time-current">0:00</span>
+          <input id="notetaker-seek" type="range" min="0" max="100" value="0" class="nt-seek-bar">
+          <span id="notetaker-time-total">0:00</span>
+          <select id="notetaker-speed" class="nt-speed-select">
+            <option value="0.5">0.5x</option>
+            <option value="1" selected>1x</option>
+            <option value="1.5">1.5x</option>
+            <option value="2">2x</option>
+          </select>
+        </div>
+      <!-- Progress placeholder inserted dynamically via _createGenProgress("notetaker") -->
+      <!-- Bottom controls -->
+      <div class="studio-controls">
+        <!-- Settings crumb (collapsible) -->
+        <div id="notetaker-settings-crumb" class="settings-crumb">
+          <span id="notetaker-settings-trigger" class="settings-trigger">
+            <svg width="13" height="13"><use href="#i-sliders"/></svg>
+            Settings
+            <svg class="chevron-icon" width="9" height="9" style="opacity:0.5;"><use href="#i-chevron-down"/></svg>
+          </span>
+        </div>
+        <div id="notetaker-settings-panel" class="settings-panel">
+          <div class="settings-prominent-grid nt-settings-grid">
+            <div class="ss-group" title="Style of summary notes to generate from the transcription">
+              <div class="ss-group-label">Note Type</div>
+              <select id="notetaker-type-select">
+                <option value="auto">Auto-detect</option>
+                <option value="professional">Professional</option>
+                <option value="personal">Personal</option>
+                <option value="casual">Casual</option>
+                <option value="training">Training</option>
+                <option value="interview">Interview</option>
+                <option value="client">Client</option>
+                <option value="custom">Custom</option>
+              </select>
+            </div>
+            <div class="ss-group" title="Whisper model size - larger models are more accurate but slower">
+              <div class="ss-group-label">Model</div>
+              <select id="notetaker-model-select">
+                <option value="tiny">Whisper Tiny</option>
+                <option value="base">Whisper Base</option>
+                <option value="small">Whisper Small</option>
+                <option value="medium" selected>Whisper Medium</option>
+                <option value="large-v3">Whisper Large v3</option>
+              </select>
+            </div>
+            <div class="ss-group" title="Language of the audio - auto-detect works for most content">
+              <div class="ss-group-label">Language</div>
+              <select id="notetaker-lang-select">
+                <option value="auto">Auto-detect</option>
+                <option value="en">English</option>
+                <option value="es">Spanish</option>
+                <option value="fr">French</option>
+                <option value="de">German</option>
+                <option value="it">Italian</option>
+                <option value="pt">Portuguese</option>
+                <option value="nl">Dutch</option>
+                <option value="ja">Japanese</option>
+                <option value="ko">Korean</option>
+                <option value="zh">Chinese</option>
+                <option value="ru">Russian</option>
+                <option value="ar">Arabic</option>
+                <option value="hi">Hindi</option>
+              </select>
+            </div>
+            <div class="ss-group" title="Identify and label different speakers in the audio">
+              <div class="ss-group-label">Diarization</div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="notetaker-diarize-check" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="ss-group" id="notetaker-speakers-group" title="Expected number of speakers - helps improve diarization accuracy">
+              <div class="ss-group-label">Speakers</div>
+              <input type="number" id="notetaker-speakers-input" min="1" max="20" placeholder="auto">
+            </div>
+            <div class="ss-group" title="Show live transcript while recording (uses fast model, ~1-2s delay)">
+              <div class="ss-group-label">Live Preview</div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="notetaker-live-check" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+          <div id="notetaker-custom-instructions-row" class="nt-custom-instructions" style="display:none;">
+            <div class="ss-group" title="Custom instructions for how the AI should summarize this transcription">
+              <div class="ss-group-label">Custom Instructions</div>
+              <textarea id="notetaker-custom-instructions" rows="2" placeholder="e.g., Focus on technical decisions and architecture changes"></textarea>
+            </div>
+          </div>
+          <div class="settings-section">
+            <div class="advanced-toggle" id="nt-voice-toggle">
+              <svg class="chevron-icon" width="9" height="9" style="opacity:0.5;"><use href="#i-chevron-right"/></svg>
+              Voice
+            </div>
+            <div class="advanced-body" id="nt-voice-body">
+              <div class="settings-prominent-grid">
+                <div class="ss-group" title="Which Orpheus speaker voice reads summaries aloud. This is independent from the chat voice so you can pair different voices with each use case.">
+                  <div class="ss-group-label voice-label-row">
+                    <span>Voice</span>
+                    <span class="voice-desc" id="nt-voice-desc"></span>
+                  </div>
+                  <select id="nt-voice-select"><option value="tara">tara (loading…)</option></select>
+                </div>
+                <div class="ss-group" title="Playback rate multiplier. 1.0 is natural speed, 0.8 is slower/clearer for dense material, 1.3 is faster for skimming. Does not retrain the voice - just time-stretches the audio buffer.">
+                  <div class="ss-group-label">Speed</div>
+                  <div class="sc-slider">
+                    <input type="range" id="nt-tts-speed-slider" min="0.7" max="1.5" step="0.05" value="1.0">
+                    <span class="field-val" id="nt-tts-speed-val">1.00x</span>
+                  </div>
+                </div>
+                <div class="ss-group" title="Randomness of the Orpheus audio-token sampler. Lower (0.4-0.5) produces tighter, more consistent delivery. Higher (0.7-0.9) adds natural prosody variation but occasionally mispronounces. 0.6 is the recommended default.">
+                  <div class="ss-group-label">TTS Temp</div>
+                  <div class="sc-slider">
+                    <input type="range" id="nt-tts-temp-slider" min="0.4" max="0.9" step="0.05" value="0.6">
+                    <span class="field-val" id="nt-tts-temp-val">0.60</span>
+                  </div>
+                </div>
+                <div class="ss-group" title="Nucleus sampling for Orpheus audio tokens. Lower (0.5-0.7) produces safer, more stable speech; higher (0.9-1.0) allows more expressive but riskier output.">
+                  <div class="ss-group-label">TTS Top-P</div>
+                  <div class="sc-slider">
+                    <input type="range" id="nt-tts-topp-slider" min="0.5" max="1.0" step="0.05" value="0.9">
+                    <span class="field-val" id="nt-tts-topp-val">0.90</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Action bar -->
+        <div class="prompt-box nt-prompt-box">
+          <!-- Source tabs -->
+          <div class="nt-source-tabs">
+            <button class="nt-source-tab active" data-source="mic" title="Microphone">
+              <svg width="14" height="14"><use href="#i-mic"/></svg> Mic
+            </button>
+            <button class="nt-source-tab" data-source="system" title="System Audio">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> System
+            </button>
+            <button class="nt-source-tab" data-source="upload" title="Upload File">
+              <svg width="14" height="14"><use href="#i-upload"/></svg> Upload
+            </button>
+          </div>
+          <!-- Recording controls (mic/system) -->
+          <div class="nt-prompt-content">
+            <div id="notetaker-record-section" class="nt-record-section">
+              <canvas id="notetaker-waveform" class="nt-waveform" width="600" height="40"></canvas>
+              <span id="notetaker-record-timer" class="nt-record-timer">0:00</span>
+              <div class="nt-record-btns">
+                <button id="notetaker-record-btn" class="generate-btn" title="Record">
+                  <svg width="16" height="16"><use href="#i-mic"/></svg>
+                </button>
+                <button id="notetaker-pause-btn" class="prompt-action-btn" style="display:none;" title="Pause">
+                  <svg width="16" height="16"><use href="#i-pause"/></svg>
+                </button>
+                <button id="notetaker-stop-btn" class="prompt-action-btn" style="display:none;" title="Stop">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+                </button>
+              </div>
+            </div>
+            <!-- Upload section -->
+            <div id="notetaker-upload-section" class="nt-upload-section" style="display:none;">
+              <div id="notetaker-dropzone" class="video-image-upload">
+                <span id="notetaker-dropzone-label">Drop audio/video file here or&nbsp;<label for="notetaker-file-input" style="color:var(--accent);cursor:pointer;text-decoration:underline;">browse</label></span>
+                <span id="notetaker-file-info" style="display:none;"></span>
+                <input id="notetaker-file-input" type="file" accept=".wav,.mp3,.m4a,.flac,.mp4,.mkv,.webm,.mov,.ogg,.wma" style="display:none;">
+              </div>
+            </div>
+          </div>
+          <!-- Transcribe button -->
+          <button id="notetaker-transcribe-btn" class="generate-btn" title="Transcribe (Enter)" style="display:none;">
+            <svg width="16" height="16"><use href="#i-bolt"/></svg>
+          </button>
+        </div>
+      </div>
+      </div><!-- /studio-main-area -->
+    </div>
+    </div><!-- /studio-col -->
+    <!-- Summary panel -->
+    <div id="notetaker-summary-panel" class="fav-panel">
+      <div class="panel-resize-handle" id="notetaker-summary-resize-handle"></div>
+      <div class="fav-panel-header">
+        <svg width="16" height="16"><use href="#i-bolt"/></svg>
+        <h3>Summary</h3>
+        <div style="margin-left:auto;display:flex;gap:4px;align-items:center;">
+          <button id="notetaker-gen-summary-btn" class="action-btn action-btn-label" title="Generate summary">
+            <svg width="12" height="12"><use href="#i-sparkles"/></svg> Generate
+          </button>
+<button id="notetaker-tts-summary-btn" class="action-btn" title="Read summary aloud">
+            <svg width="12" height="12"><use href="#i-play"/></svg>
+          </button>
+          <button id="notetaker-copy-summary-btn" class="action-btn" title="Copy summary">
+            <svg width="12" height="12"><use href="#i-copy"/></svg>
+          </button>
+          <button id="notetaker-download-summary-btn" class="action-btn" title="Download summary">
+            <svg width="12" height="12"><use href="#i-download"/></svg>
+          </button>
+        </div>
+        <button id="notetaker-summary-close" title="Close summary" style="background:none;border:none;color:var(--text-dim);cursor:pointer;padding:4px;display:flex;align-items:center;">
+          <svg width="14" height="14"><use href="#i-x"/></svg>
+        </button>
+      </div>
+      <div id="notetaker-summary-text" class="nt-summary-content"></div>
+      <div id="notetaker-summary-empty" class="fav-panel-empty">
+        <svg width="48" height="48" style="opacity:0.15"><use href="#i-bolt"/></svg>
+        <p>Summary will appear here after transcription.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Code Studio -->
+  <div id="code-studio" class="studio-view">
+    <div class="studio-col">
+    <div id="code-studio-header" class="studio-header">
+      <button id="code-panel-toggle" class="panel-toggle-btn" title="Code Panel">
+        <svg width="14" height="14"><use href="#i-code"/></svg>
+        Code Panel
+      </button>
+    </div>
+    <div id="code-body" class="studio-body-layout">
+
+      <!-- Thread panel (main area) -->
+      <div id="code-thread-panel" class="studio-main">
+        <div id="code-thread-scroll" class="code-thread-scroll">
+          <div id="code-thread-empty" class="studio-canvas-empty">
+            <svg width="64" height="64"><use href="#i-code"/></svg>
+            <p>Start a conversation to build code iteratively.</p>
+          </div>
+        </div>
+        <div id="code-controls" class="studio-controls">
+          <div id="code-settings-crumb" class="settings-crumb">
+            <span id="code-settings-trigger" class="settings-trigger">
+              <svg width="13" height="13"><use href="#i-sliders"/></svg>
+              <span id="code-settings-summary">Model</span>
+              <svg class="chevron-icon" width="9" height="9" style="opacity:0.5;"><use href="#i-chevron-down"/></svg>
+            </span>
+          </div>
+          <div id="code-settings-panel" class="settings-panel">
+            <div class="settings-prominent-grid">
+              <div class="ss-group" title="LLM model used for code generation">
+                <div class="ss-group-label">Model</div>
+                <div class="studio-prompt-model-row">
+                  <select id="code-model-select"></select>
+                </div>
+              </div>
+              <div class="ss-group" title="Control auto-apply behavior for edits and code execution">
+                <div class="ss-group-label">Permissions</div>
+                <div class="studio-preset-grid" id="code-permissions-row">
+                  <button class="studio-preset-btn active" data-perm="normal" title="Auto-apply edits, manual run">Normal</button>
+                  <button class="studio-preset-btn" data-perm="restrictive" title="Require confirmation for all changes, hide run">Strict</button>
+                  <button class="studio-preset-btn" data-perm="permissive" title="Auto-apply edits and auto-execute code">Auto</button>
+                </div>
+              </div>
+            </div>
+            <div class="settings-section">
+              <div class="settings-prominent-grid">
+                <div class="ss-group" title="Analyze the request and produce a plan before generating code. Supports back-and-forth Q&A until you say proceed.">
+                  <div class="ss-group-label">Plan Mode</div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="code-plan-toggle">
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+                <div class="ss-group" title="Enable model reasoning/thinking tokens (requires compatible model)">
+                  <div class="ss-group-label">Thinking</div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="code-think-toggle">
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div class="settings-section">
+              <div class="advanced-toggle" id="code-advanced-toggle">
+                <svg class="chevron-icon" width="9" height="9" style="opacity:0.5;"><use href="#i-chevron-right"/></svg>
+                Advanced
+              </div>
+              <div class="advanced-body" id="code-advanced-body">
+                <div class="settings-prominent-grid">
+                  <div class="ss-group" title="Model context window size in tokens. Match to your selected model's capacity.">
+                    <div class="ss-group-label">Context Window</div>
+                    <div class="sc-slider">
+                      <input type="range" id="code-ctx-slider" min="2048" max="131072" step="1024" value="8192">
+                      <span class="field-val" id="code-ctx-val">8k</span>
+                    </div>
+                  </div>
+                  <div class="ss-group" title="Automatically compact older messages when context reaches this %. 0 = off.">
+                    <div class="ss-group-label">Auto-Compact</div>
+                    <div class="sc-slider">
+                      <input type="range" id="code-compact-slider" min="0" max="95" step="5" value="0">
+                      <span class="field-val" id="code-compact-val">Off</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="code-image-preview-bar" class="attach-preview-bar"></div>
+          <div id="code-file-preview-bar" class="file-preview-bar"></div>
+          <div id="code-prompt-box" class="prompt-box">
+            <textarea id="code-prompt" placeholder="Describe what you want to build..." rows="1"></textarea>
+            <input type="file" id="code-file-input" accept="image/*,.txt,.md,.csv,.json,.xml,.html,.css,.js,.ts,.py,.java,.cpp,.c,.h,.cs,.go,.rs,.rb,.php,.sh,.yaml,.yml,.toml,.ini,.cfg,.conf,.sql,.r,.m,.swift,.kt,.scala,.pl,.lua,.zig,.nim,.ex,.hs,.ml,.lisp,.clj,.f90,.asm,.dockerfile,.makefile,.cmake,.gradle,.bat,.ps1,.jsx,.tsx,.vue,.svelte,.pdf,.log" multiple style="display:none;" />
+            <button class="prompt-action-btn attach-btn" id="code-attach-btn" title="Attach file or image">
+              <svg width="16" height="16"><use href="#i-paperclip"/></svg>
+            </button>
+            <button id="code-suggest-btn" class="prompt-action-btn" title="Suggest a coding task">
+              <svg width="16" height="16"><use href="#i-bulb"/></svg>
+            </button>
+            <button id="code-generate-btn" class="generate-btn" title="Generate (Enter)">
+              <svg width="16" height="16"><use href="#i-bolt"/></svg>
+            </button>
+          </div>
+          <div id="code-ctx-bar" style="display:none;align-items:center;gap:5px;padding:4px 4px 0;font-size:0.7rem;color:var(--text-faint);">
+            <svg width="14" height="14" viewBox="0 0 16 16" style="flex-shrink:0;transform:rotate(-90deg);">
+              <circle cx="8" cy="8" r="6" fill="none" stroke="var(--surface3)" stroke-width="3"/>
+              <circle id="code-ctx-arc" cx="8" cy="8" r="6" fill="none" stroke="var(--accent)" stroke-width="3"
+                stroke-dasharray="0 37.7" stroke-linecap="round" style="transition:stroke-dasharray 0.4s,stroke 0.4s;"/>
+            </svg>
+            <span id="code-ctx-label">0% context</span>
+          </div>
+        </div>
+      </div>
+    </div><!-- /code-body -->
+    </div><!-- /studio-col -->
+
+    <!-- Code panel (openable side panel, like favorites) -->
+    <div id="code-panel" class="fav-panel">
+      <div class="panel-resize-handle" id="code-panel-resize-handle"></div>
+      <div id="code-panel-header" class="fav-panel-header">
+        <svg width="16" height="16"><use href="#i-code"/></svg>
+        <h3>Code</h3>
+        <span id="code-panel-lang"></span>
+        <div id="code-panel-actions" style="margin-left:auto;display:flex;gap:4px;align-items:center;">
+          <button id="code-edit-toggle" class="action-btn" title="Edit code">
+            <svg width="12" height="12"><use href="#i-edit"/></svg>
+          </button>
+          <button id="code-wrap-toggle" class="action-btn" title="Toggle word wrap">
+            <svg width="12" height="12"><use href="#i-wrap"/></svg>
+          </button>
+          <button id="code-find-btn" class="action-btn" title="Find &amp; Replace (Ctrl+F)">
+            <svg width="12" height="12"><use href="#i-search"/></svg>
+          </button>
+          <button id="code-diff-btn" class="action-btn" title="Show diff" style="display:none">
+            <svg width="12" height="12"><use href="#i-diff"/></svg>
+          </button>
+          <span class="toolbar-sep"></span>
+          <button id="code-copy-btn" class="action-btn" title="Copy code">
+            <svg width="12" height="12"><use href="#i-copy"/></svg>
+          </button>
+          <button id="code-download-btn" class="action-btn" title="Download">
+            <svg width="12" height="12"><use href="#i-download"/></svg>
+          </button>
+          <span class="toolbar-sep"></span>
+          <button id="code-run-btn" class="action-btn" title="Run code">
+            <svg width="12" height="12"><use href="#i-bolt"/></svg>
+          </button>
+          <button id="code-preview-toggle" class="action-btn" title="Preview" style="display:none">
+            <svg width="12" height="12"><use href="#i-eye"/></svg>
+          </button>
+        </div>
+        <button id="code-panel-close" title="Close code panel" style="background:none;border:none;color:var(--text-dim);cursor:pointer;padding:4px;display:flex;align-items:center;">
+          <svg width="14" height="14"><use href="#i-x"/></svg>
+        </button>
+      </div>
+      <div id="code-find-bar" style="display:none;">
+        <div class="code-find-row">
+          <input id="code-find-input" type="text" placeholder="Find..." spellcheck="false">
+          <span id="code-find-count"></span>
+          <button id="code-find-prev" class="action-btn" title="Previous"><svg width="10" height="10"><use href="#i-chevron-up"/></svg></button>
+          <button id="code-find-next" class="action-btn" title="Next"><svg width="10" height="10"><use href="#i-chevron-down"/></svg></button>
+          <button id="code-find-close" class="action-btn" title="Close"><svg width="10" height="10"><use href="#i-x"/></svg></button>
+        </div>
+        <div class="code-find-row">
+          <input id="code-replace-input" type="text" placeholder="Replace..." spellcheck="false">
+          <button id="code-replace-btn" class="action-btn" title="Replace">Replace</button>
+          <button id="code-replace-all-btn" class="action-btn" title="Replace all">All</button>
+        </div>
+      </div>
+      <div id="code-panel-content">
+        <pre id="code-display"><code></code></pre>
+        <div id="code-editor-wrap" style="display:none;">
+          <div id="code-editor-gutter"></div>
+          <div id="code-editor-area">
+            <div id="code-editor" spellcheck="false"></div>
+            <pre id="code-editor-highlight"><code></code></pre>
+          </div>
+        </div>
+      </div>
+      <div id="code-exec-resize" class="code-exec-resize-handle" style="display:none;"></div>
+      <div id="code-exec-output" style="display:none;">
+        <div class="code-exec-header">
+          <span class="code-exec-label">Output</span>
+          <button id="code-exec-close" title="Close output" style="margin-left:auto;background:none;border:none;color:var(--text-dim);cursor:pointer;padding:4px;display:flex;align-items:center;"><svg width="14" height="14"><use href="#i-x"/></svg></button>
+        </div>
+        <pre class="code-exec-pre"></pre>
+      </div>
+      <div id="code-panel-empty" class="fav-panel-empty">
+        <svg width="48" height="48" style="opacity:0.15"><use href="#i-code"/></svg>
+        <p>Code will appear here after generation.</p>
+      </div>
+    </div>
+
+    <!-- Preview panel (separate side panel to the right of code panel) -->
+    <div id="code-preview-panel" class="fav-panel">
+      <div class="panel-resize-handle" id="code-preview-resize-handle"></div>
+      <div class="fav-panel-header">
+        <svg width="16" height="16"><use href="#i-eye"/></svg>
+        <h3>Preview</h3>
+        <button id="code-preview-fullscreen" class="action-btn" title="Fullscreen preview" style="margin-left:auto;">
+          <svg width="12" height="12"><use href="#i-maximize"/></svg>
+        </button>
+        <button id="code-preview-close" style="background:none;border:none;color:var(--text-dim);cursor:pointer;padding:4px;display:flex;align-items:center;" title="Close preview">
+          <svg width="14" height="14"><use href="#i-x"/></svg>
+        </button>
+      </div>
+      <div id="code-preview-frame">
+        <iframe sandbox="allow-scripts" srcdoc=""></iframe>
+      </div>
+    </div>
+
+    <!-- Preview fullscreen modal -->
+    <div id="code-preview-modal">
+      <div id="code-preview-modal-card">
+        <div id="code-preview-modal-header">
+          <svg width="16" height="16" style="color:var(--text-dim);flex-shrink:0;"><use href="#i-eye"/></svg>
+          <span id="code-preview-modal-title">Preview</span>
+          <button id="code-preview-modal-close" title="Close">&times;</button>
+        </div>
+        <div id="code-preview-modal-frame">
+          <iframe sandbox="allow-scripts" srcdoc=""></iframe>
+        </div>
+        <div class="modal-resize-handle" id="code-preview-modal-resize"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Shared Trash Modal (image / music / video) -->
+  <div id="shared-trash-modal" class="popout-modal">
+    <div class="popout-modal-inner">
+      <div class="popout-modal-header">
+        <h3>Trash</h3>
+        <span id="shared-trash-count" class="studio-trash-count-label"></span>
+        <button id="shared-trash-empty-btn" class="studio-trash-empty-btn" title="Empty trash"><svg width="15" height="15"><use href="#i-trash"/></svg></button>
+        <button id="shared-trash-close-btn" class="studio-trash-close-btn">&times;</button>
+      </div>
+      <div id="shared-trash-content"></div>
+    </div>
+  </div>
+
+  <!-- Activity log pop-out modal -->
+  <div id="activity-log-modal" class="popout-modal" role="dialog" aria-modal="false" aria-labelledby="activity-log-header">
+    <div class="popout-modal-inner activity-log-modal-inner">
+      <div class="popout-modal-header" id="activity-log-header">
+        <h3>Activity Log</h3>
+        <span id="activity-log-count" class="studio-trash-count-label"></span>
+        <button id="activity-log-pause-btn" class="studio-trash-empty-btn" title="Pause live updates" style="margin-left:auto">
+          <svg width="15" height="15"><use href="#i-pause"/></svg>
+        </button>
+        <button id="activity-log-copy-btn" class="studio-trash-empty-btn" title="Copy visible entries">
+          <svg width="15" height="15"><use href="#i-copy"/></svg>
+        </button>
+        <button id="activity-log-clear-btn" class="studio-trash-empty-btn" title="Clear log">
+          <svg width="15" height="15"><use href="#i-trash"/></svg>
+        </button>
+        <button id="activity-log-close-btn" class="studio-trash-close-btn" title="Close">&times;</button>
+      </div>
+      <div class="activity-log-toolbar">
+        <input id="activity-log-search" type="search" placeholder="Search model, service, action, detail..." />
+        <div class="activity-log-font-btns">
+          <button id="activity-log-font-dec" type="button" class="studio-trash-empty-btn activity-log-font-btn" title="Decrease font size">A-</button>
+          <button id="activity-log-font-inc" type="button" class="studio-trash-empty-btn activity-log-font-btn" title="Increase font size">A+</button>
+        </div>
+        <select id="activity-log-level">
+          <option value="all">All levels</option>
+          <option value="normal">Normal only</option>
+          <option value="verbose">Verbose only</option>
+        </select>
+      </div>
+      <div id="activity-log-body" class="vram-log-body activity-log-body"></div>
+      <div class="modal-resize-handle" id="activity-log-resize"></div>
+    </div>
+  </div>
+
+  <!-- Image lightbox -->
+  <div id="studio-lightbox">
+    <div id="studio-lightbox-inner">
+      <button id="studio-lightbox-close">&times;</button>
+      <div id="studio-lightbox-actions">
+        <button class="action-btn lb-fav" title="Add to favorites">
+          <svg width="12" height="12"><use href="#i-heart"/></svg>
+        </button>
+        <button class="action-btn lb-vary" title="Generate variation">
+          <svg width="12" height="12"><use href="#i-bolt"/></svg>
+        </button>
+        <button class="action-btn lb-enhance" title="Enhance (upscale)">
+          <svg width="12" height="12"><use href="#i-sparkles"/></svg>
+        </button>
+        <button class="action-btn lb-edit" title="Edit (inpaint)">
+          <svg width="12" height="12"><use href="#i-edit"/></svg>
+        </button>
+        <button class="action-btn lb-dl" title="Download">
+          <svg width="12" height="12"><use href="#i-download"/></svg>
+        </button>
+        <button class="action-btn lb-del img-del" title="Delete this image">
+          <svg width="12" height="12"><use href="#i-trash-simple"/></svg>
+        </button>
+      </div>
+      <button class="lightbox-arrow lb-prev" title="Previous image">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <img id="studio-lightbox-img" src="" alt="Full size" />
+      <span id="studio-lightbox-res"></span>
+      <button class="lightbox-arrow lb-next" title="Next image">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+  </div>
+
+
+  <!-- SETTINGS PANEL (lives in #main so pinning works as flex child) -->
+  <div id="settings-panel">
+  <div id="settings-dialog">
+    <div id="settings-header">
+      <h2>Settings</h2>
+      <button id="settings-close"><svg width="18" height="18"><use href="#i-x"/></svg></button>
+    </div>
+    <div id="settings-body">
+
+      <!-- Left nav -->
+      <div id="settings-nav">
+        <div class="settings-nav-label">My Settings</div>
+        <div class="settings-nav-item active" data-pane="general">Profile<span class="nav-sub">Name, location &amp; memory</span></div>
+        <div class="settings-nav-item" data-pane="ai">Assistants<span class="nav-sub">Model &amp; chat behavior</span></div>
+        <div class="settings-nav-item" data-pane="appearance">Appearance<span class="nav-sub">Theme, colors &amp; text</span></div>
+        <div id="admin-nav-divider" style="display:none;height:1px;background:var(--border);margin:8px 4px;"></div>
+        <div class="settings-nav-label" id="admin-nav-label" style="display:none;">Administration</div>
+        <div class="settings-nav-item" data-pane="admin" id="admin-nav-item" style="display:none;">Users<span class="nav-sub">Manage accounts &amp; roles</span></div>
+        <div class="settings-nav-item" data-pane="interface" id="interface-nav-item" style="display:none;">Platform<span class="nav-sub">Branding &amp; global config</span></div>
+        <div class="settings-nav-item" data-pane="defaults" id="defaults-nav-item" style="display:none;">Defaults<span class="nav-sub">Applied to new accounts</span></div>
+        <div class="settings-nav-item" data-pane="prompts" id="prompts-nav-item" style="display:none;">Prompts<span class="nav-sub">LLM prompt templates</span></div>
+        <div class="settings-nav-item" data-pane="developer" id="developer-nav-item" style="display:none;">Developer<span class="nav-sub">Debug &amp; diagnostics</span></div>
+      </div>
+
+      <!-- Right content -->
+      <div id="settings-content">
+
+        <!-- General (Profile) -->
+        <div class="settings-pane active" id="pane-general">
+
+          <div class="ai-section-heading">Account</div>
+          <div class="setting-group compact-rows">
+            <div class="account-split">
+              <div class="account-split-left">
+                <span class="compact-row-label">Avatar</span>
+                <div class="profile-avatar-row">
+                  <div id="profile-avatar-wrap">
+                    <div id="profile-avatar-circle">
+                      <span id="profile-avatar-initials">?</span>
+                      <img id="profile-avatar-img" />
+                    </div>
+                    <div id="profile-avatar-overlay" title="Change avatar">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    </div>
+                    <input type="file" id="avatar-file-input" accept="image/*" />
+                    <button id="avatar-reset-btn" title="Remove avatar">✕</button>
+                  </div>
+                  <span id="profile-account-badge">User</span>
+                </div>
+                <span class="compact-row-desc">Click the avatar to upload an image.</span>
+              </div>
+              <div class="account-split-right">
+                <div class="account-field">
+                  <span class="compact-row-label">Display Name</span>
+                  <input type="text" id="profile-name" class="setting-input" placeholder="Your name" />
+                </div>
+                <div class="account-field">
+                  <span class="compact-row-label">Change Password</span>
+                  <input type="password" id="change-pw-current" class="setting-input" placeholder="Current password" autocomplete="current-password" />
+                  <input type="password" id="change-pw-new" class="setting-input" placeholder="New password (min 6 chars)" autocomplete="new-password" />
+                  <div class="pw-action-row">
+                    <button id="change-pw-btn" class="accent-btn">Update</button>
+                    <span id="change-pw-msg"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ai-section-heading">Preferences</div>
+          <div class="setting-group compact-rows">
+            <div class="compact-row stacked">
+              <span class="compact-row-label">Location</span>
+              <input type="text" id="profile-location" class="setting-input" placeholder="e.g. Seattle, WA" />
+              <span class="compact-row-desc">Used for local recommendations, weather, time zone, and similar context.</span>
+            </div>
+            <div class="compact-row stacked">
+              <span class="compact-row-label">Personal Preferences</span>
+              <textarea id="profile-prefs" class="setting-input" placeholder="e.g. Be concise. Use bullet points. Assume expert-level knowledge."></textarea>
+              <span class="compact-row-desc">How you'd like the AI to respond to you.</span>
+            </div>
+          </div>
+
+          <div class="ai-section-heading">Memory</div>
+          <div class="setting-group compact-rows">
+            <div class="compact-row">
+              <span class="compact-row-label">Auto-save Memories</span>
+              <label class="toggle-switch" title="Auto-save memories from conversations">
+                <input type="checkbox" id="auto-memory-toggle" />
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="compact-row-desc">When enabled, the AI automatically remembers important details. When off, only saves when you explicitly ask.</span>
+            </div>
+            <div class="compact-row stacked">
+              <span class="compact-row-label">Saved Facts</span>
+              <div class="memory-add-row">
+                <input type="text" id="memory-input" class="setting-input" placeholder="Add a fact..." />
+                <button id="memory-add-btn">Add</button>
+              </div>
+              <div id="memory-list" class="memory-list"></div>
+            </div>
+          </div>
+
+          <div class="ai-section-heading">Danger Zone</div>
+          <div class="setting-group compact-rows">
+            <div class="danger-split">
+              <div class="account-field">
+                <span class="compact-row-label">Delete Account</span>
+                <button id="delete-account-btn" class="accent-btn danger">Delete My Account</button>
+                <span class="compact-row-desc">Permanently delete your account and all your data. This cannot be undone.</span>
+              </div>
+              <div class="account-field">
+                <span class="compact-row-label">Clear All My Data</span>
+                <button id="clear-all-data-btn" class="accent-btn danger">Clear All My Data</button>
+                <span class="compact-row-desc">Delete all conversations, folders, memory, image sessions, and music tracks. Your account and settings are kept.</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Assistants (was AI) -->
+        <div class="settings-pane" id="pane-ai">
+          <div class="ai-section-heading admin-only-row" id="model-pull-heading" style="display:none;">Pull New Model</div>
+          <div class="setting-group compact-rows admin-only-row" id="model-pull-section" style="display:none;">
+            <div class="compact-row stacked">
+              <span class="compact-row-label">Model name</span>
+              <div class="model-pull-row">
+                <input type="text" id="model-pull-input" class="setting-input" placeholder="e.g. llama3:8b" autocomplete="off" spellcheck="false" />
+                <div id="model-pull-dropdown" class="model-pull-dropdown" style="display:none;"></div>
+                <button id="model-pull-btn" class="accent-btn">Pull</button>
+              </div>
+              <span class="compact-row-desc" id="model-pull-hint">
+                <span id="model-pull-status">Loading suggestions...</span>
+                Format: <code>name</code> or <code>name:tag</code> (e.g. <code>llama3:8b</code>). Browse models at <a href="https://ollama.com/library" target="_blank" rel="noopener">ollama.com/library</a>.
+                <a href="#" id="model-pull-retry" style="display:none;">Retry</a>
+              </span>
+            </div>
+            <div id="model-pull-sessions"></div>
+          </div>
+
+          <div class="ai-section-heading admin-only-row" id="installed-models-heading" style="display:none;">Installed Models</div>
+          <div class="setting-group admin-only-row" id="installed-models-section" style="display:none;">
+            <div id="installed-models-list" class="installed-models-list"></div>
+          </div>
+
+          <div class="ai-section-heading">Background Models</div>
+          <div class="setting-group compact-rows">
+            <div class="compact-row">
+              <span class="compact-row-label">Songwriting</span>
+              <select id="songwrite-model-select"><option value="">Loading…</option></select>
+              <span class="compact-row-desc">Lyrics and style prompts for Music Studio.</span>
+            </div>
+            <div class="compact-row">
+              <span class="compact-row-label">Utility</span>
+              <select id="utility-model-select"><option value="">Loading…</option></select>
+              <span class="compact-row-desc">Fast model for titles, names, and suggestions.</span>
+            </div>
+            <div class="compact-row">
+              <span class="compact-row-label">Note Taker Summary</span>
+              <select id="notetaker-summary-model-select"><option value="">Loading…</option></select>
+              <span class="compact-row-desc">Summarizes transcripts into structured notes.</span>
+            </div>
+          </div>
+
+          <div class="ai-section-heading">Voice Output</div>
+          <div class="setting-group compact-rows">
+            <div class="compact-row">
+              <span class="compact-row-label">Auto-play TTS</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="tts-toggle" />
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="compact-row-desc">Automatically read AI responses aloud.</span>
+            </div>
+            <div class="compact-row">
+              <span class="compact-row-label">3D Avatar</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="avatar-toggle" />
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="compact-row-desc">Show a local 3D avatar that lip-syncs with replies.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Appearance -->
+        <div class="settings-pane" id="pane-appearance">
+
+          <div class="ai-section-heading">Display</div>
+          <div class="setting-group compact-rows">
+            <div class="compact-row wide">
+              <span class="compact-row-label">Text Size</span>
+              <div class="text-size-row">
+                <span>A</span>
+                <input type="range" id="text-size-slider" min="0" max="3" step="1" value="1" />
+                <span style="font-size:1.1rem;">A</span>
+              </div>
+              <span id="text-size-val" class="compact-row-aside">Medium</span>
+            </div>
+            <div class="compact-row wide">
+              <span class="compact-row-label">Color Mode</span>
+              <div class="mode-seg" id="color-mode-seg" role="tablist" aria-label="Color mode">
+                <button type="button" data-mode="light" role="tab">Light</button>
+                <button type="button" data-mode="dark" role="tab" class="active">Dark</button>
+                <button type="button" data-mode="auto" role="tab">Auto</button>
+              </div>
+              <span id="color-mode-val" class="compact-row-aside">Dark</span>
+            </div>
+            <div class="compact-row">
+              <span class="compact-row-label">Show VRAM Status</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="show-vram-toggle" checked />
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="compact-row-desc">Show the VRAM meter and loaded-models list at the bottom of the sidebar.</span>
+            </div>
+          </div>
+
+          <div class="ai-section-heading">Light Themes</div>
+          <div class="setting-group compact-rows">
+            <div class="compact-row stacked">
+              <div class="theme-presets" id="theme-presets-light">
+                <div class="theme-preset" data-theme="parchment" title="Parchment">
+                  <div class="theme-preset-swatch"><span style="background:#faf6eb;border:1px solid #d5ccb0;"></span><span style="background:#a0782a;"></span></div>
+                  <div class="theme-preset-label">Parchment</div>
+                </div>
+                <div class="theme-preset" data-theme="light" title="Light">
+                  <div class="theme-preset-swatch"><span style="background:#f0f0f5;border:1px solid #d4d4de;"></span><span style="background:#7c6af7;"></span></div>
+                  <div class="theme-preset-label">Light</div>
+                </div>
+                <div class="theme-preset" data-theme="arctic" title="Arctic">
+                  <div class="theme-preset-swatch"><span style="background:#f0f7ff;border:1px solid #b0d0f0;"></span><span style="background:#0088ff;"></span></div>
+                  <div class="theme-preset-label">Arctic</div>
+                </div>
+                <div class="theme-preset" data-theme="beach" title="Beach">
+                  <div class="theme-preset-swatch"><span style="background:#fef9f0;border:1px solid #e0c998;"></span><span style="background:#ff6b35;"></span></div>
+                  <div class="theme-preset-label">Beach</div>
+                </div>
+                <div class="theme-preset" data-theme="lavender" title="Lavender">
+                  <div class="theme-preset-swatch"><span style="background:#f4f0ff;border:1px solid #c8b8ee;"></span><span style="background:#8b5cf6;"></span></div>
+                  <div class="theme-preset-label">Lavender</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ai-section-heading">Dark Themes</div>
+          <div class="setting-group compact-rows">
+            <div class="compact-row stacked">
+              <div class="theme-presets" id="theme-presets-dark">
+                <div class="theme-preset" data-theme="midnight" title="Midnight">
+                  <div class="theme-preset-swatch"><span style="background:#0d1117;"></span><span style="background:#58a6ff;"></span></div>
+                  <div class="theme-preset-label">Midnight</div>
+                </div>
+                <div class="theme-preset" data-theme="slate" title="Slate">
+                  <div class="theme-preset-swatch"><span style="background:#1e2433;"></span><span style="background:#94a3b8;"></span></div>
+                  <div class="theme-preset-label">Slate</div>
+                </div>
+                <div class="theme-preset" data-theme="forest" title="Forest">
+                  <div class="theme-preset-swatch"><span style="background:#122018;"></span><span style="background:#4ade80;"></span></div>
+                  <div class="theme-preset-label">Forest</div>
+                </div>
+                <div class="theme-preset active" data-theme="dark" title="Dark (default)">
+                  <div class="theme-preset-swatch"><span style="background:#1a1a2e;"></span><span style="background:#7c6af7;"></span></div>
+                  <div class="theme-preset-label">Dark</div>
+                </div>
+                <div class="theme-preset" data-theme="ember" title="Ember">
+                  <div class="theme-preset-swatch"><span style="background:#211508;"></span><span style="background:#f97316;"></span></div>
+                  <div class="theme-preset-label">Ember</div>
+                </div>
+                <div class="theme-preset" data-theme="rose" title="Rose">
+                  <div class="theme-preset-swatch"><span style="background:#221020;"></span><span style="background:#fb7185;"></span></div>
+                  <div class="theme-preset-label">Rose</div>
+                </div>
+                <div class="theme-preset" data-theme="cyber" title="Cyber">
+                  <div class="theme-preset-swatch"><span style="background:#0a0a0f;"></span><span style="background:#ff00ff;"></span></div>
+                  <div class="theme-preset-label">Cyber</div>
+                </div>
+                <div class="theme-preset" data-theme="underwater" title="Underwater">
+                  <div class="theme-preset-swatch"><span style="background:#020e1a;"></span><span style="background:#00d4ff;"></span></div>
+                  <div class="theme-preset-label">Underwater</div>
+                </div>
+                <div class="theme-preset" data-theme="neon" title="Neon">
+                  <div class="theme-preset-swatch"><span style="background:#0a000a;"></span><span style="background:#ffff00;"></span></div>
+                  <div class="theme-preset-label">Neon</div>
+                </div>
+                <div class="theme-preset" data-theme="aurora" title="Aurora">
+                  <div class="theme-preset-swatch"><span style="background:#040812;"></span><span style="background:#50ff80;"></span></div>
+                  <div class="theme-preset-label">Aurora</div>
+                </div>
+                <div class="theme-preset" data-theme="sunset" title="Sunset">
+                  <div class="theme-preset-swatch"><span style="background:#1a0a0a;"></span><span style="background:#ff4500;"></span></div>
+                  <div class="theme-preset-label">Sunset</div>
+                </div>
+                <div class="theme-preset" data-theme="matrix" title="Matrix">
+                  <div class="theme-preset-swatch"><span style="background:#000800;"></span><span style="background:#00ff00;"></span></div>
+                  <div class="theme-preset-label">Matrix</div>
+                </div>
+                <div class="theme-preset" data-theme="volcano" title="Volcano">
+                  <div class="theme-preset-swatch"><span style="background:#120800;"></span><span style="background:#ff3c00;"></span></div>
+                  <div class="theme-preset-label">Volcano</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ai-section-heading">Accent Color</div>
+          <div class="setting-group compact-rows">
+            <div class="compact-row stacked">
+              <div class="color-swatches">
+                <div class="color-swatch" data-color="#7c6af7" style="background:#7c6af7;" title="Purple (default)"></div>
+                <div class="color-swatch" data-color="#3b82f6" style="background:#3b82f6;" title="Blue"></div>
+                <div class="color-swatch" data-color="#10b981" style="background:#10b981;" title="Green"></div>
+                <div class="color-swatch" data-color="#f59e0b" style="background:#f59e0b;" title="Amber"></div>
+                <div class="color-swatch" data-color="#ef4444" style="background:#ef4444;" title="Red"></div>
+                <div class="color-swatch" data-color="#ec4899" style="background:#ec4899;" title="Pink"></div>
+                <input type="color" id="accent-custom" title="Custom color" />
+              </div>
+              <span class="compact-row-desc">Accent color used throughout the UI.</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Voice pane removed: voice + speed live in the chat settings crumb,
+             autoplay + avatar toggles moved to pane-ai (Assistants). -->
+
+
+        <!-- Developer + Services (admin only) -->
+        <div class="settings-pane" id="pane-developer">
+
+          <div class="ai-section-heading">Debug</div>
+          <div class="setting-group compact-rows">
+            <div class="compact-row">
+              <span class="compact-row-label">Debug Info</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="debug-toggle" />
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="compact-row-desc">Show distance/threshold/chunk counts on responses, and reveal the live GPU activity log in the sidebar.</span>
+            </div>
+            <div class="compact-row">
+              <span class="compact-row-label">Verbose Activity Log</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="debug-verbose-toggle" disabled />
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="compact-row-desc">Stream detailed engine events (fit checks, phase timing, fast-path hits, idle-unload, tts block changes). Requires Debug Info.</span>
+            </div>
+          </div>
+
+          <div class="ai-section-heading">Services</div>
+          <div class="setting-group compact-rows">
+            <div class="compact-row stacked">
+              <div class="stacked-label-row">
+                <span class="compact-row-label">Containers</span>
+                <button id="dev-refresh-btn" class="service-refresh-btn" title="Refresh">↺ Refresh</button>
+              </div>
+              <div id="service-status-list" class="service-status-list"></div>
+            </div>
+            <div class="compact-row stacked">
+              <span class="compact-row-label">External APIs</span>
+              <div id="api-status-list" class="service-status-list"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Administration (admin only) -->
+        <div class="settings-pane" id="pane-admin">
+          <div class="ai-section-heading ai-section-heading-row">
+            <span>Users</span>
+            <button class="hbtn" id="admin-add-user-toggle"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add User</button>
+          </div>
+          <div id="admin-user-list" class="admin-user-list"></div>
+        </div>
+
+        <!-- Interface (admin only) -->
+        <div class="settings-pane" id="pane-interface">
+
+          <div class="ai-section-heading">Branding</div>
+          <div class="setting-group compact-rows">
+            <div class="compact-row stacked">
+              <span class="compact-row-label">App Name</span>
+              <input type="text" id="app-name-input" class="setting-input" placeholder="WoozleBox" />
+            </div>
+            <div class="compact-row">
+              <span class="compact-row-label">Show name in sidebar</span>
+              <label class="toggle-switch"><input type="checkbox" id="sidebar-name-toggle" checked /><span class="toggle-slider"></span></label>
+              <span class="compact-row-desc">Display the app name next to the logo in the sidebar.</span>
+            </div>
+            <div class="compact-row">
+              <span class="compact-row-label">Show name on login</span>
+              <label class="toggle-switch"><input type="checkbox" id="login-name-toggle" checked /><span class="toggle-slider"></span></label>
+              <span class="compact-row-desc">Display the app name on the login screen.</span>
+            </div>
+            <div class="compact-row stacked">
+              <span class="compact-row-label">Logos &amp; Icons</span>
+              <div class="logo-upload-grid">
+
+              <!-- Sidebar Logo -->
+                <div class="logo-upload-item">
+                  <div id="logo-upload-wrap" class="logo-upload-target logo-wide" title="Upload sidebar logo">
+                    <div id="logo-letter-preview" class="logo-letter">D</div>
+                    <img id="logo-preview" class="logo-preview-img" />
+                    <div id="logo-upload-overlay" class="logo-upload-overlay">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    </div>
+                    <button id="logo-reset-btn" class="logo-reset-badge" title="Remove">✕</button>
+                  </div>
+                  <span class="logo-upload-label">Sidebar<br><span class="logo-dim-size">280×56 · 56×56</span></span>
+                  <input type="file" id="logo-file-input" accept="image/*" />
+                </div>
+
+                <div class="logo-upload-item">
+                  <div id="login-logo-upload-wrap" class="logo-upload-target logo-wide" title="Upload login logo">
+                    <div id="login-logo-letter-preview" class="logo-letter">D</div>
+                    <img id="login-logo-preview" class="logo-preview-img" />
+                    <div id="login-logo-upload-overlay" class="logo-upload-overlay">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    </div>
+                    <button id="login-logo-reset-btn" class="logo-reset-badge" title="Remove">✕</button>
+                  </div>
+                  <span class="logo-upload-label">Login<br><span class="logo-dim-size">280×56 · 56×56</span></span>
+                  <input type="file" id="login-logo-file-input" accept="image/*" />
+                </div>
+
+                <div class="logo-upload-item">
+                  <div id="ai-avatar-upload-wrap" class="logo-upload-target logo-round" title="Upload AI avatar">
+                    <div id="ai-avatar-letter" class="logo-letter-sm">D</div>
+                    <img id="ai-avatar-preview" class="logo-preview-img-round" />
+                    <div id="ai-avatar-upload-overlay" class="logo-upload-overlay logo-overlay-round">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    </div>
+                    <button id="ai-avatar-reset-btn" class="logo-reset-badge logo-reset-sm" title="Remove">✕</button>
+                  </div>
+                  <span class="logo-upload-label">Avatar<br><span class="logo-dim-size">56×56</span></span>
+                  <input type="file" id="ai-avatar-file-input" accept="image/*" />
+                </div>
+
+                <div class="logo-upload-item">
+                  <div id="favicon-upload-wrap" class="logo-upload-target logo-square" title="Upload favicon">
+                    <div id="favicon-letter" class="logo-letter-sm">D</div>
+                    <img id="favicon-preview" class="logo-preview-img-fill" />
+                    <div id="favicon-upload-overlay" class="logo-upload-overlay">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    </div>
+                    <button id="favicon-reset-btn" class="logo-reset-badge logo-reset-sm" title="Remove">✕</button>
+                  </div>
+                  <span class="logo-upload-label">Favicon<br><span class="logo-dim-size">56×56</span></span>
+                  <input type="file" id="favicon-file-input" accept="image/png,image/x-icon,image/svg+xml" />
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <div class="ai-section-heading">Login Appearance</div>
+          <div class="setting-group compact-rows">
+            <div class="compact-row stacked">
+              <span class="compact-row-label">Login Theme</span>
+              <div class="theme-presets" id="platform-theme-presets">
+                <div class="theme-preset" data-platform-theme="dark" title="Dark (default)">
+                  <div class="theme-preset-swatch"><span style="background:#1a1a2e;"></span><span style="background:#7c6af7;"></span></div>
+                  <div class="theme-preset-label">Dark</div>
+                </div>
+                <div class="theme-preset" data-platform-theme="midnight" title="Midnight">
+                  <div class="theme-preset-swatch"><span style="background:#0d1117;"></span><span style="background:#58a6ff;"></span></div>
+                  <div class="theme-preset-label">Midnight</div>
+                </div>
+                <div class="theme-preset" data-platform-theme="slate" title="Slate">
+                  <div class="theme-preset-swatch"><span style="background:#1e2433;"></span><span style="background:#64748b;"></span></div>
+                  <div class="theme-preset-label">Slate</div>
+                </div>
+                <div class="theme-preset" data-platform-theme="forest" title="Forest">
+                  <div class="theme-preset-swatch"><span style="background:#0d1f12;"></span><span style="background:#22c55e;"></span></div>
+                  <div class="theme-preset-label">Forest</div>
+                </div>
+                <div class="theme-preset" data-platform-theme="rose" title="Rose">
+                  <div class="theme-preset-swatch"><span style="background:#1c0e14;"></span><span style="background:#f43f5e;"></span></div>
+                  <div class="theme-preset-label">Rose</div>
+                </div>
+                <div class="theme-preset" data-platform-theme="light" title="Light">
+                  <div class="theme-preset-swatch"><span style="background:#f0f0f5;border:1px solid #d4d4de;"></span><span style="background:#7c6af7;"></span></div>
+                  <div class="theme-preset-label">Light</div>
+                </div>
+              </div>
+            </div>
+            <div class="compact-row stacked">
+              <span class="compact-row-label">Login Accent Color</span>
+              <div class="color-swatches" id="platform-color-swatches">
+                <div class="color-swatch" data-platform-color="#7c6af7" style="background:#7c6af7;" title="Purple (default)"></div>
+                <div class="color-swatch" data-platform-color="#3b82f6" style="background:#3b82f6;" title="Blue"></div>
+                <div class="color-swatch" data-platform-color="#10b981" style="background:#10b981;" title="Green"></div>
+                <div class="color-swatch" data-platform-color="#f59e0b" style="background:#f59e0b;" title="Amber"></div>
+                <div class="color-swatch" data-platform-color="#ef4444" style="background:#ef4444;" title="Red"></div>
+                <div class="color-swatch" data-platform-color="#ec4899" style="background:#ec4899;" title="Pink"></div>
+                <input type="color" id="platform-accent-custom" title="Custom color" />
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Defaults (admin only) -->
+        <div class="settings-pane" id="pane-defaults">
+
+          <div class="ai-section-heading">LLM Defaults</div>
+          <div class="setting-group compact-rows">
+            <div class="compact-row">
+              <span class="compact-row-label">Default LLM</span>
+              <select id="admin-default-model" class="setting-input"></select>
+              <span class="compact-row-desc">The default Large Language Model used to generate responses.</span>
+            </div>
+            <div class="compact-row stacked">
+              <span class="compact-row-label">Default System Prompt</span>
+              <textarea id="admin-default-prompt" class="setting-input" rows="4" placeholder="You are a personal AI assistant. When relevant context from the user's vault is provided, prioritize it in your answer. Otherwise, answer using your general knowledge."></textarea>
+              <span class="compact-row-desc">Sets the AI's base behavior. Leave blank to use the built-in default.</span>
+            </div>
+            <div class="compact-row stacked">
+              <div class="stacked-label-row">
+                <span class="compact-row-label">Temperature</span>
+                <span id="admin-temp-val" class="setting-val">0.20</span>
+              </div>
+              <input type="range" id="admin-temp-slider" min="0" max="1" step="0.05" value="0.2" />
+              <span class="compact-row-desc">Controls how creative or unpredictable the AI is. Lower = more focused and factual. Higher = more varied and creative.</span>
+            </div>
+            <div class="compact-row stacked">
+              <div class="stacked-label-row">
+                <span class="compact-row-label">Similarity Threshold</span>
+                <span id="admin-thresh-val" class="setting-val">0.60</span>
+              </div>
+              <input type="range" id="admin-thresh-slider" min="0.1" max="1.0" step="0.05" value="0.6" />
+              <span class="compact-row-desc">How closely a passage from the vault must match the question to be used as context.</span>
+            </div>
+            <div class="compact-row stacked">
+              <div class="stacked-label-row">
+                <span class="compact-row-label">Context Passages</span>
+                <span id="admin-topk-val" class="setting-val">30</span>
+              </div>
+              <input type="range" id="admin-topk-slider" min="5" max="50" step="5" value="30" />
+              <span class="compact-row-desc">How many passages from the vault are pulled in to answer each question.</span>
+            </div>
+            <div class="compact-row stacked">
+              <div class="stacked-label-row">
+                <span class="compact-row-label">History Limit</span>
+                <span id="admin-history-val" class="setting-val">10</span>
+              </div>
+              <input type="range" id="admin-history-slider" min="0" max="40" step="2" value="10" />
+              <span class="compact-row-desc">How many previous messages the AI can see. 0 = no history.</span>
+            </div>
+            <div class="compact-row stacked">
+              <div class="stacked-label-row">
+                <span class="compact-row-label">Auto-Compact Threshold</span>
+                <span id="admin-compact-val" class="setting-val">75%</span>
+              </div>
+              <input type="range" id="admin-compact-slider" min="0" max="95" step="5" value="75" />
+              <span class="compact-row-desc">When conversation reaches this % of context limit, older messages are summarized. 0 = disabled.</span>
+            </div>
+          </div>
+
+          <div class="ai-section-heading">Appearance Defaults</div>
+          <div class="setting-group compact-rows">
+            <div class="compact-row stacked">
+              <div class="stacked-label-row">
+                <span class="compact-row-label">Text Size</span>
+                <span id="admin-text-size-val" class="setting-val">Medium</span>
+              </div>
+              <div class="text-size-row">
+                <span>A</span>
+                <input type="range" id="admin-text-size-slider" min="0" max="3" step="1" value="1" />
+                <span style="font-size:1.1rem;">A</span>
+              </div>
+            </div>
+            <div class="compact-row stacked">
+              <span class="compact-row-label">Theme</span>
+              <div class="theme-presets" id="admin-theme-presets">
+                <div class="theme-preset active" data-admin-theme="dark">
+                  <div class="theme-preset-swatch"><span style="background:#1a1a2e;"></span><span style="background:#7c6af7;"></span></div>
+                  <div class="theme-preset-label">Dark</div>
+                </div>
+                <div class="theme-preset" data-admin-theme="midnight">
+                  <div class="theme-preset-swatch"><span style="background:#0d1117;"></span><span style="background:#58a6ff;"></span></div>
+                  <div class="theme-preset-label">Midnight</div>
+                </div>
+                <div class="theme-preset" data-admin-theme="slate">
+                  <div class="theme-preset-swatch"><span style="background:#1e2433;"></span><span style="background:#64748b;"></span></div>
+                  <div class="theme-preset-label">Slate</div>
+                </div>
+                <div class="theme-preset" data-admin-theme="forest">
+                  <div class="theme-preset-swatch"><span style="background:#0d1f12;"></span><span style="background:#22c55e;"></span></div>
+                  <div class="theme-preset-label">Forest</div>
+                </div>
+                <div class="theme-preset" data-admin-theme="rose">
+                  <div class="theme-preset-swatch"><span style="background:#1c0e14;"></span><span style="background:#f43f5e;"></span></div>
+                  <div class="theme-preset-label">Rose</div>
+                </div>
+                <div class="theme-preset" data-admin-theme="light">
+                  <div class="theme-preset-swatch"><span style="background:#f0f0f5;border:1px solid #d4d4de;"></span><span style="background:#7c6af7;"></span></div>
+                  <div class="theme-preset-label">Light</div>
+                </div>
+              </div>
+            </div>
+            <div class="compact-row stacked">
+              <span class="compact-row-label">Accent Color</span>
+              <div class="color-swatches" id="admin-color-swatches">
+                <div class="color-swatch" data-admin-color="#7c6af7" style="background:#7c6af7;" title="Purple (default)"></div>
+                <div class="color-swatch" data-admin-color="#3b82f6" style="background:#3b82f6;" title="Blue"></div>
+                <div class="color-swatch" data-admin-color="#10b981" style="background:#10b981;" title="Green"></div>
+                <div class="color-swatch" data-admin-color="#f59e0b" style="background:#f59e0b;" title="Amber"></div>
+                <div class="color-swatch" data-admin-color="#ef4444" style="background:#ef4444;" title="Red"></div>
+                <div class="color-swatch" data-admin-color="#ec4899" style="background:#ec4899;" title="Pink"></div>
+                <input type="color" id="admin-accent-custom" title="Custom color" value="#7c6af7" />
+              </div>
+            </div>
+          </div>
+
+          <div class="ai-section-heading">Voice Defaults</div>
+          <div class="setting-group compact-rows">
+            <div class="compact-row">
+              <span class="compact-row-label">Auto-play TTS</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="admin-tts-toggle" />
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="compact-row-desc">Automatically read AI responses aloud.</span>
+            </div>
+            <div class="compact-row">
+              <span class="compact-row-label">TTS Voice</span>
+              <select id="admin-default-voice" class="setting-input">
+                <option value="tara">tara - Warm conversational female</option>
+                <option value="leah">leah - Gentle articulate female</option>
+                <option value="jess">jess - Bright energetic female</option>
+                <option value="mia">mia - Soft professional female</option>
+                <option value="zoe">zoe - Light soothing female</option>
+                <option value="leo">leo - Confident authoritative male</option>
+                <option value="dan">dan - Friendly casual male</option>
+                <option value="zac">zac - Enthusiastic dynamic male</option>
+              </select>
+              <span class="compact-row-desc">Default voice for new user accounts.</span>
+            </div>
+          </div>
+
+          <div class="defaults-save-row">
+            <button class="accent-btn" id="admin-save-defaults-btn">Save Defaults</button>
+            <div id="admin-defaults-msg"></div>
+            <div class="setting-desc">Applied when a new user account is created. Existing accounts are not affected.</div>
+          </div>
+        </div>
+
+        <!-- Prompts (admin only) -->
+        <div class="settings-pane" id="pane-prompts">
+          <div class="ai-section-heading ai-section-heading-row">
+            <span>Prompt Templates</span>
+            <div class="ai-section-heading-actions">
+              <button class="hbtn icon-btn" id="prompt-help-btn" title="Prompt editing help">?</button>
+              <button class="hbtn icon-btn" id="prompt-reset-all-btn" title="Reset all prompts to defaults"><svg width="16" height="16"><use href="#i-refresh"/></svg></button>
+            </div>
+          </div>
+          <div class="setting-desc prompt-templates-desc">Edit the system prompts used by all LLM features. Changes apply globally for all users.</div>
+          <div class="setting-group" style="gap:8px;">
+            <div class="prompt-help-panel" id="prompt-help-panel" style="display:none;">
+              <div class="prompt-help-title">Prompt Editing Guide</div>
+              <div class="prompt-help-section">
+                <div class="prompt-help-heading">Template Variables</div>
+                <div class="prompt-help-text">Some prompts support runtime variables that get replaced with real values when the prompt is used. Available variables are listed below each prompt. Wrap variable names in curly braces:</div>
+                <div class="prompt-help-example">{model} - replaced with the active LLM model name<br>{custom_instructions} - replaced with user-provided instructions</div>
+              </div>
+              <div class="prompt-help-section">
+                <div class="prompt-help-heading">Markdown Formatting</div>
+                <div class="prompt-help-text">Prompts are sent as plain text to the LLM. You can use markdown-style formatting that the model will understand:</div>
+                <div class="prompt-help-example">## Headings - organize sections<br>- Bullets - list items or rules<br>[section] - section labels (e.g. [verse], [chorus])</div>
+              </div>
+              <div class="prompt-help-section">
+                <div class="prompt-help-heading">Special Tags</div>
+                <div class="prompt-help-text">Some prompts use special tags that control specific features:</div>
+                <div class="prompt-help-example">&lt;laugh&gt; &lt;sigh&gt; &lt;gasp&gt; - TTS emotion tags (Orpheus voices)<br>[SAVE_MEMORY:fact] - memory storage directive<br>[DELETE_MEMORY:fact] - memory removal directive<br>/no_think - disable model thinking/reasoning</div>
+              </div>
+              <div class="prompt-help-section">
+                <div class="prompt-help-heading">Tips</div>
+                <div class="prompt-help-text">Changes auto-save after you stop typing. Click the preview area to edit, click outside to return to preview. Modified prompts show a pill indicator and can be individually reset. The "Reset All" button reverts every modified prompt to its default.</div>
+              </div>
+            </div>
+            <div id="prompt-editor-list"></div>
+          </div>
+        </div>
+
+      </div><!-- #settings-content -->
+    </div><!-- #settings-body -->
+    <div class="modal-resize-handle" id="settings-resize"></div>
+  </div><!-- #settings-dialog -->
+  </div><!-- #settings-panel -->
+
+</div>
+<button id="sidebar-open-btn" title="Open sidebar" style="display:none;position:fixed;left:8px;top:60px;z-index:50;width:28px;height:28px;padding:0;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-dim);cursor:pointer;font-size:0.9rem;align-items:center;justify-content:center;transition:border-color 0.15s,color 0.15s;">›</button>
+
+<div id="overlay"></div>
+
+<!-- SETUP SCREEN -->
+<div id="setup-screen" class="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="logo" id="auth-logo-letter-setup"><span>D</span></div>
+      <img id="auth-logo-img-setup" class="auth-logo-img-wide" style="display:none;" />
+      <span id="auth-app-name-setup">WoozleBox</span>
+    </div>
+    <h1>Create administrator account</h1>
+    <p>This is the first run. Set up your admin account to get started.</p>
+    <div class="auth-field"><label>Username</label><input id="setup-username" type="text" autocomplete="username" /></div>
+    <div class="auth-field"><label>Password</label><input id="setup-password" type="password" autocomplete="new-password" /></div>
+    <div class="auth-field"><label>Confirm password</label><input id="setup-confirm" type="password" autocomplete="new-password" /></div>
+    <button class="auth-btn" id="setup-submit-btn">Create Account</button>
+    <div class="auth-error" id="setup-error"></div>
+  </div>
+</div>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen" class="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="logo" id="auth-logo-letter-login"><span>D</span></div>
+      <img id="auth-logo-img-login" class="auth-logo-img-wide" style="display:none;" />
+      <span id="auth-app-name-login">WoozleBox</span>
+    </div>
+    <div class="auth-field"><label>Username</label><input id="login-username" type="text" autocomplete="username" /></div>
+    <div class="auth-field"><label>Password</label><input id="login-password" type="password" autocomplete="current-password" /></div>
+    <button class="auth-btn" id="login-submit-btn">Sign In</button>
+    <div class="auth-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- CONTEXT MENU -->
+<div id="ctx-menu">
+  <button id="ctx-rename">Rename</button>
+  <div id="ctx-move-wrap" style="position:relative;">
+    <button id="ctx-move">Move to Folder ▸</button>
+    <div id="ctx-move-sub" style="display:none;position:absolute;left:100%;top:0;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px;min-width:140px;z-index:1001;"></div>
+  </div>
+  <button id="ctx-delete" class="danger">Delete</button>
+</div>
+
+<!-- FOLDER CONTEXT MENU -->
+<div id="folder-ctx-menu" style="display:none;position:fixed;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px;z-index:1000;min-width:120px;">
+  <button id="folder-ctx-edit" style="display:block;width:100%;text-align:left;background:none;border:none;color:var(--text-dim);cursor:pointer;padding:6px 12px;font-size:0.82rem;border-radius:5px;">Edit</button>
+  <button id="folder-ctx-delete" style="display:block;width:100%;text-align:left;background:none;border:none;color:var(--danger);cursor:pointer;padding:6px 12px;font-size:0.82rem;border-radius:5px;">Delete</button>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div id="add-user-modal">
+  <div id="add-user-modal-inner">
+    <div id="add-user-modal-header">
+      <h3>Add User</h3>
+    </div>
+    <div id="add-user-modal-body">
+      <input id="admin-new-username" type="text" placeholder="Username" class="setting-input" autocomplete="off" />
+      <input id="admin-new-password" type="password" placeholder="Password (min 6 chars)" class="setting-input" />
+      <select id="admin-new-role" class="setting-input">
+        <option value="user">User</option>
+        <option value="admin">Administrator</option>
+      </select>
+      <div id="admin-create-error"></div>
+    </div>
+    <div id="add-user-modal-footer">
+      <button id="admin-add-cancel-btn" class="hbtn" style="padding:7px 16px;font-size:0.82rem;">Cancel</button>
+      <button id="admin-create-user-btn" class="accent-btn" style="padding:7px 18px;font-size:0.82rem;">Create User</button>
+    </div>
+  </div>
+</div>
+
+<div id="reset-pw-modal" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:340px;max-width:92vw;display:flex;flex-direction:column;overflow:hidden;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid var(--border);">
+      <h3 style="margin:0;font-size:0.95rem;font-weight:600;color:var(--text);">Reset Password</h3>
+    </div>
+    <div style="padding:20px;display:flex;flex-direction:column;gap:10px;">
+      <div style="font-size:0.82rem;color:var(--text-dim);">Set a new password for <strong id="reset-pw-username" style="color:var(--text);"></strong></div>
+      <input id="reset-pw-input" type="password" placeholder="New password (min 6 chars)" class="setting-input" style="font-size:0.85rem;padding:8px 11px;" />
+      <div id="reset-pw-error" style="font-size:0.78rem;color:var(--danger);min-height:16px;"></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;padding:12px 20px;border-top:1px solid var(--border);">
+      <button id="reset-pw-cancel-btn" class="hbtn" style="padding:7px 16px;font-size:0.82rem;">Cancel</button>
+      <button id="reset-pw-confirm-btn" class="accent-btn" style="padding:7px 18px;font-size:0.82rem;">Reset</button>
+    </div>
+  </div>
+</div>
+
+<div id="confirm-modal">
+  <div id="confirm-modal-inner">
+    <div id="confirm-modal-header">
+      <h3 id="confirm-modal-title">Confirm</h3>
+    </div>
+    <div id="confirm-modal-body"></div>
+    <div id="confirm-modal-footer">
+      <button id="confirm-cancel-btn">Cancel</button>
+      <button id="confirm-ok-btn" class="danger">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div id="prompt-modal">
+  <div id="prompt-modal-inner">
+    <div id="prompt-modal-header">
+      <h3 id="prompt-modal-title">Rename</h3>
+    </div>
+    <div id="prompt-modal-body">
+      <label id="prompt-modal-label"></label>
+      <input id="prompt-modal-input" type="text" autocomplete="off" />
+    </div>
+    <div id="prompt-modal-footer">
+      <button id="prompt-cancel-btn">Cancel</button>
+      <button id="prompt-ok-btn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHARED FOLDER MODAL (chat / image / music) -->
+<div id="shared-folder-modal" class="folder-modal">
+  <div class="folder-modal-inner">
+    <div class="folder-modal-header">
+      <h3 id="shared-folder-title">New Folder</h3>
+      <button id="shared-folder-close">✕</button>
+    </div>
+    <div class="folder-modal-body">
+      <div class="pm-hint" id="shared-folder-hint" style="margin-bottom:4px;"></div>
+      <div class="pm-field">
+        <label class="pm-label" for="shared-folder-name">Name</label>
+        <input type="text" id="shared-folder-name" class="setting-input" />
+      </div>
+      <div class="pm-field">
+        <label class="pm-label" for="shared-folder-desc">Description <span style="font-weight:400;color:var(--text-faint);">(optional)</span></label>
+        <input type="text" id="shared-folder-desc" class="setting-input" placeholder="What this folder is for…" />
+      </div>
+      <div class="pm-field" id="shared-folder-prompt-wrap" style="display:none;">
+        <label class="pm-label" for="shared-folder-prompt">System Prompt <span style="font-weight:400;color:var(--text-faint);">(optional)</span></label>
+        <textarea id="shared-folder-prompt" class="setting-input" rows="5" placeholder="Instructions for the AI when working in this folder...&#10;&#10;e.g. Always cite sources. Be precise and concise."></textarea>
+        <div class="pm-hint">Custom AI instructions for every chat in this folder. Leave blank to use the default.</div>
+      </div>
+    </div>
+    <div class="folder-modal-footer">
+      <button class="folder-cancel" id="shared-folder-cancel">Cancel</button>
+      <button class="folder-save" id="shared-folder-save">Save Folder</button>
+    </div>
+  </div>
+</div>
+
+<!-- (image folder modal merged into shared-folder-modal) -->
+
+<!-- (music folder modal merged into shared-folder-modal) -->
+
+<!-- (music trash modal merged into shared-trash-modal) -->
+
+<!-- FILE PREVIEW MODAL -->
+<!-- SEARCH MODAL -->
+<div id="search-modal" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.55);align-items:flex-start;justify-content:center;padding-top:80px;">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;width:600px;max-width:92vw;max-height:70vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.5);">
+    <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);">
+      <svg width="16" height="16" style="color:var(--text-dim)"><use href="#i-search"/></svg>
+      <input id="search-modal-input" type="search" placeholder="Search chats and messages…" autocomplete="off"
+        style="flex:1;background:none;border:none;outline:none;color:var(--text);font-size:0.95rem;font-family:inherit;" />
+      <kbd style="font-size:0.7rem;color:var(--text-faint);background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 6px;cursor:pointer;" id="search-modal-esc">Esc</kbd>
+    </div>
+    <div id="search-modal-results" style="flex:1;overflow-y:auto;padding:8px 0;"></div>
+  </div>
+</div>
+
+<div id="file-modal" style="display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;">
+  <div id="file-modal-inner" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:860px;max-width:92vw;height:90vh;display:flex;flex-direction:column;overflow:hidden;position:relative;">
+    <div class="modal-resize-se" id="modal-resize-se"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);">
+      <span id="file-modal-title" style="font-size:0.9rem;font-weight:600;color:var(--text)"></span>
+      <button id="file-modal-close" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:1.1rem;">✕</button>
+    </div>
+    <div id="file-modal-content" style="flex:1;overflow:auto;padding:20px 24px;font-size:0.85rem;color:var(--text);word-break:break-word;line-height:1.6;margin:0;background:var(--bg);font-family:inherit;"></div>
+    <iframe id="file-modal-pdf" style="display:none;flex:1;border:none;width:100%;height:100%;"></iframe>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+
+<!-- JavaScript modules -->
+<script src="js/config.js?v=2"></script>
+<script src="js/app.js?v=7"></script>
+<script src="js/auth.js"></script>
+<script src="js/settings.js?v=7"></script>
+<script src="js/chat-settings.js?v=1"></script>
+<script src="js/memory.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/markdown.js"></script>
+<script src="js/tts.js?v=7"></script>
+<script src="js/vault.js"></script>
+<script src="js/gpu.js"></script>
+<script src="js/admin.js"></script>
+<script src="js/admin-prompts.js"></script>
+<script src="js/db-helpers.js"></script>
+<script src="js/studio-api.js"></script>
+<script src="js/studio-helpers.js"></script>
+<script src="js/image-studio.js?v=2"></script>
+<script src="lib/lamejs.min.js"></script>
+<script src="js/music-studio.js?v=2"></script>
+<script src="js/video-studio.js"></script>
+<script src="lib/highlight.min.js"></script>
+<script src="lib/highlight-languages.min.js"></script>
+<script src="js/code-studio.js"></script>
+<script src="js/notetaker.js"></script>
+<script src="js/slash-commands.js"></script>
+<script src="js/chat.js?v=2"></script>
+<script>
+  // Avatar settings toggle - wired after all deferred scripts have run
+  document.getElementById('avatar-toggle').addEventListener('change', function(e) {
+    window.applyAvatar(e.target.checked);
+    if (typeof scheduleSettingsSync === 'function') scheduleSettingsSync();
+  });
+  // Sync checkbox state when settings panel opens
+  document.getElementById('settings-btn').addEventListener('click', function() {
+    var cb = document.getElementById('avatar-toggle');
+    if (cb && window._avatarEnabled) cb.checked = window._avatarEnabled();
+  }, true);
+</script>
+<script type="module" src="js/avatar.js"></script>
+</body>
+</html>

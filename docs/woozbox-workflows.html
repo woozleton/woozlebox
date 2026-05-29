@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WoozleBox - VRAM Workflows</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0F1117; color: #E4E4E7; font-family: 'Segoe UI', Calibri, sans-serif; padding: 40px; min-height: 100vh; }
+  h1 { font-size: 34px; font-weight: 700; margin-bottom: 6px; }
+  h2 { font-size: 24px; font-weight: 700; margin: 48px 0 8px; }
+  .subtitle { font-size: 18px; color: #9CA3AF; margin-bottom: 36px; }
+  .h2-desc { font-size: 14px; color: #9CA3AF; margin-bottom: 20px; }
+
+  .workflow { max-width: 900px; margin-bottom: 40px; }
+
+  .step { display: flex; align-items: stretch; gap: 0; margin: 0; }
+  .step-left { width: 140px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; }
+  .step-trigger { font-size: 13px; font-weight: 600; color: #9CA3AF; text-align: center; padding-top: 18px; }
+  .step-line { flex: 1; width: 2px; background: #2A2D3A; margin: 6px 0; }
+  .step-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; border: 2px solid #2A2D3A; }
+  .step-right { flex: 1; padding: 10px 0 10px 20px; }
+
+  .step-card { background: #1A1D27; border: 1px solid #2A2D3A; border-radius: 8px; padding: 16px 20px; position: relative; }
+  .step-card::before {
+    content: '';
+    position: absolute; left: -12px; top: 20px;
+    width: 0; height: 0;
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    border-right: 12px solid #2A2D3A;
+  }
+  .step-card::after {
+    content: '';
+    position: absolute; left: -10px; top: 21px;
+    width: 0; height: 0;
+    border-top: 7px solid transparent;
+    border-bottom: 7px solid transparent;
+    border-right: 11px solid #1A1D27;
+  }
+  .step-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  .step-actions { display: flex; flex-direction: column; gap: 5px; }
+  .action { display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 1.4; }
+  .action-icon { font-size: 14px; flex-shrink: 0; width: 20px; text-align: center; }
+
+  .dot-blue { background: #60A5FA; border-color: #60A5FA; }
+  .dot-green { background: #34D399; border-color: #34D399; }
+  .dot-amber { background: #F59E0B; border-color: #F59E0B; }
+  .dot-red { background: #EF4444; border-color: #EF4444; }
+  .dot-teal { background: #2DD4BF; border-color: #2DD4BF; }
+  .dot-purple { background: #818CF8; border-color: #818CF8; }
+
+  .c-red { color: #EF4444; }
+  .c-amber { color: #F59E0B; }
+  .c-green { color: #34D399; }
+  .c-blue { color: #60A5FA; }
+  .c-teal { color: #2DD4BF; }
+  .c-purple { color: #818CF8; }
+  .c-dim { color: #6B7280; }
+
+  .footnote { margin-top: 32px; font-size: 14px; color: #6B7280; font-style: italic; max-width: 900px; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<h1>VRAM Workflows</h1>
+<p class="subtitle">Step-by-step GPU orchestration for each studio mode</p>
+
+<!-- Chat -->
+<h2 class="c-blue">Chat</h2>
+<p class="h2-desc">Keeps the target LLM if already loaded, evicts everything else, and coexists with Orpheus TTS when it fits</p>
+
+<div class="workflow">
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Switch to Chat</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-blue"></div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">gpu-manager /acquire (chat)</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-purple">&#9670;</span> Keep target chat LLM if already loaded</div>
+          <div class="action"><span class="action-icon c-red">&#10005;</span> Evict other Ollama models</div>
+          <div class="action"><span class="action-icon c-amber">&#9660;</span> Unload all gen services</div>
+          <div class="action"><span class="action-icon c-green">&#9650;</span> Warm up user's selected chat LLM (if not kept)</div>
+          <div class="action"><span class="action-icon c-blue">&#9679;</span> TTS fit check: chat_llm + tts + headroom vs budget</div>
+          <div class="action"><span class="action-icon c-green">&#9650;</span> If it fits, load Orpheus via tts-llm supervisor (:5007)</div>
+          <div class="action"><span class="action-icon c-red">&#10005;</span> Else evict Orpheus + set tts_blocked_by &rarr; TTS requests return 409</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Send Message</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-blue"></div>
+      <div class="step-line" style="background:transparent;"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">rag-api /chat</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-blue">&#9679;</span> Embed query via embedding model</div>
+          <div class="action"><span class="action-icon c-blue">&#9679;</span> Search vault via ChromaDB</div>
+          <div class="action"><span class="action-icon c-blue">&#9679;</span> Stream LLM response</div>
+          <div class="action"><span class="action-icon c-dim">&#9888;</span> <span class="c-dim">Auto-play TTS streams directly from tts-api (:5005) - 409 surfaces as toast if blocked</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Image Studio -->
+<h2 class="c-green">Image Studio</h2>
+<p class="h2-desc">Utility model loads on-demand for inspire/naming, evicted before generation</p>
+
+<div class="workflow">
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Switch to Image</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-green"></div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">gpu-manager /acquire (image)</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-red">&#10005;</span> Evict non-utility LLMs</div>
+          <div class="action"><span class="action-icon c-amber">&#9660;</span> Unload music-api, video-api, notetaker-api</div>
+          <div class="action"><span class="action-icon c-green">&#9650;</span> Load selected image model</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Inspire Button</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-purple"></div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">media-api /image/inspire</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-purple">&#9679;</span> Utility LLM loads on-demand</div>
+          <div class="action"><span class="action-icon c-purple">&#9679;</span> Returns creative image prompt</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Generate</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-green"></div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">gpu-manager /acquire (image, pre_inference)</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-red">&#10005;</span> Evict ALL Ollama models (including utility)</div>
+          <div class="action"><span class="action-icon c-dim">&#10003;</span> Image model already loaded</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Inference</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-green"></div>
+      <div class="step-line" style="background:transparent;"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">image-api /generate</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-green">&#9679;</span> Image model runs diffusion</div>
+          <div class="action"><span class="action-icon c-green">&#9679;</span> Full VRAM available - no contention</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Music Studio -->
+<h2 class="c-amber">Music Studio</h2>
+<p class="h2-desc">Two models coexist - ACE-Step for music + SDXL Turbo for cover art</p>
+
+<div class="workflow">
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Switch to Music</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-amber"></div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">gpu-manager /acquire (music)</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-red">&#10005;</span> Evict non-utility LLMs</div>
+          <div class="action"><span class="action-icon c-amber">&#9660;</span> Unload video-api, notetaker-api</div>
+          <div class="action"><span class="action-icon c-dim">&#10003;</span> Keep image-api (for cover art)</div>
+          <div class="action"><span class="action-icon c-amber">&#9650;</span> Load ACE-Step</div>
+          <div class="action"><span class="action-icon c-green">&#9650;</span> Load SDXL Turbo (cover art)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Inspire / Name</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-purple"></div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">media-api /music/inspire, /name-song</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-purple">&#9679;</span> Utility LLM loads on-demand</div>
+          <div class="action"><span class="action-icon c-purple">&#9679;</span> Returns prompt idea / song title</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Write Song</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-blue"></div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">gpu-manager /acquire (songwriting) + media-api /music/write-song</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-red">&#10005;</span> Evict ALL Ollama models (including utility)</div>
+          <div class="action"><span class="action-icon c-amber">&#9660;</span> Unload all gen services</div>
+          <div class="action"><span class="action-icon c-green">&#9650;</span> Warm up songwriting LLM</div>
+          <div class="action"><span class="action-icon c-blue">&#9679;</span> Returns style prompt + structured lyrics</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Generate</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-amber"></div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">gpu-manager /acquire (music, pre_inference)</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-red">&#10005;</span> Evict ALL Ollama models</div>
+          <div class="action"><span class="action-icon c-amber">&#9650;</span> Load ACE-Step</div>
+          <div class="action"><span class="action-icon c-green">&#9650;</span> Load SDXL Turbo (cover art)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Inference</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-amber"></div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">music-api /generate</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-amber">&#9679;</span> ACE-Step runs audio generation</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Cover Art</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-green"></div>
+      <div class="step-line" style="background:transparent;"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">media-api /music/cover-art</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-purple">&#9679;</span> Utility LLM generates image prompt</div>
+          <div class="action"><span class="action-icon c-green">&#9679;</span> SDXL Turbo renders cover art</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Video Studio -->
+<h2 class="c-red">Video Studio</h2>
+<p class="h2-desc">Video model needs all VRAM - everything else is evicted</p>
+
+<div class="workflow">
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Switch to Video</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-red"></div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">gpu-manager /acquire (video)</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-red">&#10005;</span> Evict ALL Ollama models (including utility)</div>
+          <div class="action"><span class="action-icon c-amber">&#9660;</span> Unload all gen services</div>
+          <div class="action"><span class="action-icon c-red">&#9650;</span> Load video model</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Inspire</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-purple"></div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">media-api /video/inspire</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-purple">&#9679;</span> Utility LLM loads on-demand</div>
+          <div class="action"><span class="action-icon c-dim">&#9888;</span> <span class="c-dim">Video model + utility coexist temporarily</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Generate</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-red"></div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">gpu-manager /acquire (video, pre_inference)</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-red">&#10005;</span> Evict ALL Ollama models (including utility)</div>
+          <div class="action"><span class="action-icon c-dim">&#10003;</span> Video model already loaded</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Inference</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-red"></div>
+      <div class="step-line" style="background:transparent;"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">video-api /generate</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-red">&#9679;</span> Video model generates frames</div>
+          <div class="action"><span class="action-icon c-red">&#9679;</span> Full VRAM available - no contention</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Note Taker -->
+<h2 class="c-teal">Note Taker</h2>
+<p class="h2-desc">whisperX transcription + optional LLM summarization</p>
+
+<div class="workflow">
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Switch to Note Taker</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-teal"></div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">gpu-manager /acquire (notetaker)</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-red">&#10005;</span> Evict ALL Ollama models (including utility)</div>
+          <div class="action"><span class="action-icon c-amber">&#9660;</span> Unload all gen services</div>
+          <div class="action"><span class="action-icon c-amber">&#9660;</span> Unload tts-llm (Orpheus is on-demand here, not resident)</div>
+          <div class="action"><span class="action-icon c-green">&#9650;</span> Load whisperX model</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Transcribe</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-teal"></div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">notetaker-api /transcribe</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon" style="color:#2DD4BF;">&#9679;</span> ffmpeg converts audio to 16kHz WAV</div>
+          <div class="action"><span class="action-icon" style="color:#2DD4BF;">&#9679;</span> whisperX transcribes + aligns word timestamps</div>
+          <div class="action"><span class="action-icon" style="color:#2DD4BF;">&#9679;</span> pyannote exclusive diarization - one speaker per moment (if enabled)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Auto-Name</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-purple"></div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">media-api /notetaker/name</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-purple">&#9679;</span> Utility LLM generates title from transcript</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Summarize (optional)</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-blue"></div>
+      <div class="step-line" style="background:transparent;"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">media-api /notetaker/summarize</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-blue">&#9679;</span> Full LLM loads for quality summaries</div>
+          <div class="action"><span class="action-icon c-blue">&#9679;</span> LLM auto-classifies note type (professional, personal, etc.)</div>
+          <div class="action"><span class="action-icon c-blue">&#9679;</span> Prompt selected by classified note type</div>
+          <div class="action"><span class="action-icon c-dim">&#9888;</span> <span class="c-dim">whisperX stays loaded - coexists with LLM</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Play Summary (TTS)</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-teal"></div>
+      <div class="step-line" style="background:transparent;"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">gpu-manager /acquire?service=tts</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-green">&#9650;</span> Supervisor spawns llama-server for Orpheus on demand</div>
+          <div class="action"><span class="action-icon c-blue">&#9679;</span> tts-api streams SNAC audio back to the browser</div>
+          <div class="action"><span class="action-icon c-red">&#10005;</span> On audio `ended`, frontend fires /release?service=tts to free VRAM</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Code Studio -->
+<h2 class="c-blue">Code Studio</h2>
+<p class="h2-desc">Pair-programming editor - keeps the target coding LLM if already loaded</p>
+
+<div class="workflow">
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Switch to Code</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-blue"></div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">gpu-manager /acquire (code)</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-purple">&#9670;</span> Keep target code LLM if already loaded</div>
+          <div class="action"><span class="action-icon c-red">&#10005;</span> Evict other Ollama models</div>
+          <div class="action"><span class="action-icon c-amber">&#9660;</span> Unload all gen services</div>
+          <div class="action"><span class="action-icon c-green">&#9650;</span> Warm up coding LLM (if not kept)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-trigger">Generate Code</div>
+      <div class="step-line"></div>
+      <div class="step-dot dot-blue"></div>
+      <div class="step-line" style="background:transparent;"></div>
+    </div>
+    <div class="step-right">
+      <div class="step-card">
+        <div class="step-title">Ollama /api/chat (multi-turn)</div>
+        <div class="step-actions">
+          <div class="action"><span class="action-icon c-blue">&#9679;</span> Multi-turn conversation with system prompt</div>
+          <div class="action"><span class="action-icon c-blue">&#9679;</span> SEARCH/REPLACE block parsing for incremental edits</div>
+          <div class="action"><span class="action-icon c-blue">&#9679;</span> Optional plan mode, thinking, and permission gating</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="footnote">
+  The utility model loads on-demand when inspire/naming is called.
+  It is always evicted before actual inference via the pre_inference flag on /acquire.
+  Songwriting uses a dedicated VRAM profile that evicts everything before loading the full LLM.
+  Chat, code, and songwriting acquires keep the target LLM if it's already loaded - only other models are evicted.
+  HuggingFace gated repos return HTTP 403 and surface a toast with an accept-terms link.
+  See VRAM_PROFILES in gpu-manager/main.py and .env for model configuration.
+</p>
+
+</body>
+</html>

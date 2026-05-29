@@ -1,0 +1,285 @@
+name: woozlebox
+
+services:
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: chromadb
+    ports:
+      - "${CHROMA_PORT:-8001}:8000"
+    volumes:
+      - chroma_data:/data
+    environment:
+      - IS_PERSISTENT=TRUE
+      - ANONYMIZED_TELEMETRY=FALSE
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/8000'"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  rag-api:
+    build: ./rag-api
+    container_name: rag-api
+    ports:
+      - "${RAG_API_PORT:-8000}:8000"
+    volumes:
+      - ./files:/vault:rw
+      - rag_data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - VAULT_PATH=${VAULT_PATH:-/vault}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
+      - EMBED_MODEL=${EMBED_MODEL:-nomic-embed-text}
+      - LLM_MODEL=${LLM_MODEL:-qwen3:30b-a3b}
+      - SIMILARITY_THRESHOLD=${SIMILARITY_THRESHOLD:-0.45}
+      - CHROMA_HOST=chromadb
+      - CHROMA_PORT_INTERNAL=8000
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
+      - DB_DIR=/app/data
+      - TTS_URL=http://tts-api:5005
+      - GPU_MANAGER_URL=${GPU_MANAGER_URL:-http://gpu-manager:8400}
+    depends_on:
+      chromadb:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    restart: unless-stopped
+
+  # TTS stack (Orpheus model, GPU-accelerated expressive speech)
+  tts-init:
+    image: curlimages/curl:latest
+    container_name: tts-init
+    user: root
+    volumes:
+      - tts_models:/app/models
+    working_dir: /app
+    command: >
+      sh -c '
+      if [ ! -f /app/models/Orpheus-3b-FT-Q4_K_M.gguf ]; then
+        echo "Downloading Orpheus model..."
+        wget -P /app/models https://huggingface.co/lex-au/Orpheus-3b-FT-Q4_K_M.gguf/resolve/main/Orpheus-3b-FT-Q4_K_M.gguf
+      else
+        echo "Orpheus model already exists"
+      fi'
+    restart: "no"
+
+  tts-llm:
+    build:
+      context: ./tts-llm
+      dockerfile: Dockerfile
+    container_name: tts-llm
+    volumes:
+      - tts_models:/models
+    depends_on:
+      tts-init:
+        condition: service_completed_successfully
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+    environment:
+      - ORPHEUS_GGUF=/models/Orpheus-3b-FT-Q4_K_M.gguf
+      - SUPERVISOR_PORT=5007
+      - LLAMA_SERVER_ARGS=--port 5006 --host 0.0.0.0 --n-gpu-layers 99 --ctx-size 10240 --n-predict 4096 --batch-size 2048 --ubatch-size 512 --flash-attn on --cache-type-k q8_0 --cache-type-v q8_0 --parallel 2 --cont-batching --cache-reuse 256
+
+  tts-api:
+    build:
+      context: ./orpheus
+      dockerfile: Dockerfile.gpu
+    container_name: tts-api
+    environment:
+      - ORPHEUS_API_URL=http://tts-llm:5006/v1/completions
+      - ORPHEUS_MODEL_NAME=Orpheus-3b-FT-Q4_K_M.gguf
+      - ORPHEUS_PORT=5005
+      - ORPHEUS_MAX_TOKENS=32768
+      - ORPHEUS_TEMPERATURE=0.6
+      - ORPHEUS_TOP_P=0.9
+      - USE_GPU=true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    depends_on:
+      tts-llm:
+        condition: service_started
+    restart: unless-stopped
+
+  image-api:
+    build: ./image-api
+    container_name: image-api
+    ports:
+      - "${IMAGE_GEN_PORT:-8100}:8100"
+    volumes:
+      - hf_cache:/root/.cache/huggingface
+    environment:
+      - HF_TOKEN=${HF_TOKEN}
+      - HF_HOME=/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+
+  music-api:
+    build: ./music-api
+    container_name: music-api
+    ports:
+      - "${MUSIC_GEN_PORT:-8200}:8200"
+    volumes:
+      - hf_cache:/root/.cache/huggingface
+      # ACE-Step ignores HF_HOME and downloads into its project_root; mount
+      # a dedicated volume so the 9.4 GB of weights persist across rebuilds.
+      - ace_step_models:/opt/ace-step/checkpoints
+    environment:
+      - HF_HOME=/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+
+  video-api:
+    build: ./video-api
+    container_name: video-api
+    ports:
+      - "${VIDEO_GEN_PORT:-8300}:8300"
+    volumes:
+      - hf_cache:/root/.cache/huggingface
+    environment:
+      - HF_HOME=/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+
+  notetaker-api:
+    build: ./notetaker-api
+    container_name: notetaker-api
+    ports:
+      - "${NOTETAKER_API_PORT:-8600}:8600"
+    volumes:
+      - hf_cache:/root/.cache/huggingface
+      - notetaker_data:/data
+    environment:
+      - HF_TOKEN=${HF_TOKEN}
+      - HF_HOME=/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+
+  media-api:
+    build: ./media-api
+    container_name: media-api
+    ports:
+      - "${MEDIA_API_PORT:-8500}:8500"
+    environment:
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
+      - UTILITY_MODEL=${UTILITY_MODEL:-qwen3:0.6b}
+      - LLM_MODEL=${LLM_MODEL:-qwen3:30b-a3b}
+      - CHAT_API_URL=http://rag-api:8000
+      - IMAGE_GEN_URL=${IMAGE_GEN_URL:-http://image-api:8100}
+      - MUSIC_GEN_URL=${MUSIC_GEN_URL:-http://music-api:8200}
+      - VIDEO_GEN_URL=${VIDEO_GEN_URL:-http://video-api:8300}
+      - NOTETAKER_API_URL=${NOTETAKER_API_URL:-http://notetaker-api:8600}
+      - GPU_MANAGER_URL=${GPU_MANAGER_URL:-http://gpu-manager:8400}
+      - CODE_RUNNER_URL=${CODE_RUNNER_URL:-http://code-runner:8700}
+    depends_on:
+      - rag-api
+      - ollama
+    restart: unless-stopped
+
+  code-runner:
+    build: ./code-runner
+    container_name: code-runner
+    ports:
+      - "${CODE_RUNNER_PORT:-8700}:8700"
+    restart: unless-stopped
+
+  gpu-manager:
+    build: ./gpu-manager
+    container_name: gpu-manager
+    ports:
+      - "${GPU_MANAGER_PORT:-8400}:8400"
+    volumes:
+      - tts_models:/tts_models:ro
+    environment:
+      - TTS_MODEL_DIR=/tts_models
+      - IMAGE_GEN_URL=${IMAGE_GEN_URL:-http://image-api:8100}
+      - MUSIC_GEN_URL=${MUSIC_GEN_URL:-http://music-api:8200}
+      - VIDEO_GEN_URL=${VIDEO_GEN_URL:-http://video-api:8300}
+      - NOTETAKER_API_URL=${NOTETAKER_API_URL:-http://notetaker-api:8600}
+      - TTS_LLM_URL=${TTS_LLM_URL:-http://tts-llm:5007}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
+      - UTILITY_MODEL=${UTILITY_MODEL:-qwen3:0.6b}
+      - LLM_MODEL=${LLM_MODEL:-qwen3:30b-a3b}
+      - VRAM_RESERVED_MB=${VRAM_RESERVED_MB:-2500}
+      - IDLE_UNLOAD_MIN=${IDLE_UNLOAD_MIN:-15}
+      - TTS_FIT_HEADROOM_MB=${TTS_FIT_HEADROOM_MB:-1500}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+
+  web:
+    image: nginx:alpine
+    container_name: web
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    volumes:
+      - ./web:/usr/share/nginx/html:ro
+      - ./web/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    restart: unless-stopped
+
+volumes:
+  chroma_data:
+  rag_data:
+  ollama_data:
+  hf_cache:
+  notetaker_data:
+  tts_models:
+  ace_step_models:

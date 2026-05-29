@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WoozleBox File Structure</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0F1117; color: #E4E4E7; font-family: 'Segoe UI', Calibri, sans-serif; padding: 40px; min-height: 100vh; }
+  h1 { font-size: 34px; font-weight: 700; margin-bottom: 6px; }
+  h2 { font-size: 26px; font-weight: 700; margin: 44px 0 20px; color: #E4E4E7; }
+  .subtitle { font-size: 18px; color: #9CA3AF; margin-bottom: 32px; }
+  .section-desc { font-size: 16px; color: #9CA3AF; margin-bottom: 20px; line-height: 1.5; }
+
+  /* Service section cards */
+  .svc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(460px, 1fr)); gap: 16px; max-width: 1100px; margin-bottom: 14px; }
+  .svc-card { background: #1A1D27; border: 1px solid #2A2D3A; border-radius: 10px; overflow: hidden; }
+  .svc-accent { height: 4px; }
+  .svc-header { padding: 16px 20px 10px; display: flex; align-items: baseline; gap: 10px; border-bottom: 1px solid #2A2D3A; }
+  .svc-name { font-size: 20px; font-weight: 700; }
+  .svc-role { font-size: 13px; color: #9CA3AF; }
+  .svc-body { padding: 12px 20px 16px; }
+
+  /* File tree */
+  .tree { font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace; font-size: 14px; line-height: 1.7; }
+  .tree-file { display: flex; align-items: baseline; gap: 10px; }
+  .tree-indent { color: #3A3D4A; user-select: none; white-space: pre; }
+  .tree-name { color: #E4E4E7; white-space: nowrap; }
+  .tree-name.dir { color: #60A5FA; font-weight: 600; }
+  .tree-desc { font-family: 'Segoe UI', Calibri, sans-serif; font-size: 12px; color: #6B7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+
+  /* Root tree */
+  .root-tree { background: #1A1D27; border: 1px solid #2A2D3A; border-radius: 10px; padding: 20px 24px; max-width: 800px; margin-bottom: 14px; }
+
+  /* Colors */
+  .c-blue { color: #60A5FA; }
+  .c-green { color: #34D399; }
+  .c-amber { color: #F59E0B; }
+  .c-red { color: #EF4444; }
+  .c-purple { color: #818CF8; }
+  .c-orange { color: #F97316; }
+  .c-dim { color: #6B7280; }
+  .c-white { color: #E4E4E7; }
+  .accent-web { background: #E4E4E7; }
+  .accent-rag { background: #60A5FA; }
+  .accent-media { background: #818CF8; }
+  .accent-gpu { background: #F97316; }
+  .accent-image { background: #34D399; }
+  .accent-music { background: #F59E0B; }
+  .accent-video { background: #EF4444; }
+  .accent-notetaker { background: #2DD4BF; }
+  .accent-docs { background: #6B7280; }
+
+  /* Script load order */
+  .load-order { max-width: 800px; }
+  .load-group { margin-bottom: 16px; }
+  .load-group-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #6B7280; margin-bottom: 8px; }
+  .load-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; font-size: 14px; }
+  .load-num { width: 22px; height: 22px; border-radius: 50%; background: #2A2D3A; color: #9CA3AF; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .load-file { font-family: monospace; font-size: 13px; min-width: 160px; }
+  .load-desc { font-size: 12px; color: #6B7280; }
+  .load-arrow { color: #3A3D4A; font-size: 12px; margin: 0 0 0 10px; }
+
+  .footnote { margin-top: 24px; font-size: 14px; color: #6B7280; font-style: italic; max-width: 1100px; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<h1>WoozleBox File Structure</h1>
+<p class="subtitle">Complete codebase layout with file descriptions</p>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Root Layout</h2>
+<p class="section-desc">Monorepo with one directory per Docker service, plus a static frontend and docs.</p>
+
+<div class="root-tree">
+  <div class="tree">
+    <div class="tree-file"><span class="tree-name dir">woozlebox/</span></div>
+    <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">docker-compose.yml</span><span class="tree-desc">All services, ports, volumes, GPU access</span></div>
+    <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">README.md</span><span class="tree-desc">User-facing install and feature documentation</span></div>
+    <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">CLAUDE.md</span><span class="tree-desc">Developer / AI-agent guidance for this repo</span></div>
+    <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">todo.md</span><span class="tree-desc">Project backlog</span></div>
+    <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name dir">web/</span><span class="tree-desc">Static SPA frontend (nginx :8080)</span></div>
+    <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name dir">rag-api/</span><span class="tree-desc">Chat, auth, vault, memory, TTS proxy (FastAPI :8000)</span></div>
+    <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name dir">media-api/</span><span class="tree-desc">Media orchestration proxy (FastAPI :8500)</span></div>
+    <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name dir">gpu-manager/</span><span class="tree-desc">VRAM orchestration (FastAPI :8400)</span></div>
+    <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name dir">image-api/</span><span class="tree-desc">Diffusion image generation (FastAPI :8100)</span></div>
+    <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name dir">music-api/</span><span class="tree-desc">ACE-Step music generation (FastAPI :8200)</span></div>
+    <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name dir">video-api/</span><span class="tree-desc">Wan 2.1 video generation (FastAPI :8300)</span></div>
+    <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name dir">notetaker-api/</span><span class="tree-desc">whisperX transcription + pyannote diarization (FastAPI :8600)</span></div>
+    <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name dir">code-runner/</span><span class="tree-desc">Sandboxed code execution for Code Studio (FastAPI :8700)</span></div>
+    <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name dir">tts-llm/</span><span class="tree-desc">Supervisor that spawns/kills llama-server for Orpheus GGUF (FastAPI :5007, llama-server :5006)</span></div>
+    <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name dir">orpheus/</span><span class="tree-desc">Orpheus FastAPI / SNAC decoder (tts-api :5005) - cloned separately from Lex-au/Orpheus-FastAPI, gitignored</span></div>
+    <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name dir">docs/</span><span class="tree-desc">Reference documentation (this file lives here)</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Frontend</h2>
+<p class="section-desc">Vanilla HTML/CSS/JS single-page application. No build tools, no frameworks. Served as static files by nginx.</p>
+
+<div class="svc-grid" style="grid-template-columns: 1fr;">
+  <div class="svc-card">
+    <div class="svc-accent accent-web"></div>
+    <div class="svc-header">
+      <span class="svc-name">web/</span>
+      <span class="svc-role">23 JS modules &middot; 6 CSS files</span>
+    </div>
+    <div class="svc-body">
+      <div class="tree">
+        <div class="tree-file"><span class="tree-name">index.html</span><span class="tree-desc">Full SPA markup - chat, studios, notetaker, settings, admin, vault</span></div>
+        <div class="tree-file"><span class="tree-name">icons.svg</span><span class="tree-desc">SVG sprite sheet (45 symbols via &lt;use&gt;)</span></div>
+        <div class="tree-file">&nbsp;</div>
+        <div class="tree-file"><span class="tree-name dir">css/</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">1-variables.css</span><span class="tree-desc">CSS custom properties, text sizes, wild themes</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">2-base.css</span><span class="tree-desc">Reset, base elements, sidebar, layout, context menu, VRAM activity log, activity log pop-out modal</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">3-studios.css</span><span class="tree-desc">Shared studio components, image/music/video studios, note taker, code studio</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">4-chat.css</span><span class="tree-desc">Chat area, message bubbles, markdown, input area, slash command popup</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">5-ui.css</span><span class="tree-desc">Settings dialog, modals, vault panel, auth, toast, avatar panel, prompt modal</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">6-responsive.css</span><span class="tree-desc">Tablet, phone, and small-phone media queries</span></div>
+        <div class="tree-file">&nbsp;</div>
+        <div class="tree-file"><span class="tree-name dir">js/</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">config.js</span><span class="tree-desc">API base URLs, getToken(), apiFetch(), mediaFetch()</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">app.js</span><span class="tree-desc">DOM refs, state vars, initApp(), loadApp(), view switching, GPU acquire with gated repo handling</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">auth.js</span><span class="tree-desc">Login/setup screen logic, auth form handlers</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">settings.js</span><span class="tree-desc">/settings page UI, profile, themes, accent, branding, voice picker</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">chat-settings.js</span><span class="tree-desc">Per-model chat settings (temperature, context window, system prompt overrides)</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">memory.js</span><span class="tree-desc">Memory facts list (add/delete) + account actions (password, clear data, delete account)</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">ui.js</span><span class="tree-desc">Sidebar, search modal, context menus, resize handles, prompt modal, gated repo toast, persistent modal position/size</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">markdown.js</span><span class="tree-desc">renderMarkdown() - tables, code blocks, nested lists, links</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">tts.js</span><span class="tree-desc">TTS audio engine, shared AudioContext for avatar lip-sync, STT mic input</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">vault.js</span><span class="tree-desc">File vault panel, upload, delete, move, index polling</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">gpu.js</span><span class="tree-desc">VRAM SSE connection, status polling, sidebar display, activity log with keep/evict/load actions and filter/search pop-out modal</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">admin.js</span><span class="tree-desc">Admin panel, user management, default settings</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">admin-prompts.js</span><span class="tree-desc">Admin prompt template editor - accordion UI with collapsible categories, preview/edit, auto-save, per-prompt and bulk reset</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">db-helpers.js</span><span class="tree-desc">createStudioDB() legacy IndexedDB CRUD factory (unused by studios)</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">studio-api.js</span><span class="tree-desc">createStudioAPI() server-backed CRUD factory for all studios</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">studio-helpers.js</span><span class="tree-desc">Shared utilities: formatStudioTimestamp(), trashAge(), updateBadge(), wireSettingsToggle(), purgeOldTrash()</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">image-studio.js</span><span class="tree-desc">Image generation, folders, trash, favorites, lightbox, inpaint</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">music-studio.js</span><span class="tree-desc">Music generation, waveform, songwrite, sessions, presets</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">video-studio.js</span><span class="tree-desc">Video generation, I2V upload, sessions, favorites</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">notetaker.js</span><span class="tree-desc">Note taker - recording, transcription, diarization, summaries, live streaming, export</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">code-studio.js</span><span class="tree-desc">Code studio - pair programming, SEARCH/REPLACE, version history, plan mode, thinking, permissions</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">slash-commands.js</span><span class="tree-desc">Slash command registry, shared autocomplete popup, 31 handlers (15 universal + 16 chat-only)</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">chat.js</span><span class="tree-desc">Chat send, streaming, bubbles, suggestions, message queue</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">avatar.js</span><span class="tree-desc">3D avatar (ES module) - TalkingHead init, floating panel, amplitude lip-sync loop</span></div>
+        <div class="tree-file">&nbsp;</div>
+        <div class="tree-file"><span class="tree-name dir">lib/</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">talkinghead/</span><span class="tree-desc">TalkingHead library + lipsync modules (vendored, MIT)</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">three/</span><span class="tree-desc">Three.js r170 ES module + addons (GLTFLoader, OrbitControls, etc.)</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">lamejs.min.js</span><span class="tree-desc">MP3 encoder for music studio recording</span></div>
+        <div class="tree-file">&nbsp;</div>
+        <div class="tree-file"><span class="tree-name dir">models/</span></div>
+        <div class="tree-file"><span class="tree-indent">  </span><span class="tree-name">avatar.glb</span><span class="tree-desc">3D avatar GLB with ARKit blend shapes (brunette, ~4.7 MB)</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Script Load Order</h2>
+<p class="section-desc">Most scripts use the <code style="background:#2A2D3A;padding:2px 6px;border-radius:3px;font-size:14px;">defer</code> attribute and share global scope. <code style="background:#2A2D3A;padding:2px 6px;border-radius:3px;font-size:14px;">avatar.js</code> is a <code style="background:#2A2D3A;padding:2px 6px;border-radius:3px;font-size:14px;">type="module"</code> and runs in its own scope - it exposes functions via <code style="background:#2A2D3A;padding:2px 6px;border-radius:3px;font-size:14px;">window.*</code>. An <code style="background:#2A2D3A;padding:2px 6px;border-radius:3px;font-size:14px;">importmap</code> in <code style="background:#2A2D3A;padding:2px 6px;border-radius:3px;font-size:14px;">&lt;head&gt;</code> maps <code style="background:#2A2D3A;padding:2px 6px;border-radius:3px;font-size:14px;">three</code> and <code style="background:#2A2D3A;padding:2px 6px;border-radius:3px;font-size:14px;">three/addons/</code> to local vendored files.</p>
+
+<div class="load-order">
+  <div class="load-group">
+    <div class="load-group-label">Core (no dependencies)</div>
+    <div class="load-row"><span class="load-num">1</span><span class="load-file c-blue">config.js</span><span class="load-desc">API constants, fetch wrappers</span></div>
+  </div>
+  <div class="load-group">
+    <div class="load-group-label">DOM refs &amp; state (depends on config)</div>
+    <div class="load-row"><span class="load-num">2</span><span class="load-file c-blue">app.js</span><span class="load-desc">All getElementById() refs, state variables, initApp()</span></div>
+  </div>
+  <div class="load-group">
+    <div class="load-group-label">Independent modules (depend on config + app)</div>
+    <div class="load-row"><span class="load-num">3</span><span class="load-file">auth.js</span></div>
+    <div class="load-row"><span class="load-num">4</span><span class="load-file">settings.js</span></div>
+    <div class="load-row"><span class="load-num">5</span><span class="load-file">chat-settings.js</span><span class="load-desc">Per-model chat settings</span></div>
+    <div class="load-row"><span class="load-num">6</span><span class="load-file">memory.js</span></div>
+    <div class="load-row"><span class="load-num">7</span><span class="load-file">ui.js</span></div>
+    <div class="load-row"><span class="load-num">8</span><span class="load-file">markdown.js</span></div>
+    <div class="load-row"><span class="load-num">9</span><span class="load-file">tts.js</span></div>
+    <div class="load-row"><span class="load-num">10</span><span class="load-file">vault.js</span></div>
+    <div class="load-row"><span class="load-num">11</span><span class="load-file">gpu.js</span></div>
+    <div class="load-row"><span class="load-num">12</span><span class="load-file">admin.js</span></div>
+    <div class="load-row"><span class="load-num">13</span><span class="load-file">admin-prompts.js</span></div>
+  </div>
+  <div class="load-group">
+    <div class="load-group-label">Studio infrastructure (depend on app)</div>
+    <div class="load-row"><span class="load-num">13</span><span class="load-file c-purple">db-helpers.js</span><span class="load-desc">Legacy IndexedDB factory (unused by studios)</span></div>
+    <div class="load-row"><span class="load-num">14</span><span class="load-file c-purple">studio-api.js</span><span class="load-desc">Server-backed CRUD factory for all studios</span></div>
+    <div class="load-row"><span class="load-num">15</span><span class="load-file c-purple">studio-helpers.js</span><span class="load-desc">Shared utilities used by all studios</span></div>
+  </div>
+  <div class="load-group">
+    <div class="load-group-label">Studios (depend on studio-api, studio-helpers, ui, settings)</div>
+    <div class="load-row"><span class="load-num">16</span><span class="load-file c-green">image-studio.js</span></div>
+    <div class="load-row"><span class="load-num">17</span><span class="load-file c-amber">music-studio.js</span></div>
+    <div class="load-row"><span class="load-num">18</span><span class="load-file c-red">video-studio.js</span></div>
+    <div class="load-row"><span class="load-num">19</span><span class="load-file" style="color:#2DD4BF;">notetaker.js</span></div>
+    <div class="load-row"><span class="load-num">20</span><span class="load-file c-blue">code-studio.js</span></div>
+  </div>
+  <div class="load-group">
+    <div class="load-group-label">Slash commands (depends on app, settings, memory, ui, all studios)</div>
+    <div class="load-row"><span class="load-num">21</span><span class="load-file c-blue">slash-commands.js</span><span class="load-desc">Command registry, shared autocomplete popup, 31 handlers (15 universal + 16 chat-only)</span></div>
+  </div>
+  <div class="load-group">
+    <div class="load-group-label">Chat (depends on markdown, tts, slash-commands for interception)</div>
+    <div class="load-row"><span class="load-num">22</span><span class="load-file c-blue">chat.js</span></div>
+  </div>
+  <div class="load-group">
+    <div class="load-group-label">ES module (own scope, exposes window.applyAvatar + window._avatarEnabled)</div>
+    <div class="load-row"><span class="load-num">23</span><span class="load-file c-purple">avatar.js</span><span class="load-desc">type="module" - TalkingHead, Three.js, Web Audio via importmap</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Backend Services</h2>
+<p class="section-desc">Each service is a single-file FastAPI app with its own requirements.txt (except <code>rag-api</code>, which has <code>db.py</code> + <code>indexer.py</code> alongside <code>main.py</code>, and <code>tts-llm</code>, which uses <code>supervisor.py</code> to wrap a llama.cpp server, not FastAPI). No shared library code between services.</p>
+
+<div class="svc-grid">
+
+  <div class="svc-card">
+    <div class="svc-accent accent-rag"></div>
+    <div class="svc-header">
+      <span class="svc-name c-blue">rag-api/</span>
+      <span class="svc-role">:8000 &middot; Chat &amp; core platform</span>
+    </div>
+    <div class="svc-body">
+      <div class="tree">
+        <div class="tree-file"><span class="tree-name">main.py</span><span class="tree-desc">Chat streaming, auth, vault, TTS proxy, conversations, folders, memory, web search, admin, compact</span></div>
+        <div class="tree-file"><span class="tree-name">db.py</span><span class="tree-desc">SQLite schema &amp; queries - users, conversations, messages, memory, folders</span></div>
+        <div class="tree-file"><span class="tree-name">indexer.py</span><span class="tree-desc">Background document indexer - PDF/MD/TXT chunking into ChromaDB</span></div>
+        <div class="tree-file"><span class="tree-name">requirements.txt</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="svc-card">
+    <div class="svc-accent accent-media"></div>
+    <div class="svc-header">
+      <span class="svc-name c-purple">media-api/</span>
+      <span class="svc-role">:8500 &middot; Media orchestration</span>
+    </div>
+    <div class="svc-body">
+      <div class="tree">
+        <div class="tree-file"><span class="tree-name">main.py</span><span class="tree-desc">Proxies to gen services, GPU acquire/release, utility LLM for inspire/naming/songwriting/cover art, notetaker summarization + classification</span></div>
+        <div class="tree-file"><span class="tree-name">requirements.txt</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="svc-card">
+    <div class="svc-accent accent-gpu"></div>
+    <div class="svc-header">
+      <span class="svc-name c-orange">gpu-manager/</span>
+      <span class="svc-role">:8400 &middot; VRAM orchestration</span>
+    </div>
+    <div class="svc-body">
+      <div class="tree">
+        <div class="tree-file"><span class="tree-name">main.py</span><span class="tree-desc">Model load/unload, Ollama eviction, VRAM profiles, SSE events, nvidia-smi live budget, TTS fit check + 409, idle-unload timer, /status reconciliation, fast-path /health probe, keep-target optimization</span></div>
+        <div class="tree-file"><span class="tree-name">requirements.txt</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="svc-card">
+    <div class="svc-accent accent-infra"></div>
+    <div class="svc-header">
+      <span class="svc-name c-dim">tts-llm/</span>
+      <span class="svc-role">:5006 / :5007 &middot; Orpheus supervisor</span>
+    </div>
+    <div class="svc-body">
+      <div class="tree">
+        <div class="tree-file"><span class="tree-name">supervisor.py</span><span class="tree-desc">FastAPI on :5007 that spawns/kills llama-server (:5006) as a subprocess. Endpoints: /models/load, /models/unload, /health, /models/status. Matches the shape of the other services so gpu-manager treats it uniformly.</span></div>
+        <div class="tree-file"><span class="tree-name">Dockerfile</span><span class="tree-desc">Based on llama.cpp:server-cuda, adds python3 + supervisor</span></div>
+        <div class="tree-file"><span class="tree-name">requirements.txt</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="svc-card">
+    <div class="svc-accent accent-image"></div>
+    <div class="svc-header">
+      <span class="svc-name c-green">image-api/</span>
+      <span class="svc-role">:8100 &middot; Image generation</span>
+    </div>
+    <div class="svc-body">
+      <div class="tree">
+        <div class="tree-file"><span class="tree-name">main.py</span><span class="tree-desc">Playground v2.5, SD 3.5, SDXL Turbo, SD Inpaint, Real-ESRGAN upscaler, gated repo detection</span></div>
+        <div class="tree-file"><span class="tree-name">requirements.txt</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="svc-card">
+    <div class="svc-accent accent-music"></div>
+    <div class="svc-header">
+      <span class="svc-name c-amber">music-api/</span>
+      <span class="svc-role">:8200 &middot; Music generation</span>
+    </div>
+    <div class="svc-body">
+      <div class="tree">
+        <div class="tree-file"><span class="tree-name">main.py</span><span class="tree-desc">ACE-Step 1.5 text-to-music, WAV output, progress callbacks</span></div>
+        <div class="tree-file"><span class="tree-name">requirements.txt</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="svc-card">
+    <div class="svc-accent accent-video"></div>
+    <div class="svc-header">
+      <span class="svc-name c-red">video-api/</span>
+      <span class="svc-role">:8300 &middot; Video generation</span>
+    </div>
+    <div class="svc-body">
+      <div class="tree">
+        <div class="tree-file"><span class="tree-name">main.py</span><span class="tree-desc">Wan 2.1 T2V 1.3B - text-to-video and image-to-video, MP4 output</span></div>
+        <div class="tree-file"><span class="tree-name">requirements.txt</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="svc-card">
+    <div class="svc-accent accent-notetaker"></div>
+    <div class="svc-header">
+      <span class="svc-name" style="color:#2DD4BF;">notetaker-api/</span>
+      <span class="svc-role">:8600 &middot; Transcription + diarization</span>
+    </div>
+    <div class="svc-body">
+      <div class="tree">
+        <div class="tree-file"><span class="tree-name">main.py</span><span class="tree-desc">whisperX transcription, pyannote exclusive diarization, audio storage, ffmpeg conversion, VRAM reporting via CUDA runtime</span></div>
+        <div class="tree-file"><span class="tree-name">requirements.txt</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="svc-card">
+    <div class="svc-accent" style="background:#2A2D3A;"></div>
+    <div class="svc-header">
+      <span class="svc-name c-dim">code-runner/</span>
+      <span class="svc-role">:8700 &middot; Sandboxed code execution</span>
+    </div>
+    <div class="svc-body">
+      <div class="tree">
+        <div class="tree-file"><span class="tree-name">main.py</span><span class="tree-desc">Sandboxed Python / JavaScript / Bash execution for Code Studio Run button</span></div>
+        <div class="tree-file"><span class="tree-name">Dockerfile</span><span class="tree-desc">Restricted runtime with language toolchains baked in</span></div>
+        <div class="tree-file"><span class="tree-name">requirements.txt</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="svc-card">
+    <div class="svc-accent" style="background:#2A2D3A;"></div>
+    <div class="svc-header">
+      <span class="svc-name c-dim">orpheus/ (tts-api)</span>
+      <span class="svc-role">:5005 &middot; Orpheus FastAPI wrapper</span>
+    </div>
+    <div class="svc-body">
+      <div class="tree">
+        <div class="tree-file"><span class="tree-name dir">Lex-au/Orpheus-FastAPI</span><span class="tree-desc">Upstream project cloned into ./orpheus/ - FastAPI endpoint that turns llama-server audio tokens into WAV via the SNAC neural codec. Gitignored, brought in at install time.</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Documentation</h2>
+
+<div class="svc-grid" style="grid-template-columns: 1fr;">
+  <div class="svc-card">
+    <div class="svc-accent accent-docs"></div>
+    <div class="svc-header">
+      <span class="svc-name c-dim">docs/</span>
+      <span class="svc-role">Reference documentation</span>
+    </div>
+    <div class="svc-body">
+      <div class="tree">
+        <div class="tree-file"><span class="tree-name">woozbox-installation.html</span><span class="tree-desc">Prerequisites, first-run setup, model pre-warm</span></div>
+        <div class="tree-file"><span class="tree-name">woozbox-architecture.html</span><span class="tree-desc">Service map, data flow, VRAM profiles per studio</span></div>
+        <div class="tree-file"><span class="tree-name">woozbox-workflows.html</span><span class="tree-desc">Step-by-step GPU orchestration for each studio mode</span></div>
+        <div class="tree-file"><span class="tree-name">woozbox-file-structure.html</span><span class="tree-desc">This file - complete codebase layout</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Key Patterns</h2>
+
+<div class="svc-grid" style="grid-template-columns: 1fr;">
+  <div class="svc-card">
+    <div class="svc-accent" style="background: #2A2D3A;"></div>
+    <div class="svc-body" style="padding: 20px 24px;">
+      <div style="display:grid; grid-template-columns:160px 1fr; gap:14px 20px; font-size:14px;">
+
+        <span class="c-dim" style="font-weight:600;">No build tools</span>
+        <span>Plain &lt;script defer&gt; and &lt;link&gt; tags. No bundler, no transpiler, no npm.</span>
+
+        <span class="c-dim" style="font-weight:600;">Global scope JS</span>
+        <span>All JS files share the global scope. Functions defined in any file are callable from any other file loaded after it.</span>
+
+        <span class="c-dim" style="font-weight:600;">Studio API factory</span>
+        <span><code style="background:#2A2D3A;padding:1px 5px;border-radius:3px;">createStudioAPI()</code> in studio-api.js generates server-backed CRUD functions (save, loadAll, remove, clear, has) for each studio. Data is stored in SQLite with media files on disk.</span>
+
+        <span class="c-dim" style="font-weight:600;">Shared modals</span>
+        <span>Two shared modals (trash + folder) are reused across image/music/video studios and note taker via dynamic <code style="background:#2A2D3A;padding:1px 5px;border-radius:3px;">onclick</code> assignment.</span>
+
+        <span class="c-dim" style="font-weight:600;">SVG sprites</span>
+        <span>icons.svg contains 45 &lt;symbol&gt; elements. Used via <code style="background:#2A2D3A;padding:1px 5px;border-radius:3px;">icon("name", size)</code> helper which returns &lt;svg&gt;&lt;use&gt; markup.</span>
+
+        <span class="c-dim" style="font-weight:600;">PROMPTS dicts</span>
+        <span>All 37 LLM system prompts are defined as <code style="background:#2A2D3A;padding:1px 5px;border-radius:3px;">PROMPTS = {}</code> dicts at the top of rag-api/main.py and media-api/main.py. Defaults are hardcoded; admin overrides are stored in the <code style="background:#2A2D3A;padding:1px 5px;border-radius:3px;">prompt_overrides</code> SQLite table. The <code style="background:#2A2D3A;padding:1px 5px;border-radius:3px;">get_prompt(key)</code> helper checks overrides first. The admin prompt editor UI (admin-prompts.js) provides a collapsible accordion editor with auto-save, preview, and per-prompt reset.</span>
+
+        <span class="c-dim" style="font-weight:600;">Single-file services</span>
+        <span>Each backend service is one main.py file. <code style="background:#2A2D3A;padding:1px 5px;border-radius:3px;">rag-api</code> has additional modules (db.py, indexer.py); <code style="background:#2A2D3A;padding:1px 5px;border-radius:3px;">tts-llm</code> is supervisor.py (wraps a llama.cpp server, not FastAPI).</span>
+
+        <span class="c-dim" style="font-weight:600;">GPU serialization</span>
+        <span>gpu-manager serializes all /acquire calls via asyncio.Lock. Only one model occupies VRAM at a time (except music which keeps SDXL Turbo for cover art).</span>
+
+        <span class="c-dim" style="font-weight:600;">ES module + importmap</span>
+        <span>avatar.js is the only ES module. An importmap in &lt;head&gt; maps the bare specifiers <code style="background:#2A2D3A;padding:1px 5px;border-radius:3px;">three</code> and <code style="background:#2A2D3A;padding:1px 5px;border-radius:3px;">three/addons/</code> to vendored local files in <code style="background:#2A2D3A;padding:1px 5px;border-radius:3px;">web/lib/</code>, so TalkingHead and its deps resolve without a bundler.</span>
+
+        <span class="c-dim" style="font-weight:600;">Slash commands</span>
+        <span><code style="background:#2A2D3A;padding:1px 5px;border-radius:3px;">registerCommand()</code> in slash-commands.js adds commands to a global registry. 31 commands total - 15 are tagged <code style="background:#2A2D3A;padding:1px 5px;border-radius:3px;">universal: true</code> and work from any prompt input (chat, image, music, video, code), the other 16 are chat-only. Typing <code style="background:#2A2D3A;padding:1px 5px;border-radius:3px;">/</code> in any prompt shows a context-filtered autocomplete popup. A shared popup element tracks the active textarea and moves between <code style="background:#2A2D3A;padding:1px 5px;border-radius:3px;">.prompt-box</code> containers on focus.</span>
+
+        <span class="c-dim" style="font-weight:600;">Shared AudioContext</span>
+        <span>avatar.js creates the Web Audio AudioContext early and exposes it as <code style="background:#2A2D3A;padding:1px 5px;border-radius:3px;">window._ttsAudioCtx</code>. tts.js picks it up lazily on first TTS use, ensuring both share one context so the AnalyserNode can tap TTS audio for lip-sync.</span>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="footnote">
+  Monorepo with 10 backend services (rag-api, media-api, gpu-manager, image-api, music-api, video-api, notetaker-api, code-runner, tts-llm, tts-api), 23 JavaScript modules, 6 CSS files, and a single-page HTML shell.
+</p>
+
+</body>
+</html>
