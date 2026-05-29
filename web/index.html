@@ -552,6 +552,7 @@
                   <input type="range" id="chat-ctx-slider" min="2048" max="32768" step="2048" value="8192">
                   <span class="field-val" id="chat-ctx-val">8k</span>
                 </div>
+                <div class="ss-group-label" id="chat-ctx-note" style="display:none;opacity:0.7;font-weight:normal;margin-top:4px;">&nbsp;</div>
               </div>
               <div class="ss-group" title="When the context window fills past this percentage, the oldest turns are automatically summarized and compressed to free up room. 0 disables compaction (hard-stops at context limit). 75% is a sensible default.">
                 <div class="ss-group-label">Auto-Compact</div>
@@ -2558,7 +2559,7 @@
 <script src="js/app.js?v=9"></script>
 <script src="js/auth.js"></script>
 <script src="js/settings.js?v=9"></script>
-<script src="js/chat-settings.js?v=2"></script>
+<script src="js/chat-settings.js?v=3"></script>
 <script src="js/memory.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/markdown.js"></script>

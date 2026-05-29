@@ -144,6 +144,39 @@ function applyChatSettingsToUI(resolved) {
   _updateChatVoiceDesc();
 }
 
+// Auto-fit: cap the context slider's max to the largest window that fits this
+// model in VRAM (measured by gpu-manager). The user can still pick any value up
+// to that, never beyond. Clamps a too-large stored value down.
+async function refreshCtxFit(modelName) {
+  const slider = _cs.ctx();
+  const note = document.getElementById("chat-ctx-note");
+  if (!slider || !modelName) return;
+  try {
+    const res = await fetch(GPU_API + "/llm/ctx-fit?model=" + encodeURIComponent(modelName));
+    const data = await res.json();
+    const safeMax = data && data.safe_max;
+    if (!safeMax) {  // unmeasurable - leave full range
+      slider.max = 32768;
+      if (note) note.style.display = "none";
+      return;
+    }
+    slider.max = safeMax;
+    if (parseInt(slider.value) > safeMax) {
+      slider.value = safeMax;
+      persist("num_ctx", safeMax);
+      updateChatSettingLabels();
+    }
+    if (note) {
+      const k = safeMax >= 1024 ? (safeMax / 1024) + "k" : safeMax;
+      note.textContent = "Max " + k + " - the largest context that fits this model in VRAM.";
+      note.style.display = "";
+    }
+  } catch {
+    slider.max = 32768;
+    if (note) note.style.display = "none";
+  }
+}
+
 function readChatSettingsFromUI() {
   return {
     temperature:     parseFloat(_cs.temp()?.value ?? CHAT_SETTINGS_DEFAULTS.temperature),
@@ -322,6 +355,8 @@ function initChatSettings() {
   // loadModels() (which dispatches a 'change' synthetically after setting
   // the default). To be safe, apply defaults now so labels are correct.
   applyChatSettingsToUI(loadChatModelSettings(""));
+  // If a model is already known at init, cap the context slider to its fit.
+  if (typeof selectedModel !== "undefined" && selectedModel) refreshCtxFit(selectedModel);
 
   // Slider / toggle / textarea change handlers: persist per-model.
   const persist = (field, value) => {
@@ -382,6 +417,7 @@ function initChatSettings() {
     const m = _cs.model().value;
     applyChatSettingsToUI(loadChatModelSettings(m));
     refreshModelCapabilities(m);
+    refreshCtxFit(m);
   });
 
   // Crumb toggle (mirrors code-studio.js pattern via shared helper).

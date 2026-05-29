@@ -49,6 +49,21 @@ IDLE_UNLOAD_MIN = int(os.environ.get("IDLE_UNLOAD_MIN", "15"))
 # voice-mode model (~10-13GB) still keeps TTS comfortably.
 TTS_FIT_HEADROOM_MB = int(os.environ.get("TTS_FIT_HEADROOM_MB", "3500"))
 
+# Comfort headroom (MB) kept free below the true VRAM ceiling when auto-fitting a
+# chat model's context window, so the GPU is not driven to the edge.
+CTX_FIT_HEADROOM_MB = int(os.environ.get("CTX_FIT_HEADROOM_MB", "1500"))
+# Never auto-cap below this many tokens, even if the comfort margin would imply
+# less - a sub-8k context is barely usable, so accept running near the VRAM edge
+# (or slight CPU offload) on a too-large model rather than a uselessly tiny window.
+CTX_FIT_FLOOR = int(os.environ.get("CTX_FIT_FLOOR", "8192"))
+# Candidate context-window sizes (tokens), matching the frontend slider ladder.
+CTX_LADDER = [2048, 4096, 8192, 12288, 16384, 24576, 32768]
+# Per-model measured KV-cache cost, derived empirically from real loads:
+#   {model: {"bytes_per_token": float, "fixed_mb": float, "safe_max": int}}
+# GGUF metadata does not reliably expose kv_heads, so we measure size_vram at two
+# context sizes and solve the linear footprint = fixed + bytes_per_token * ctx.
+_ctx_fit_cache: dict = {}
+
 _GPU_FALLBACK = {"used_mb": 0, "free_mb": 0, "total_mb": 24576, "gpu_name": "Unknown"}
 
 # Cached GPU total, populated on first call. Avoids spawning nvidia-smi
@@ -559,6 +574,81 @@ async def _warmup_llm(model: str = None):
         logger.warning(f"[VRAM] LLM warmup failed for {use_model}: {e}")
 
 
+async def _ps_size_vram_mb(model: str) -> int:
+    """Return the currently-loaded model's size_vram in MB, or 0 if not loaded."""
+    try:
+        ps = await _http.get(f"{OLLAMA_BASE_URL}/api/ps", timeout=5.0)
+        for m in ps.json().get("models", []):
+            if m.get("name") == model:
+                return round(m.get("size_vram", 0) / 1024 / 1024)
+    except Exception:
+        pass
+    return 0
+
+
+async def _load_at_ctx(model: str, num_ctx: int) -> int:
+    """Load model at a specific num_ctx and return its size_vram in MB."""
+    await _http.post(
+        f"{OLLAMA_BASE_URL}/api/generate",
+        json={"model": model, "prompt": "hi", "keep_alive": "5m",
+              "stream": False, "options": {"num_ctx": num_ctx}},
+        timeout=120.0,
+    )
+    return await _ps_size_vram_mb(model)
+
+
+async def _compute_ctx_safe_max(model: str) -> Optional[int]:
+    """Empirically derive the largest context window that fits in VRAM with a
+    comfort margin, by measuring size_vram at two context sizes and solving the
+    linear footprint (fixed + bytes_per_token * ctx). Cached per model.
+
+    Returns the chosen num_ctx (snapped to CTX_LADDER), or None if it could not
+    be measured (caller should leave the slider at its full range).
+    """
+    if model in _ctx_fit_cache:
+        return _ctx_fit_cache[model].get("safe_max")
+    try:
+        # Budget already subtracts VRAM_RESERVED_MB for the OS/desktop, so the
+        # model + KV cache must fit within it - not the raw card total.
+        budget = await _gpu_budget_mb()
+        if not budget:
+            return None
+        # Two probe points; the model stays 100% on GPU at these small sizes.
+        v_lo = await _load_at_ctx(model, 4096)
+        v_hi = await _load_at_ctx(model, 16384)
+        if v_lo <= 0 or v_hi <= 0 or v_hi < v_lo:
+            return None
+        bytes_per_tok_mb = (v_hi - v_lo) / (16384 - 4096)  # MB per token
+        fixed_mb = v_lo - bytes_per_tok_mb * 4096
+        usable = budget - CTX_FIT_HEADROOM_MB - fixed_mb
+        if usable <= 0 or bytes_per_tok_mb <= 0:
+            safe_max = CTX_FIT_FLOOR
+        else:
+            max_tokens = usable / bytes_per_tok_mb
+            # Largest ladder rung that fits.
+            safe_max = CTX_LADDER[0]
+            for rung in CTX_LADDER:
+                if rung <= max_tokens:
+                    safe_max = rung
+                else:
+                    break
+            # Never recommend a uselessly small window.
+            safe_max = max(safe_max, CTX_FIT_FLOOR)
+        _ctx_fit_cache[model] = {
+            "bytes_per_token_mb": round(bytes_per_tok_mb, 4),
+            "fixed_mb": round(fixed_mb), "safe_max": safe_max,
+        }
+        logger.info(
+            f"[VRAM] ctx-fit {model}: fixed={round(fixed_mb)}MB "
+            f"per_tok={bytes_per_tok_mb*1024:.1f}KB budget={budget}MB "
+            f"-> safe_max={safe_max}"
+        )
+        return safe_max
+    except Exception as e:
+        logger.warning(f"[VRAM] ctx-fit measurement failed for {model}: {e}")
+        return None
+
+
 class AcquireRequest(BaseModel):
     service: str
     model: Optional[str] = None
@@ -1039,6 +1129,25 @@ async def release(req: ReleaseRequest):
 async def gpu_stats():
     """Return real GPU memory stats from nvidia-smi."""
     return await _query_nvidia_smi()
+
+
+@app.get("/llm/ctx-fit")
+async def llm_ctx_fit(model: str):
+    """Largest context window (num_ctx) that fits this model in VRAM with a
+    comfort margin. Measured empirically on first call (loads the model at two
+    probe contexts), cached thereafter. Returns safe_max=None if unmeasurable,
+    in which case the frontend leaves the slider at its full range.
+    """
+    async with _lock:
+        safe_max = await _compute_ctx_safe_max(model)
+    detail = _ctx_fit_cache.get(model, {})
+    return {
+        "model": model,
+        "safe_max": safe_max,
+        "ladder": CTX_LADDER,
+        "fixed_mb": detail.get("fixed_mb"),
+        "per_token_kb": round(detail.get("bytes_per_token_mb", 0) * 1024, 1) if detail else None,
+    }
 
 
 @app.get("/status")
