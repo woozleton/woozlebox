@@ -479,14 +479,6 @@
     </div>
 
     <div id="input-area">
-      <div id="ctx-bar-wrap" style="display:none;align-items:center;gap:5px;padding:0 4px 8px;font-size:0.7rem;color:var(--text-faint);">
-        <svg id="ctx-pie" width="14" height="14" viewBox="0 0 16 16" style="flex-shrink:0;transform:rotate(-90deg);">
-          <circle cx="8" cy="8" r="6" fill="none" stroke="var(--surface3)" stroke-width="3"/>
-          <circle id="ctx-pie-arc" cx="8" cy="8" r="6" fill="none" stroke="var(--accent)" stroke-width="3"
-            stroke-dasharray="0 37.7" stroke-linecap="round" style="transition:stroke-dasharray 0.4s,stroke 0.4s;"/>
-        </svg>
-        <span id="ctx-label">0%</span>
-      </div>
       <div id="image-preview-bar" class="attach-preview-bar"></div>
       <div id="file-preview-bar" class="file-preview-bar"></div>
       <div id="queue-tray"></div>
@@ -627,6 +619,14 @@
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           CAUTION: Your query will be sent to the Internet
         </div>
+      </div>
+      <div id="ctx-bar-wrap" style="display:none;align-items:center;gap:5px;padding:8px 4px 0;font-size:0.7rem;color:var(--text-faint);">
+        <svg id="ctx-pie" width="14" height="14" viewBox="0 0 16 16" style="flex-shrink:0;transform:rotate(-90deg);">
+          <circle cx="8" cy="8" r="6" fill="none" stroke="var(--surface3)" stroke-width="3"/>
+          <circle id="ctx-pie-arc" cx="8" cy="8" r="6" fill="none" stroke="var(--accent)" stroke-width="3"
+            stroke-dasharray="0 37.7" stroke-linecap="round" style="transition:stroke-dasharray 0.4s,stroke 0.4s;"/>
+        </svg>
+        <span id="ctx-label">0%</span>
       </div>
     </div>
     </div><!-- /chat-content -->
