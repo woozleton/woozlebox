@@ -6,7 +6,10 @@ services:
     image: ollama/ollama:latest
     container_name: ollama
     ports:
-      - "11434:11434"
+      # Bind to localhost only - the Ollama API has no auth, so do not expose it
+      # to the LAN. Other containers reach it via the internal Docker network
+      # (http://ollama:11434), which is unaffected by this host-port binding.
+      - "127.0.0.1:11434:11434"
     volumes:
       - ollama_data:/root/.ollama
     environment:
