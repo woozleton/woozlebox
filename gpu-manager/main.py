@@ -41,7 +41,13 @@ DEFAULT_LLM = os.environ.get("LLM_MODEL", "qwen3:30b-a3b")
 # VRAM budgeting config - used for the chat+tts coexistence fit check.
 VRAM_RESERVED_MB = int(os.environ.get("VRAM_RESERVED_MB", "2500"))
 IDLE_UNLOAD_MIN = int(os.environ.get("IDLE_UNLOAD_MIN", "15"))
-TTS_FIT_HEADROOM_MB = int(os.environ.get("TTS_FIT_HEADROOM_MB", "1500"))
+# Headroom kept free on top of (chat LLM + Orpheus) so the GPU is not driven
+# to the edge. 1500MB was too tight: a 27B (~16.7GB) + Orpheus (~2.2GB) passed
+# the fit check yet pushed a 24GB card to ~98% with the desktop compositor.
+# At 3500MB on a 24GB card the coexistence cutoff is ~16GB of chat-LLM weights:
+# anything larger (e.g. a 27B) evicts Orpheus and disables voice instead. A ~9B
+# voice-mode model (~10-13GB) still keeps TTS comfortably.
+TTS_FIT_HEADROOM_MB = int(os.environ.get("TTS_FIT_HEADROOM_MB", "3500"))
 
 _GPU_FALLBACK = {"used_mb": 0, "free_mb": 0, "total_mb": 24576, "gpu_name": "Unknown"}
 
@@ -303,8 +309,12 @@ async def _chat_llm_vram_mb(model_name: str) -> int:
     """Estimate VRAM cost of an Ollama chat LLM.
 
     Prefers the live `/api/ps` size_vram when the model is currently
-    loaded; otherwise uses `/api/show` model_info sizes as a static
-    estimate. Returns 0 on any failure.
+    loaded; otherwise falls back to the model's on-disk file size from
+    `/api/tags` (an honest lower bound, since all weights must load into
+    VRAM). The fit-check runs BEFORE the target model is loaded, so the
+    /api/tags fallback is the common case - returning 0 here would make a
+    large model wrongly appear to leave room for TTS. Returns 0 only if
+    the model is genuinely unknown to Ollama.
     """
     if not model_name:
         return 0
@@ -317,23 +327,15 @@ async def _chat_llm_vram_mb(model_name: str) -> int:
                     return round(sv / 1024 / 1024)
     except Exception:
         pass
+    # Not loaded: use the GGUF file size reported by /api/tags. This is the
+    # reliable source - /api/show has no usable top-level size field.
     try:
-        resp = await _http.post(
-            f"{OLLAMA_BASE_URL}/api/show",
-            json={"name": model_name},
-            timeout=10.0,
-        )
-        data = resp.json()
-        size = data.get("size")
-        if size:
-            return round(size / 1024 / 1024)
-        info = data.get("model_info") or {}
-        for k in ("general.file_size", "llama.size"):
-            if k in info:
-                try:
-                    return round(int(info[k]) / 1024 / 1024)
-                except Exception:
-                    pass
+        tags = await _http.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=5.0)
+        for m in tags.json().get("models", []):
+            if m.get("name") == model_name:
+                size = m.get("size") or 0
+                if size:
+                    return round(size / 1024 / 1024)
     except Exception as e:
         logger.debug(f"chat LLM vram probe failed for {model_name}: {e}")
     return 0

@@ -528,8 +528,30 @@ if (SpeechRecognition) {
 // ── Voice Conversation Mode ──
 // Hands-free loop: listen -> auto-send -> stream+speak -> listen again
 let voiceModeActive = false;
+// Set false by gpu-manager's TTS fit-check when the chat model is too large to
+// coexist with Orpheus (the model evicts TTS). Blocks entering voice mode and
+// force-exits it if active.
+let voiceBlocked = false;
+
+// Enable or disable the voice ability based on whether Orpheus can coexist with
+// the current chat model. `blockedBy` is the offending model name (for the title).
+function setVoiceAvailable(available, blockedBy) {
+  voiceBlocked = !available;
+  if (!voiceModeBtn) return;
+  if (voiceBlocked) {
+    if (voiceModeActive) stopVoiceMode();
+    voiceModeBtn.disabled = true;  // .prompt-action-btn:disabled styles this
+    voiceModeBtn.title = blockedBy
+      ? `Voice disabled: ${blockedBy} leaves insufficient VRAM. Pick a smaller chat model.`
+      : "Voice disabled: chat model too large for voice";
+  } else {
+    voiceModeBtn.disabled = false;
+    voiceModeBtn.title = "Voice conversation mode";
+  }
+}
 
 function startVoiceMode() {
+  if (voiceBlocked) { showToast("Voice is disabled - the current chat model is too large to run TTS alongside it"); return; }
   if (!sttRecognition) { showToast("Voice mode requires speech recognition support"); return; }
   voiceModeActive = true;
   // Enable TTS transiently for voice mode (don't persist to localStorage)
@@ -562,6 +584,7 @@ function startListening() {
 }
 
 voiceModeBtn.addEventListener("click", () => {
+  if (voiceBlocked) { showToast("Voice is disabled - the current chat model is too large to run TTS alongside it"); return; }
   if (voiceModeActive) stopVoiceMode();
   else startVoiceMode();
 });

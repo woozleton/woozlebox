@@ -501,11 +501,19 @@ async function _prepareModelsForViewNow(view) {
     const _chatLabel = modelSelect?.options?.[modelSelect.selectedIndex]?.textContent || _chatModel || "chat model";
     _setModelLoading("chat", true, _chatLabel);
     try {
-      await fetch(GPU_API + "/acquire", {
+      const resp = await fetch(GPU_API + "/acquire", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ service: "chat", model: _chatModel }),
       });
+      // Reflect TTS coexistence: a large chat model evicts Orpheus and
+      // disables voice; a smaller one re-enables it.
+      try {
+        const data = await resp.json();
+        if (typeof _setChatTtsBlocked === "function") {
+          _setChatTtsBlocked(data && data.tts_blocked_by ? data.tts_blocked_by : null);
+        }
+      } catch {}
     } catch {}
     _modelReady.chat = true;
     _setModelLoading("chat", false);

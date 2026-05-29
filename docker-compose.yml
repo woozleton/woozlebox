@@ -9,6 +9,12 @@ services:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
+    environment:
+      # Quantize the KV cache to q8_0 (needs flash attention). Roughly halves
+      # KV-cache VRAM with negligible quality loss, so large models hold ~2x the
+      # context on-GPU before spilling to CPU. Applies to all Ollama models.
+      - OLLAMA_FLASH_ATTENTION=1
+      - OLLAMA_KV_CACHE_TYPE=q8_0
     deploy:
       resources:
         reservations:
@@ -255,7 +261,7 @@ services:
       - LLM_MODEL=${LLM_MODEL:-qwen3:30b-a3b}
       - VRAM_RESERVED_MB=${VRAM_RESERVED_MB:-2500}
       - IDLE_UNLOAD_MIN=${IDLE_UNLOAD_MIN:-15}
-      - TTS_FIT_HEADROOM_MB=${TTS_FIT_HEADROOM_MB:-1500}
+      - TTS_FIT_HEADROOM_MB=${TTS_FIT_HEADROOM_MB:-3500}
     deploy:
       resources:
         reservations:

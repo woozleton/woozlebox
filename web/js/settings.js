@@ -1347,13 +1347,17 @@ function _getChatTtsPill() {
 }
 function _setChatTtsBlocked(modelName) {
   const pill = _getChatTtsPill();
-  if (!pill) return;
-  if (modelName) {
-    pill.textContent = `TTS disabled: ${modelName} leaves insufficient VRAM for voice. Pick a smaller chat model to enable voice.`;
-    pill.style.display = "";
-  } else {
-    pill.style.display = "none";
+  if (pill) {
+    if (modelName) {
+      pill.textContent = `TTS disabled: ${modelName} leaves insufficient VRAM for voice. Pick a smaller chat model to enable voice.`;
+      pill.style.display = "";
+    } else {
+      pill.style.display = "none";
+    }
   }
+  // A large chat model evicts Orpheus, so the voice ability must be disabled.
+  // When the block clears (smaller model), voice becomes available again.
+  if (typeof setVoiceAvailable === "function") setVoiceAvailable(!modelName, modelName);
 }
 
 modelSelect.addEventListener("change", async () => {
