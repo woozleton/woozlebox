@@ -1231,9 +1231,15 @@ async def events(verbose: int = 0):
                 if item.get("level") == "verbose" and not want_verbose:
                     continue
                 yield f"event: vram_log\ndata: {json.dumps(item)}\n\n"
+            # Heartbeat: emit an SSE comment if no real event arrives within the
+            # interval, so clients can distinguish a healthy-but-idle stream from
+            # a dead one (their watchdog reconnects on prolonged silence).
             while True:
-                msg = await q.get()
-                yield msg
+                try:
+                    msg = await asyncio.wait_for(q.get(), timeout=15.0)
+                    yield msg
+                except asyncio.TimeoutError:
+                    yield "event: heartbeat\ndata: {}\n\n"
         except asyncio.CancelledError:
             pass
         finally:

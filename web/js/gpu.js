@@ -64,6 +64,13 @@ let _lastVramLoaded = [];      // last known loaded models for re-rendering
 let _vramLogSeqHigh = 0;       // highest server seq seen (dedupe on SSE reconnect)
 let _vramSSEVerbose = false;   // verbose flag used by the current SSE connection
 let _vramSSEReconnectTimer = null; // pending onerror reconnect timeout
+let _vramSSELastMsg = 0;       // timestamp (ms) of the last message from the SSE stream
+let _vramSSEWatchdog = null;   // interval that force-reconnects a silently-dead stream
+let _vramSSEVisHandler = null; // visibilitychange handler for wake-from-sleep recheck
+// If no SSE message (incl. heartbeats) arrives within this window, the stream is
+// considered stale and is force-reconnected. The server sends heartbeats every
+// ~15s, so this only trips on a genuinely dead/half-open connection.
+const VRAM_SSE_STALE_MS = 45000;
 // Track whether a given log entry came from a "switch" synthesized on
 // the client (acquiring phase) vs the server ring buffer, so dedupe is
 // based on seq only for server entries.
@@ -326,14 +333,20 @@ function _connectVramSSE() {
     src.onopen = () => {
       if (_vramEventSource !== src) return;
       _vramSSEConnected = true;
+      _vramSSELastMsg = Date.now();
       // SSE is authoritative now - stop redundant 1s polling.
       if (_vramStatusTimer) {
         clearInterval(_vramStatusTimer);
         _vramStatusTimer = null;
       }
+      _startVramSSEWatchdog();
     };
+    // Any message proves the stream is alive (keeps the watchdog from tripping).
+    src.onmessage = () => { if (_vramEventSource === src) _vramSSELastMsg = Date.now(); };
+    src.addEventListener("heartbeat", () => { if (_vramEventSource === src) _vramSSELastMsg = Date.now(); });
     src.addEventListener("status", (e) => {
       if (_vramEventSource !== src) return;
+      _vramSSELastMsg = Date.now();
       try {
         const data = JSON.parse(e.data);
         if (data.gpu) _gpuStats = data.gpu;
@@ -342,6 +355,7 @@ function _connectVramSSE() {
     });
     src.addEventListener("acquiring", (e) => {
       if (_vramEventSource !== src) return;
+      _vramSSELastMsg = Date.now();
       try {
         const data = JSON.parse(e.data);
         _vramPendingAcquire = data.service;
@@ -365,6 +379,7 @@ function _connectVramSSE() {
     });
     src.addEventListener("vram_log", (e) => {
       if (_vramEventSource !== src) return;
+      _vramSSELastMsg = Date.now();
       try {
         _handleVramLogPayload(JSON.parse(e.data));
       } catch {}
@@ -388,6 +403,38 @@ function _connectVramSSE() {
       _vramSSEReconnectTimer = setTimeout(_connectVramSSE, 2000);
     };
   } catch {}
+}
+
+// Watchdog: an EventSource can die silently (server restart, half-open
+// connection, sleep/wake) without ever firing onerror, leaving the VRAM panel
+// frozen on stale data. This periodically checks how long it has been since the
+// last message and force-reconnects if the stream has gone quiet past the stale
+// threshold. The server sends heartbeats so a healthy idle stream never trips it.
+function _startVramSSEWatchdog() {
+  if (_vramSSEWatchdog) return;
+  _vramSSEWatchdog = setInterval(() => {
+    if (!_vramEventSource) return;  // already disconnected; onerror path handles it
+    if (Date.now() - _vramSSELastMsg > VRAM_SSE_STALE_MS) {
+      // Stale - tear down and reconnect (which re-sends a fresh status snapshot).
+      try { _vramEventSource.close(); } catch {}
+      _vramEventSource = null;
+      _vramSSEConnected = false;
+      _connectVramSSE();
+    }
+  }, 10000);
+  // Re-check immediately when the tab becomes visible again after sleep/switch.
+  if (!_vramSSEVisHandler) {
+    _vramSSEVisHandler = () => {
+      if (document.visibilityState === "visible" &&
+          Date.now() - _vramSSELastMsg > VRAM_SSE_STALE_MS) {
+        try { if (_vramEventSource) _vramEventSource.close(); } catch {}
+        _vramEventSource = null;
+        _vramSSEConnected = false;
+        _connectVramSSE();
+      }
+    };
+    document.addEventListener("visibilitychange", _vramSSEVisHandler);
+  }
 }
 
 // Called after loadSettings() hydrates verboseMode from localStorage.
