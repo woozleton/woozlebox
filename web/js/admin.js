@@ -153,9 +153,9 @@ function loadAdminDefaults() {
       document.getElementById("admin-topk-slider").value = d.topk;
       document.getElementById("admin-topk-val").textContent = d.topk;
     }
-    if (d.history !== undefined) {
-      document.getElementById("admin-history-slider").value = d.history;
-      document.getElementById("admin-history-val").textContent = d.history;
+    if (d.num_ctx !== undefined) {
+      document.getElementById("admin-ctx-slider").value = d.num_ctx;
+      document.getElementById("admin-ctx-val").textContent = d.num_ctx >= 1024 ? (d.num_ctx / 1024) + "k" : d.num_ctx;
     }
     if (d.compact !== undefined) {
       document.getElementById("admin-compact-slider").value = d.compact;
@@ -192,8 +192,9 @@ document.getElementById("admin-thresh-slider").addEventListener("input", e => {
 document.getElementById("admin-topk-slider").addEventListener("input", e => {
   document.getElementById("admin-topk-val").textContent = e.target.value;
 });
-document.getElementById("admin-history-slider").addEventListener("input", e => {
-  document.getElementById("admin-history-val").textContent = e.target.value;
+document.getElementById("admin-ctx-slider").addEventListener("input", e => {
+  const t = parseInt(e.target.value);
+  document.getElementById("admin-ctx-val").textContent = t >= 1024 ? (t / 1024) + "k" : t;
 });
 document.getElementById("admin-compact-slider").addEventListener("input", e => {
   document.getElementById("admin-compact-val").textContent = e.target.value + "%";
@@ -232,7 +233,7 @@ document.getElementById("admin-save-defaults-btn").addEventListener("click", () 
     temperature: parseFloat(document.getElementById("admin-temp-slider").value),
     threshold:   parseFloat(document.getElementById("admin-thresh-slider").value),
     topk:        parseInt(document.getElementById("admin-topk-slider").value),
-    history:     parseInt(document.getElementById("admin-history-slider").value),
+    num_ctx:     parseInt(document.getElementById("admin-ctx-slider").value),
     compact:     parseInt(document.getElementById("admin-compact-slider").value),
     textSize:    parseInt(document.getElementById("admin-text-size-slider").value),
     theme:       activeThemeEl ? activeThemeEl.dataset.adminTheme : "dark",

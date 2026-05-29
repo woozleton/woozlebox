@@ -2217,11 +2217,11 @@
             </div>
             <div class="compact-row stacked">
               <div class="stacked-label-row">
-                <span class="compact-row-label">History Limit</span>
-                <span id="admin-history-val" class="setting-val">10</span>
+                <span class="compact-row-label">Context Window</span>
+                <span id="admin-ctx-val" class="setting-val">8k</span>
               </div>
-              <input type="range" id="admin-history-slider" min="0" max="40" step="2" value="10" />
-              <span class="compact-row-desc">How many previous messages the AI can see. 0 = no history.</span>
+              <input type="range" id="admin-ctx-slider" min="2048" max="32768" step="2048" value="8192" />
+              <span class="compact-row-desc">Default context window (tokens) for new accounts. Older messages are trimmed to fit.</span>
             </div>
             <div class="compact-row stacked">
               <div class="stacked-label-row">
@@ -2565,7 +2565,7 @@
 <script src="js/tts.js?v=8"></script>
 <script src="js/vault.js"></script>
 <script src="js/gpu.js"></script>
-<script src="js/admin.js"></script>
+<script src="js/admin.js?v=1"></script>
 <script src="js/admin-prompts.js"></script>
 <script src="js/db-helpers.js"></script>
 <script src="js/studio-api.js"></script>
