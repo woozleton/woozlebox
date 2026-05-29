@@ -16,7 +16,7 @@ const CHAT_SETTINGS_DEFAULTS = {
   top_k: 30,
   top_p: 0.9,
   threshold: 0.45,
-  history: 10,
+  num_ctx: 8192,      // context window in tokens sent to Ollama
   compact: 75,
   system_prompt: "",
   thinking: false,
@@ -46,7 +46,8 @@ function _bootstrapChatSettingsFromLegacy() {
   if (legacy.temperature   !== undefined) seeded.temperature   = parseFloat(legacy.temperature);
   if (legacy.threshold     !== undefined) seeded.threshold     = parseFloat(legacy.threshold);
   if (legacy.top_k         !== undefined) seeded.top_k         = parseInt(legacy.top_k);
-  if (legacy.history       !== undefined) seeded.history       = parseInt(legacy.history);
+  // legacy.history was a message count, not a token budget - intentionally not
+  // migrated; num_ctx falls back to its default instead.
   if (legacy.compact       !== undefined) seeded.compact       = parseInt(legacy.compact);
   if (legacy.default_prompt !== undefined) seeded.system_prompt = legacy.default_prompt;
   if (legacy.voice         !== undefined) seeded.tts_voice     = legacy.voice;
@@ -81,7 +82,7 @@ const _cs = {
   topk:        () => document.getElementById("chat-topk-slider"),
   topp:        () => document.getElementById("chat-topp-slider"),
   thresh:      () => document.getElementById("chat-thresh-slider"),
-  history:     () => document.getElementById("chat-history-slider"),
+  ctx:         () => document.getElementById("chat-ctx-slider"),
   compact:     () => document.getElementById("chat-compact-slider"),
   thinking:    () => document.getElementById("chat-think-toggle"),
   voice:       () => document.getElementById("chat-voice-select"),
@@ -96,7 +97,10 @@ function updateChatSettingLabels() {
   const k = _cs.topk();    if (k) setTxt("chat-topk-val",    k.value);
   const p = _cs.topp();    if (p) setTxt("chat-topp-val",    parseFloat(p.value).toFixed(2));
   const s = _cs.thresh();  if (s) setTxt("chat-thresh-val",  parseFloat(s.value).toFixed(2));
-  const h = _cs.history(); if (h) setTxt("chat-history-val", h.value);
+  const cx = _cs.ctx(); if (cx) {
+    const tok = parseInt(cx.value);
+    setTxt("chat-ctx-val", tok >= 1024 ? (tok / 1024) + "k" : tok);
+  }
   const c = _cs.compact(); if (c) {
     const cv = parseInt(c.value);
     setTxt("chat-compact-val", cv === 0 ? "Off" : cv + "%");
@@ -122,7 +126,7 @@ function applyChatSettingsToUI(resolved) {
   set(_cs.topk(),      resolved.top_k);
   set(_cs.topp(),      resolved.top_p);
   set(_cs.thresh(),    resolved.threshold);
-  set(_cs.history(),   resolved.history);
+  set(_cs.ctx(),       resolved.num_ctx || CHAT_SETTINGS_DEFAULTS.num_ctx);
   set(_cs.compact(),   resolved.compact);
   const think = _cs.thinking();
   if (think) think.checked = !!resolved.thinking;
@@ -146,7 +150,7 @@ function readChatSettingsFromUI() {
     top_k:           parseInt(_cs.topk()?.value ?? CHAT_SETTINGS_DEFAULTS.top_k),
     top_p:           parseFloat(_cs.topp()?.value ?? CHAT_SETTINGS_DEFAULTS.top_p),
     threshold:       parseFloat(_cs.thresh()?.value ?? CHAT_SETTINGS_DEFAULTS.threshold),
-    history:         parseInt(_cs.history()?.value ?? CHAT_SETTINGS_DEFAULTS.history),
+    num_ctx:         parseInt(_cs.ctx()?.value ?? CHAT_SETTINGS_DEFAULTS.num_ctx),
     compact:         parseInt(_cs.compact()?.value ?? CHAT_SETTINGS_DEFAULTS.compact),
     thinking:        !!_cs.thinking()?.checked,
     tts_voice:       _cs.voice()?.value || CHAT_SETTINGS_DEFAULTS.tts_voice,
@@ -341,9 +345,13 @@ function initChatSettings() {
     updateChatSettingLabels();
     persist("threshold", parseFloat(_cs.thresh().value));
   });
-  _cs.history()?.addEventListener("input", () => {
+  _cs.ctx()?.addEventListener("input", () => {
     updateChatSettingLabels();
-    persist("history", parseInt(_cs.history().value));
+    persist("num_ctx", parseInt(_cs.ctx().value));
+    // Live-refresh the context usage readout against the new window.
+    if (typeof updateContextBar === "function" && typeof activeConvId !== "undefined" && activeConvId) {
+      updateContextBar(activeConvId);
+    }
   });
   _cs.compact()?.addEventListener("input", () => {
     updateChatSettingLabels();

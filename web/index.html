@@ -546,11 +546,11 @@
                   <span class="field-val" id="chat-thresh-val">0.45</span>
                 </div>
               </div>
-              <div class="ss-group" title="How many previous messages in this conversation the model sees when replying. 0 = no memory, 10 = typical, 40 = long running chats. More history gives better continuity but costs context tokens and slows generation.">
-                <div class="ss-group-label">History Limit</div>
+              <div class="ss-group" title="The context window (in tokens) the model uses. Older messages are trimmed to fit this budget, and it is sent to Ollama as num_ctx. Smaller = faster and less VRAM; larger = more conversation memory. 8k is a good default on a 24GB GPU.">
+                <div class="ss-group-label">Context Window</div>
                 <div class="sc-slider">
-                  <input type="range" id="chat-history-slider" min="0" max="40" step="2" value="10">
-                  <span class="field-val" id="chat-history-val">10</span>
+                  <input type="range" id="chat-ctx-slider" min="2048" max="32768" step="2048" value="8192">
+                  <span class="field-val" id="chat-ctx-val">8k</span>
                 </div>
               </div>
               <div class="ss-group" title="When the context window fills past this percentage, the oldest turns are automatically summarized and compressed to free up room. 0 disables compaction (hard-stops at context limit). 75% is a sensible default.">
@@ -2555,10 +2555,10 @@
 
 <!-- JavaScript modules -->
 <script src="js/config.js?v=2"></script>
-<script src="js/app.js?v=8"></script>
+<script src="js/app.js?v=9"></script>
 <script src="js/auth.js"></script>
-<script src="js/settings.js?v=8"></script>
-<script src="js/chat-settings.js?v=1"></script>
+<script src="js/settings.js?v=9"></script>
+<script src="js/chat-settings.js?v=2"></script>
 <script src="js/memory.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/markdown.js"></script>
@@ -2579,7 +2579,7 @@
 <script src="js/code-studio.js"></script>
 <script src="js/notetaker.js"></script>
 <script src="js/slash-commands.js"></script>
-<script src="js/chat.js?v=2"></script>
+<script src="js/chat.js?v=3"></script>
 <script>
   // Avatar settings toggle - wired after all deferred scripts have run
   document.getElementById('avatar-toggle').addEventListener('change', function(e) {

@@ -730,7 +730,8 @@ class ChatRequest(BaseModel):
     threshold: Optional[float] = None
     top_k: int = DEFAULT_TOP_K
     web_search: bool = False
-    history_limit: int = 10
+    history_limit: int = 10  # legacy message-count cap; superseded by num_ctx token budget
+    num_ctx: int = 8192  # context window (tokens) sent to Ollama and used to trim history
     compact_threshold: int = 75  # % of context at which to auto-compact
     user_context: Optional[str] = None  # profile name/role/preferences
     default_prompt: Optional[str] = None  # global default system prompt from settings
@@ -1207,6 +1208,10 @@ Answer concisely."""
                 for key in ("context_length", "llama.context_length", "qwen2.context_length"):
                     if key in info:
                         ctx_limit = int(info[key]); break
+            # Compact against the context window actually in use (num_ctx), not the
+            # model's max - otherwise a 262K-max model never hits the threshold.
+            if request.num_ctx > 0:
+                ctx_limit = min(ctx_limit, request.num_ctx)
             conv_check = db.get_conversation(request.conversation_id, user_id)
             if conv_check:
                 total_chars = sum(len(m["content"]) for m in conv_check["messages"])
@@ -1239,13 +1244,25 @@ Answer concisely."""
         except Exception as e:
             logger.warning(f"Auto-compact failed: {e}")
 
-    # Build message history for multi-turn context
+    # Build message history for multi-turn context.
+    # Trim by token budget (num_ctx) rather than a fixed message count: walk the
+    # conversation newest-first, including messages until we'd exceed the budget
+    # left after the system prompt, the new user message, and a reply reserve.
+    # Token count is the same ~chars/4 estimate used elsewhere (approximate).
     messages = [{"role": "system", "content": system_prompt}]
-    if request.conversation_id and request.history_limit > 0:
+    if request.conversation_id and request.num_ctx > 0:
         conv = db.get_conversation(request.conversation_id, user_id)
         if conv:
-            for msg in conv["messages"][-request.history_limit:]:
-                messages.append({"role": msg["role"] if msg["role"] != "assistant" else "assistant", "content": msg["content"]})
+            reply_reserve = min(2048, request.num_ctx // 4)  # leave room to generate
+            used = (len(system_prompt) + len(request.message)) // 4 + reply_reserve
+            history = []
+            for msg in reversed(conv["messages"]):
+                cost = len(msg["content"]) // 4
+                if used + cost > request.num_ctx:
+                    break
+                used += cost
+                history.append({"role": msg["role"], "content": msg["content"]})
+            messages.extend(reversed(history))
     user_content = request.message
     if request.files:
         file_blocks = []
@@ -1294,7 +1311,7 @@ Answer concisely."""
                 json={
                     "model": model,
                     "messages": messages,
-                    "options": {"temperature": request.temperature},
+                    "options": {"temperature": request.temperature, "num_ctx": request.num_ctx},
                     "think": False,
                     "stream": True,
                 },
@@ -1787,7 +1804,7 @@ async def pull_progress(session_id: str, user: dict = Depends(require_admin)):
 
 
 @app.get("/context-info")
-async def context_info(model: str = None, conversation_id: str = None, user: dict = Depends(get_current_user)):
+async def context_info(model: str = None, conversation_id: str = None, num_ctx: int = 0, user: dict = Depends(get_current_user)):
     use_model = model or LLM_MODEL
     ctx_limit = 4096
     try:
@@ -1800,6 +1817,11 @@ async def context_info(model: str = None, conversation_id: str = None, user: dic
                     break
     except Exception:
         pass
+    # Report usage against the context window actually in use (num_ctx) when the
+    # client supplies it, not the model's max - otherwise a 262K-max model always
+    # reads ~0%.
+    if num_ctx > 0:
+        ctx_limit = min(ctx_limit, num_ctx)
 
     tokens_used = 0
     if conversation_id:

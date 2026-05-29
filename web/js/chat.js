@@ -1282,7 +1282,7 @@ async function sendMessage() {
     thinking: chatCfg ? !!chatCfg.thinking : false,
     web_search: webSearch,
     rag_search: ragSearch,
-    history_limit: chatCfg ? chatCfg.history : parseInt(historySlider.value),
+    num_ctx: (chatCfg && chatCfg.num_ctx) ? chatCfg.num_ctx : 8192,
     compact_threshold: chatCfg ? chatCfg.compact : parseInt(compactSlider.value),
     user_context: getProfileContext(),
     default_prompt: (chatCfg && chatCfg.system_prompt) ? chatCfg.system_prompt : null,

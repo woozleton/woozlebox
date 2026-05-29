@@ -501,6 +501,9 @@ async function updateContextBar(convId) {
     const model = selectedModel || "";
     const params = new URLSearchParams({ conversation_id: convId });
     if (model) params.set("model", model);
+    // Report usage against the chosen context window, not the model's max.
+    const cfg = (typeof loadChatModelSettings === "function") ? loadChatModelSettings(model) : null;
+    if (cfg && cfg.num_ctx) params.set("num_ctx", cfg.num_ctx);
     const res = await apiFetch(`/context-info?${params}`);
     const data = await res.json();
     const pct = Math.min(data.percent, 100);
