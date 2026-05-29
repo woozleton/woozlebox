@@ -597,13 +597,44 @@ async def _load_at_ctx(model: str, num_ctx: int) -> int:
     return await _ps_size_vram_mb(model)
 
 
+async def _native_ctx_max(model: str) -> int:
+    """The model's own maximum context length from GGUF metadata. The metadata
+    key is arch-prefixed (e.g. qwen35.context_length), so scan for any
+    *.context_length. Falls back to 32768 if absent."""
+    try:
+        r = await _http.post(f"{OLLAMA_BASE_URL}/api/show", json={"name": model}, timeout=10.0)
+        mi = r.json().get("model_info", {}) or {}
+        for k, v in mi.items():
+            if k.endswith(".context_length") and v:
+                return int(v)
+    except Exception:
+        pass
+    return 32768
+
+
+def _build_ctx_ladder(native_max: int) -> list:
+    """Ladder of candidate context sizes up to the model's native max: the fixed
+    low rungs, then powers-of-two up to native_max (capped at 262144)."""
+    ceiling = min(native_max, 262144)
+    rungs = [r for r in CTX_LADDER if r <= ceiling]
+    rung = CTX_LADDER[-1]
+    while rung * 2 <= ceiling:
+        rung *= 2
+        rungs.append(rung)
+    if ceiling not in rungs:
+        rungs.append(ceiling)
+    return rungs
+
+
 async def _compute_ctx_safe_max(model: str) -> Optional[int]:
     """Empirically derive the largest context window that fits in VRAM with a
     comfort margin, by measuring size_vram at two context sizes and solving the
-    linear footprint (fixed + bytes_per_token * ctx). Cached per model.
+    linear footprint (fixed + bytes_per_token * ctx). The ceiling is the model's
+    own native context max, so a small model with VRAM to spare can reach 128K+.
+    Cached per model.
 
-    Returns the chosen num_ctx (snapped to CTX_LADDER), or None if it could not
-    be measured (caller should leave the slider at its full range).
+    Returns the chosen num_ctx, or None if it could not be measured (caller
+    should leave the slider at its full range).
     """
     if model in _ctx_fit_cache:
         return _ctx_fit_cache[model].get("safe_max")
@@ -613,6 +644,8 @@ async def _compute_ctx_safe_max(model: str) -> Optional[int]:
         budget = await _gpu_budget_mb()
         if not budget:
             return None
+        native_max = await _native_ctx_max(model)
+        ladder = _build_ctx_ladder(native_max)
         # Two probe points; the model stays 100% on GPU at these small sizes.
         v_lo = await _load_at_ctx(model, 4096)
         v_hi = await _load_at_ctx(model, 16384)
@@ -625,9 +658,9 @@ async def _compute_ctx_safe_max(model: str) -> Optional[int]:
             safe_max = CTX_FIT_FLOOR
         else:
             max_tokens = usable / bytes_per_tok_mb
-            # Largest ladder rung that fits.
-            safe_max = CTX_LADDER[0]
-            for rung in CTX_LADDER:
+            # Largest ladder rung that fits, never above the model's native max.
+            safe_max = ladder[0]
+            for rung in ladder:
                 if rung <= max_tokens:
                     safe_max = rung
                 else:
@@ -637,11 +670,12 @@ async def _compute_ctx_safe_max(model: str) -> Optional[int]:
         _ctx_fit_cache[model] = {
             "bytes_per_token_mb": round(bytes_per_tok_mb, 4),
             "fixed_mb": round(fixed_mb), "safe_max": safe_max,
+            "native_max": native_max, "ladder": ladder,
         }
         logger.info(
             f"[VRAM] ctx-fit {model}: fixed={round(fixed_mb)}MB "
             f"per_tok={bytes_per_tok_mb*1024:.1f}KB budget={budget}MB "
-            f"-> safe_max={safe_max}"
+            f"native_max={native_max} -> safe_max={safe_max}"
         )
         return safe_max
     except Exception as e:
@@ -1144,7 +1178,8 @@ async def llm_ctx_fit(model: str):
     return {
         "model": model,
         "safe_max": safe_max,
-        "ladder": CTX_LADDER,
+        "native_max": detail.get("native_max"),
+        "ladder": detail.get("ladder", CTX_LADDER),
         "fixed_mb": detail.get("fixed_mb"),
         "per_token_kb": round(detail.get("bytes_per_token_mb", 0) * 1024, 1) if detail else None,
     }

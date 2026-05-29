@@ -157,10 +157,16 @@ async function refreshCtxFit(modelName) {
     const safeMax = data && data.safe_max;
     if (!safeMax) {  // unmeasurable - leave full range
       slider.max = 32768;
+      slider.step = 2048;
       if (note) note.style.display = "none";
       return;
     }
     slider.max = safeMax;
+    // Scale step so a large (e.g. 256k) range stays draggable; keep 2k steps
+    // for small ranges. Step ~ max/64, snapped to a power of two, min 2048.
+    let step = 2048;
+    while (step * 64 < safeMax) step *= 2;
+    slider.step = step;
     if (parseInt(slider.value) > safeMax) {
       slider.value = safeMax;
       persist("num_ctx", safeMax);
