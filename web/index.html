@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="css/1-variables.css?v=3">
   <link rel="stylesheet" href="css/2-base.css?v=19">
   <link rel="stylesheet" href="css/3-studios.css?v=17">
-  <link rel="stylesheet" href="css/4-chat.css?v=12">
+  <link rel="stylesheet" href="css/4-chat.css?v=17">
   <link rel="stylesheet" href="css/5-ui.css?v=26">
   <link rel="stylesheet" href="css/6-responsive.css?v=3">
   <link rel="stylesheet" href="lib/highlight.css">
@@ -73,6 +73,7 @@
   <symbol id="i-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></symbol>
   <symbol id="i-sliders" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></symbol>
   <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></symbol>
+  <symbol id="i-incognito" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></symbol>
   <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
   <symbol id="i-trash-lines" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></symbol>
   <symbol id="i-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></symbol>
@@ -610,6 +611,9 @@
           </button>
           <button class="prompt-action-btn" id="web-btn" title="Toggle web search">
             <svg width="14" height="14"><use href="#i-globe"/></svg>
+          </button>
+          <button class="prompt-action-btn" id="incognito-btn" title="Incognito mode - start an unsaved, private chat">
+            <svg width="14" height="14"><use href="#i-incognito"/></svg>
           </button>
           <button class="generate-btn" id="send-btn" title="Send (Enter)">
             <svg width="16" height="16"><use href="#i-send"/></svg>
@@ -2559,7 +2563,7 @@
 <script src="js/app.js?v=9"></script>
 <script src="js/auth.js"></script>
 <script src="js/settings.js?v=9"></script>
-<script src="js/chat-settings.js?v=4"></script>
+<script src="js/chat-settings.js?v=5"></script>
 <script src="js/memory.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/markdown.js"></script>
@@ -2580,7 +2584,7 @@
 <script src="js/code-studio.js"></script>
 <script src="js/notetaker.js"></script>
 <script src="js/slash-commands.js"></script>
-<script src="js/chat.js?v=3"></script>
+<script src="js/chat.js?v=5"></script>
 <script>
   // Avatar settings toggle - wired after all deferred scripts have run
   document.getElementById('avatar-toggle').addEventListener('change', function(e) {

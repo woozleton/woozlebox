@@ -167,11 +167,11 @@ async function refreshCtxFit(modelName) {
     let step = 2048;
     while (step * 64 < safeMax) step *= 2;
     slider.step = step;
-    if (parseInt(slider.value) > safeMax) {
-      slider.value = safeMax;
-      persist("num_ctx", safeMax);
-      updateChatSettingLabels();
-    }
+    // Default the context to the model's safe max on selection - a newly chosen
+    // model should use as much context as fits. The user can still drag lower.
+    slider.value = safeMax;
+    persist("num_ctx", safeMax);
+    updateChatSettingLabels();
     if (note) {
       const k = safeMax >= 1024 ? (safeMax / 1024) + "k" : safeMax;
       note.textContent = "Max " + k + " - the largest context that fits this model in VRAM.";

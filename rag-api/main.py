@@ -740,6 +740,8 @@ class ChatRequest(BaseModel):
     files: list[FileAttachment] = []  # per-message file attachments
     rag_search: bool = False  # whether to include vault/RAG context
     custom_system_prompt: Optional[str] = None  # override system prompt from /system slash command
+    incognito: bool = False  # clean-slate chat: no DB writes, no memory read/save, no vault RAG
+    incognito_history: list[dict] = []  # in-session messages [{role, content}] for incognito multi-turn (not persisted)
 
 class ConversationPatch(BaseModel):
     title: str
@@ -944,6 +946,12 @@ def extract_file_text(name: str, data_b64: str) -> str:
 # --- Streaming chat generator ---
 async def chat_stream(request: ChatRequest, user_id: str) -> AsyncGenerator[str, None]:
     model = request.model or LLM_MODEL
+    # Incognito: clean-slate chat. Force off vault RAG and memory auto-save so no
+    # stored knowledge is read and nothing is persisted (DB writes are skipped
+    # below). Memory read is gated separately where facts are injected.
+    if request.incognito:
+        request.rag_search = False
+        request.auto_memory = False
     threshold = request.threshold if request.threshold is not None else SIMILARITY_THRESHOLD
     top_k = max(1, request.top_k)
     collection_name = collection_name_for_user(user_id)
@@ -1158,8 +1166,8 @@ async def chat_stream(request: ChatRequest, user_id: str) -> AsyncGenerator[str,
     if request.custom_system_prompt:
         base_instructions = request.custom_system_prompt
 
-    # Inject memory facts
-    memory_facts = db.list_memory(user_id)
+    # Inject memory facts (skipped in incognito - clean slate, no personalization)
+    memory_facts = [] if request.incognito else db.list_memory(user_id)
     memory_section = ""
     if memory_facts:
         facts_text = "\n".join(f"- {m['fact']}" for m in memory_facts)
@@ -1198,8 +1206,9 @@ async def chat_stream(request: ChatRequest, user_id: str) -> AsyncGenerator[str,
 
 Answer concisely."""
 
-    # Auto-compact if context is getting full
-    if request.conversation_id and request.compact_threshold > 0:
+    # Auto-compact if context is getting full (never in incognito - it reads and
+    # rewrites a stored conversation, which an ephemeral chat must not touch).
+    if request.conversation_id and request.compact_threshold > 0 and not request.incognito:
         try:
             ctx_limit = 4096
             async with httpx.AsyncClient(timeout=5) as hc:
@@ -1250,19 +1259,25 @@ Answer concisely."""
     # left after the system prompt, the new user message, and a reply reserve.
     # Token count is the same ~chars/4 estimate used elsewhere (approximate).
     messages = [{"role": "system", "content": system_prompt}]
-    if request.conversation_id and request.num_ctx > 0:
+    # Source the prior turns: incognito uses the in-session history sent by the
+    # client (never touches the DB); normal chats read from the saved conversation.
+    prior_messages = None
+    if request.incognito:
+        prior_messages = request.incognito_history
+    elif request.conversation_id:
         conv = db.get_conversation(request.conversation_id, user_id)
-        if conv:
-            reply_reserve = min(2048, request.num_ctx // 4)  # leave room to generate
-            used = (len(system_prompt) + len(request.message)) // 4 + reply_reserve
-            history = []
-            for msg in reversed(conv["messages"]):
-                cost = len(msg["content"]) // 4
-                if used + cost > request.num_ctx:
-                    break
-                used += cost
-                history.append({"role": msg["role"], "content": msg["content"]})
-            messages.extend(reversed(history))
+        prior_messages = conv["messages"] if conv else None
+    if prior_messages and request.num_ctx > 0:
+        reply_reserve = min(2048, request.num_ctx // 4)  # leave room to generate
+        used = (len(system_prompt) + len(request.message)) // 4 + reply_reserve
+        history = []
+        for msg in reversed(prior_messages):
+            cost = len(msg["content"]) // 4
+            if used + cost > request.num_ctx:
+                break
+            used += cost
+            history.append({"role": msg["role"], "content": msg["content"]})
+        messages.extend(reversed(history))
     user_content = request.message
     if request.files:
         file_blocks = []
@@ -1343,32 +1358,38 @@ Answer concisely."""
     deleted_memories = []
     clean_answer = full_answer
 
-    # Extract [SAVE_MEMORY: ...] tags
+    # Extract [SAVE_MEMORY: ...] tags. Only write when auto-memory is ON and not
+    # incognito - the extraction is otherwise unconditional, so the prompt swap
+    # alone does not stop a chatty model from emitting tags that get saved. Tags
+    # are always stripped from the displayed answer below regardless.
     save_pattern = re.compile(r'\[SAVE_MEMORY:\s*(.+?)\]', re.IGNORECASE)
-    for match in save_pattern.finditer(full_answer):
-        fact = match.group(1).strip()
-        if fact:
-            try:
-                mid = db.add_memory_fact(fact, user_id)
-                saved_memories.append({"id": mid, "fact": fact})
-                logger.info(f"Memory saved for {user_id}: {fact}")
-            except Exception as e:
-                logger.warning(f"Failed to save memory: {e}")
+    if request.auto_memory and not request.incognito:
+        for match in save_pattern.finditer(full_answer):
+            fact = match.group(1).strip()
+            if fact:
+                try:
+                    mid = db.add_memory_fact(fact, user_id)
+                    saved_memories.append({"id": mid, "fact": fact})
+                    logger.info(f"Memory saved for {user_id}: {fact}")
+                except Exception as e:
+                    logger.warning(f"Failed to save memory: {e}")
     clean_answer = save_pattern.sub("", clean_answer)
 
-    # Extract [DELETE_MEMORY: ...] tags
+    # Extract [DELETE_MEMORY: ...] tags. Gated the same way - when memory
+    # auto-management is off (or incognito), the AI must not mutate stored memory.
     delete_pattern = re.compile(r'\[DELETE_MEMORY:\s*(.+?)\]', re.IGNORECASE)
-    for match in delete_pattern.finditer(full_answer):
-        fact_text = match.group(1).strip()
-        if fact_text:
-            # Find matching fact by text similarity
-            existing = db.list_memory(user_id)
-            for m in existing:
-                if fact_text.lower() in m["fact"].lower() or m["fact"].lower() in fact_text.lower():
-                    db.delete_memory_fact(m["id"], user_id)
-                    deleted_memories.append({"id": m["id"], "fact": m["fact"]})
-                    logger.info(f"Memory deleted for {user_id}: {m['fact']}")
-                    break
+    if request.auto_memory and not request.incognito:
+        for match in delete_pattern.finditer(full_answer):
+            fact_text = match.group(1).strip()
+            if fact_text:
+                # Find matching fact by text similarity
+                existing = db.list_memory(user_id)
+                for m in existing:
+                    if fact_text.lower() in m["fact"].lower() or m["fact"].lower() in fact_text.lower():
+                        db.delete_memory_fact(m["id"], user_id)
+                        deleted_memories.append({"id": m["id"], "fact": m["fact"]})
+                        logger.info(f"Memory deleted for {user_id}: {m['fact']}")
+                        break
     clean_answer = delete_pattern.sub("", clean_answer)
 
     # Note: Orpheus TTS emotion tags (<laugh>, <sigh>, etc.) are NOT stripped
@@ -1384,17 +1405,20 @@ Answer concisely."""
     if deleted_memories:
         yield sse({"type": "memory_deleted", "facts": deleted_memories})
 
-    # Step 8: Save to DB
+    # Step 8: Save to DB - skipped entirely in incognito (nothing persists).
     conv_id = request.conversation_id
-    if not conv_id:
-        conv_id = db.create_conversation(user_id=user_id, folder_id=request.folder_id)
-    db.auto_title(conv_id, user_id, request.message)
-    db.add_message(
-        conv_id, "user", request.message,
-        images=request.images,
-        files=[f.dict() for f in request.files],
-    )
-    db.add_message(conv_id, "assistant", clean_answer, sources=sources, web_sources=web_sources, model_used=model)
+    if request.incognito:
+        conv_id = None  # no conversation row; downstream sends null conversation_id
+    else:
+        if not conv_id:
+            conv_id = db.create_conversation(user_id=user_id, folder_id=request.folder_id)
+        db.auto_title(conv_id, user_id, request.message)
+        db.add_message(
+            conv_id, "user", request.message,
+            images=request.images,
+            files=[f.dict() for f in request.files],
+        )
+        db.add_message(conv_id, "assistant", clean_answer, sources=sources, web_sources=web_sources, model_used=model)
 
     timings["ttft_ms"] = ttft_ms
     timings["total_ms"] = round((time.monotonic() - t_start) * 1000)

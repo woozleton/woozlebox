@@ -378,6 +378,9 @@ function renderSidebar(convs, flat = false) {
 }
 
 async function loadConversation(id) {
+  // Opening a saved conversation always leaves incognito (otherwise the next
+  // message in this saved chat would be sent unsaved).
+  _clearIncognitoFlag();
   if (localStorage.getItem("wooz_view") !== "chat") {
     setView("chat");
     prepareModelsForView("chat");
@@ -409,8 +412,57 @@ function updateActiveSidebar() {
 }
 
 
+// ── Incognito mode ──
+// A clean-slate, zero-persistence chat: nothing is written to the DB, stored
+// memory and vault RAG are ignored, and the conversation lives only in this
+// in-session buffer (sent back as context each turn). Closing it loses it.
+window.incognitoMode = false;
+let _incognitoHistory = [];
+
+// Clear the incognito flag, buffer, and visual state WITHOUT resetting the chat
+// view (so callers like loadConversation can populate the window afterward).
+function _clearIncognitoFlag() {
+  if (!window.incognitoMode) return;
+  window.incognitoMode = false;
+  _incognitoHistory = [];
+  document.body.classList.remove("incognito-active");
+  const ib = document.getElementById("incognito-btn");
+  if (ib) {
+    ib.classList.remove("active");
+    ib.title = "Incognito mode - start an unsaved, private chat";
+  }
+}
+
+function setIncognito(on) {
+  window.incognitoMode = !!on;
+  const btn = document.getElementById("incognito-btn");
+  if (btn) {
+    btn.classList.toggle("active", window.incognitoMode);
+    btn.title = window.incognitoMode
+      ? "Incognito ON - this chat is not saved. Click to turn off."
+      : "Incognito mode - start an unsaved, private chat";
+  }
+  document.body.classList.toggle("incognito-active", window.incognitoMode);
+  // Switching modes always starts a fresh, empty chat so the two never mix.
+  _incognitoHistory = [];
+  activeConvId = null;
+  chatWindow.innerHTML = "";
+  chatWindow.appendChild(makeWelcome());
+  const ctxBar = document.getElementById("ctx-bar-wrap");
+  if (ctxBar) ctxBar.style.display = "none";
+  updateActiveSidebar();
+  if (typeof loadSuggestions === "function") loadSuggestions();
+  input.focus();
+}
+
+(function _wireIncognito() {
+  const btn = document.getElementById("incognito-btn");
+  if (btn) btn.addEventListener("click", () => setIncognito(!window.incognitoMode));
+})();
+
 // ── New chat ──
 newChatBtn.addEventListener("click", async () => {
+  _incognitoHistory = [];
   if (localStorage.getItem("wooz_view") !== "chat") {
     setView("chat");
     prepareModelsForView("chat");
@@ -1290,7 +1342,12 @@ async function sendMessage() {
     images: attachedImages.map(d => d.replace(/^data:image\/[^;]+;base64,/, "")),
     files: filePayloads,
     custom_system_prompt: typeof customSystemPrompt !== "undefined" ? customSystemPrompt : null,
+    incognito: !!window.incognitoMode,
+    incognito_history: window.incognitoMode ? _incognitoHistory.slice() : [],
   };
+  // In incognito, the user turn is part of the in-session history the next
+  // request will send back as context (the backend never stores it).
+  if (window.incognitoMode) _incognitoHistory.push({ role: "user", content: text });
 
   chatAbortController = new AbortController();
   let streamingTts = null;
@@ -1384,17 +1441,23 @@ async function sendMessage() {
             stepRows.forEach(r => r.remove());
             appendAIBubble(answerText, event.sources || [], event.web_sources || [], event.model_used, debugWithTps, null, event.web_search_query || "");
           }
-          updateActiveSidebar();
-          loadConversations();
-          updateContextBar(event.conversation_id);
-          // Auto-generate smart title for new conversations
-          if (convId && !body.conversation_id) {
-            (async () => {
-              try {
-                const titleResp = await apiFetch(`/conversations/${convId}/smart-title`, { method: "POST" });
-                if (titleResp.ok) loadConversations();
-              } catch (_) {}
-            })();
+          if (window.incognitoMode) {
+            // Ephemeral: keep the reply only in the in-session buffer for
+            // multi-turn context. Nothing touches the saved conversation list.
+            _incognitoHistory.push({ role: "assistant", content: answerText });
+          } else {
+            updateActiveSidebar();
+            loadConversations();
+            updateContextBar(event.conversation_id);
+            // Auto-generate smart title for new conversations
+            if (convId && !body.conversation_id) {
+              (async () => {
+                try {
+                  const titleResp = await apiFetch(`/conversations/${convId}/smart-title`, { method: "POST" });
+                  if (titleResp.ok) loadConversations();
+                } catch (_) {}
+              })();
+            }
           }
           if (streamingTts && ttsEnabled) {
             streamingTts.flush();
