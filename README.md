@@ -4,7 +4,7 @@ A self-hosted AI toolbox that runs entirely on your own hardware. One web UI for
 
 ## What's Inside
 
-- **Chat** - Local LLMs via [Ollama](https://ollama.com) with RAG over your own documents, optional web search, per-user memory, conversation folders.
+- **Chat** - Local LLMs via [Ollama](https://ollama.com) with RAG over your own documents, optional web search, per-user memory, conversation folders, an adjustable context window that auto-fits the model and your VRAM, and an incognito mode for unsaved, private chats.
 - **Image Studio** - Stable Diffusion 3.5, Playground v2.5, SDXL Turbo, inpainting, Real-ESRGAN upscaling, style presets, folders, trash.
 - **Music Studio** - ACE-Step 1.5 text-to-music with AI songwriting and SDXL Turbo cover art.
 - **Video Studio** - Wan 2.1 text-to-video.
@@ -67,7 +67,9 @@ Open [http://localhost:8080](http://localhost:8080). On first visit you'll see a
 
 On first run, Ollama will download the default chat model (`qwen3:30b-a3b`, ~18 GB). Image, music, and video models download lazily from HuggingFace the first time you use each studio.
 
-To add more chat models later, admins can pull them directly from **Settings -> Assistants -> Pull New Model** (no shell access needed). The UI suggests names from `ollama.com/library` and shows live download progress.
+To add more chat models later, admins can pull them directly from **Settings -> Assistants -> Pull New Model** (no shell access needed). The UI suggests names from `ollama.com/library` and shows live download progress. You can also pull GGUF models straight from HuggingFace by entering an `hf.co/<user>/<repo>:<quant>` name (e.g. `hf.co/bartowski/Qwen3.6-27B-GGUF:Q4_K_M`).
+
+The Ollama API is bound to `127.0.0.1` (localhost only) since it has no authentication - other WoozleBox containers reach it over the internal Docker network. If you intentionally need to reach Ollama from another machine, change the `ollama` port mapping in `docker-compose.yml` back to `11434:11434`.
 
 ## Troubleshooting
 
@@ -105,7 +107,19 @@ CODE_RUNNER_PORT=8700
 
 # Tuning
 SIMILARITY_THRESHOLD=0.45
+
+# VRAM / context tuning (gpu-manager)
+VRAM_RESERVED_MB=2500       # VRAM reserved for the OS/desktop, kept free
+TTS_FIT_HEADROOM_MB=3500    # extra headroom required to keep Orpheus loaded alongside chat
+CTX_FIT_HEADROOM_MB=1500    # headroom kept free when auto-fitting a chat model's context window
+CTX_FIT_FLOOR=8192          # never auto-cap context below this many tokens
 ```
+
+The chat KV cache is quantized to `q8_0` by default (`OLLAMA_FLASH_ATTENTION=1` +
+`OLLAMA_KV_CACHE_TYPE=q8_0` on the `ollama` service), which roughly halves KV-cache
+VRAM so larger models keep more context on-GPU. The chat context window auto-fits
+each model to your VRAM and that model's native maximum; you can override it per
+model from the chat settings.
 
 The TTS voice (25 Orpheus voices across 8 languages) is set per-user in the Settings panel, not via env var.
 

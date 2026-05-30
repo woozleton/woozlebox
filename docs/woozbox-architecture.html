@@ -455,9 +455,11 @@
     <div class="card-header"><span>&#128207;</span> TTS Fit Check</div>
     <p class="c-dim" style="font-size:12px;line-height:1.5;">
       Before loading a chat or code LLM, gpu-manager computes
-      <code>chat_llm_vram + tts_vram + TTS_FIT_HEADROOM_MB</code> (default <b>1500</b> MB for KV cache).
-      If the sum exceeds the budget, Orpheus is evicted and <code>tts_blocked_by</code> is set to the LLM name.
-      A subsequent TTS request returns <b>HTTP 409</b> with the detail
+      <code>chat_llm_vram + tts_vram + TTS_FIT_HEADROOM_MB</code> (default <b>3500</b> MB).
+      The chat LLM's VRAM is read from <code>/api/ps</code> when loaded, otherwise from the
+      model's real file size, so a not-yet-loaded large model is sized honestly.
+      If the sum exceeds the budget, Orpheus is evicted and <code>tts_blocked_by</code> is set to the LLM name;
+      the frontend disables the voice button. A subsequent TTS request returns <b>HTTP 409</b> with the detail
       <i>"Chat model {name} leaves insufficient VRAM for TTS. Switch to a smaller chat model first."</i>,
       surfaced to the user as a toast.
     </p>
@@ -505,7 +507,10 @@
   When switching to chat/code, the target LLM is kept if already loaded - only other models are evicted.
   tts-llm is controlled via its supervisor (:5007) using <code>/models/load</code> and <code>/models/unload</code>,
   the same shape as every other service. Tunable env vars:
-  <code>VRAM_RESERVED_MB</code>, <code>IDLE_UNLOAD_MIN</code>, <code>TTS_FIT_HEADROOM_MB</code>.
+  <code>VRAM_RESERVED_MB</code>, <code>IDLE_UNLOAD_MIN</code>, <code>TTS_FIT_HEADROOM_MB</code>,
+  <code>CTX_FIT_HEADROOM_MB</code>, <code>CTX_FIT_FLOOR</code>. The chat context window
+  auto-fits each model to VRAM and its native max (measured empirically via
+  <code>/llm/ctx-fit</code>); the Ollama KV cache is quantized to q8_0.
   HuggingFace gated repos return HTTP 403 - surfaced to the user via toast with accept-terms link.
 </p>
 

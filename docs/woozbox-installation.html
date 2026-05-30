@@ -251,7 +251,9 @@ docker compose up -d --build</pre>
   <div class="svc-row header"><div>Variable</div><div>Default</div><div>Purpose</div></div>
   <div class="svc-row"><div class="svc-name">VRAM_RESERVED_MB</div><div class="svc-port">2500</div><div class="svc-desc">Subtracted from nvidia-smi total VRAM before budgeting. Covers the Windows desktop compositor, browser, and other background GPU consumers. Raise this on Windows if you run other GPU apps alongside WoozleBox.</div></div>
   <div class="svc-row"><div class="svc-name">IDLE_UNLOAD_MIN</div><div class="svc-port">15</div><div class="svc-desc">Minutes of inactivity before a loaded image / music / video / notetaker / tts service is evicted by the idle-unload timer. Set to 0 to disable.</div></div>
-  <div class="svc-row"><div class="svc-name">TTS_FIT_HEADROOM_MB</div><div class="svc-port">1500</div><div class="svc-desc">Extra VRAM reserved for KV cache when deciding whether the selected chat / code LLM can coexist with Orpheus. If chat_llm + tts + headroom &gt; budget, TTS is evicted and new TTS requests return HTTP 409 until the user picks a smaller chat model.</div></div>
+  <div class="svc-row"><div class="svc-name">TTS_FIT_HEADROOM_MB</div><div class="svc-port">3500</div><div class="svc-desc">Extra VRAM headroom when deciding whether the selected chat / code LLM can coexist with Orpheus. If chat_llm + tts + headroom &gt; budget, TTS is evicted, the voice button is disabled, and new TTS requests return HTTP 409 until the user picks a smaller chat model.</div></div>
+  <div class="svc-row"><div class="svc-name">CTX_FIT_HEADROOM_MB</div><div class="svc-port">1500</div><div class="svc-desc">Headroom kept free when auto-fitting a chat model's context window. gpu-manager measures each model's per-token KV cost and sets the largest context that fits in VRAM, bounded by the model's native maximum.</div></div>
+  <div class="svc-row"><div class="svc-name">CTX_FIT_FLOOR</div><div class="svc-port">8192</div><div class="svc-desc">Never auto-cap a chat model's context window below this many tokens, even on a tight VRAM fit.</div></div>
 </div>
 
 <h3>First use of a feature is slow</h3>

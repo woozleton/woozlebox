@@ -68,6 +68,8 @@ All ports below are host ports from `docker-compose.yml`. Override via the match
 - Studio data (items, favorites, trash, folders) is stored server-side in SQLite with media on disk. Use `createStudioAPI()` in `web/js/studio-api.js`. `createStudioDB()` in `web/js/db-helpers.js` is legacy IndexedDB - no longer used by studios.
 - Bubble actions: chat bubbles have copy, TTS, and memory buttons on hover. Code studio bubbles have copy and TTS (no memory).
 - Timestamps: `ts(epoch)` in `chat.js` delegates to `formatStudioTimestamp()`. All bubbles show date+time. Chat messages store `created_at` per-message; code studio snippets use `created_at` from `studio_items`.
+- Incognito mode (`window.incognitoMode` in `chat.js`, mask-icon toggle): a clean-slate chat that sends `incognito:true` so rag-api skips all DB writes, memory read/save, and vault RAG. Multi-turn works via `incognito_history` (in-session messages sent each turn, never persisted). A `body.incognito-active` class draws an alert border + label around `#chat-content`.
+- Chat context window: the `wooz_chat_ctx` setting (per-model, token-based) is sent as `num_ctx` and trims history by token budget. gpu-manager `/llm/ctx-fit` measures each model's per-token KV cost and returns the largest context that fits VRAM (bounded by the model's native max); the slider auto-caps to and defaults to that. Auto-memory `[SAVE_MEMORY]`/`[DELETE_MEMORY]` writes are gated on the `auto_memory` flag - off means the AI never writes memory.
 
 ### Core JS files (`web/js/`)
 
