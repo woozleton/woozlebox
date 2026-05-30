@@ -588,7 +588,9 @@ async def generate(req: GenerateRequest):
     b64 = base64.b64encode(buf.getvalue()).decode()
 
     elapsed = round(time.time() - t0, 2)
-    logger.info(f"Generated {w}x{h} in {elapsed}s -{req.prompt[:60]}")
+    # Do not log the prompt text - it would persist user content (incl. from
+    # incognito generations) in the container logs. Metadata only.
+    logger.info(f"Generated {w}x{h} in {elapsed}s")
 
     return {
         "image": b64,
@@ -758,7 +760,7 @@ async def inpaint(req: InpaintRequest):
     b64 = base64.b64encode(buf.getvalue()).decode()
 
     elapsed = round(time.time() - t0, 2)
-    logger.info(f"Inpainted {orig_w}x{orig_h} in {elapsed}s -{req.prompt[:60]}")
+    logger.info(f"Inpainted {orig_w}x{orig_h} in {elapsed}s")
 
     # Swap back to previous model in background (non-blocking)
     if prev_model and prev_model != "sd-inpaint" and prev_model in MODELS:

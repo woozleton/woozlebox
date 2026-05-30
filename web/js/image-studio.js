@@ -66,11 +66,58 @@ function setImageIncognito(on) {
       : "Incognito mode - generated images are not saved to your library";
   }
   document.body.classList.toggle("image-incognito-active", window.imageIncognito);
+  // Toggling either way starts a fresh session + clean canvas, so incognito
+  // images never mix with a saved session (and vice versa). Mirrors the
+  // "New session" button (app.js).
+  if (typeof activeStudioSessionId !== "undefined") {
+    activeStudioSessionId = "sess_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
+    if (window.imageIncognito) {
+      // Don't persist an incognito session id to localStorage.
+      localStorage.removeItem("wooz_studio_session");
+    } else {
+      localStorage.setItem("wooz_studio_session", activeStudioSessionId);
+    }
+  }
+  document.querySelectorAll(".studio-session-item").forEach(el => el.classList.remove("active"));
+  if (typeof studioCanvas !== "undefined" && studioCanvas) {
+    studioCanvas.querySelectorAll(".studio-result").forEach(el => el.remove());
+    if (studioCanvasEmpty) { studioCanvasEmpty.style.display = ""; studioCanvas.prepend(studioCanvasEmpty); }
+  }
+  if (typeof _clearSessionImgMeta === "function") _clearSessionImgMeta();
+  const sp = document.getElementById("studio-prompt");
+  if (sp) sp.focus();
 }
 (function _wireImageIncognito() {
   const btn = document.getElementById("studio-incognito-btn");
   if (btn) btn.addEventListener("click", () => setImageIncognito(!window.imageIncognito));
 })();
+
+// Per-image hover action buttons. In incognito the image is never saved, so the
+// only allowed action is Download - favorite/vary/enhance/edit/delete (which all
+// persist or reference a saved record) are omitted. Shared by both render paths.
+function _imgActionsHtml() {
+  const dl = `
+        <button class="action-btn img-dl" title="Download">
+          ${icon("download", 12)}
+        </button>`;
+  if (window.imageIncognito) return dl;
+  return `
+        <button class="action-btn img-fav" title="Add to favorites">
+          ${icon("heart", 12)}
+        </button>
+        <button class="action-btn img-vary" title="Generate variation">
+          ${icon("bolt", 12)}
+        </button>
+        <button class="action-btn img-enhance" title="Enhance (upscale)">
+          ${icon("sparkles", 12)}
+        </button>
+        <button class="action-btn img-edit" title="Edit (inpaint)">
+          ${icon("edit", 12)}
+        </button>${dl}
+        <button class="action-btn img-del" title="Delete this image">
+          ${icon("trash-simple", 12)}
+        </button>`;
+}
 
 // Helper: get the right image src for rendering (base64 or server URL)
 function _imgSrc(d, recordId) {
@@ -399,6 +446,13 @@ function _renderLightboxImage() {
   const hasMultiple = ctx.images.length > 1;
   if (prevBtn) prevBtn.style.display = hasMultiple ? "" : "none";
   if (nextBtn) nextBtn.style.display = hasMultiple ? "" : "none";
+  // Incognito images have no record, so only Download is offered - hide the
+  // persist/reference actions (favorite, variation, delete) in the lightbox too.
+  const _incog = !!window.imageIncognito || img.recordId == null;
+  ["lb-fav", "lb-vary", "lb-del"].forEach(cls => {
+    const b = studioLightbox.querySelector("." + cls);
+    if (b) b.style.display = _incog ? "none" : "";
+  });
   // Update fav button state
   const favBtn = studioLightbox.querySelector(".lb-fav");
   if (favBtn && img.recordId != null) {
@@ -2275,25 +2329,7 @@ function _appendImageToGrid(grid, result, data, idx, id, rawPrompt, body, allRes
   wrap.innerHTML = `
     <img src="${_imgSrc(data, id)}" alt="${esc(rawPrompt)}" />
     <span class="img-res-label"></span>
-    <div class="studio-img-actions">
-      <button class="action-btn img-fav" title="Add to favorites">
-        ${icon("heart", 12)}
-      </button>
-      <button class="action-btn img-vary" title="Generate variation">
-        ${icon("bolt", 12)}
-      </button>
-      <button class="action-btn img-enhance" title="Enhance (upscale)">
-        ${icon("sparkles", 12)}
-      </button>
-      <button class="action-btn img-edit" title="Edit (inpaint)">
-        ${icon("edit", 12)}
-      </button>
-      <button class="action-btn img-dl" title="Download">
-        ${icon("download", 12)}
-      </button>
-      <button class="action-btn img-del" title="Delete this image">
-        ${icon("trash-simple", 12)}
-      </button>
+    <div class="studio-img-actions">${_imgActionsHtml()}
     </div>
   `;
   const img = wrap.querySelector("img");
@@ -2305,7 +2341,7 @@ function _appendImageToGrid(grid, result, data, idx, id, rawPrompt, body, allRes
     const { list, clickIndex } = _buildSessionLightboxList(id, idx);
     openLightbox(img.src, list, clickIndex);
   });
-  wrap.querySelector(".img-fav").addEventListener("click", async () => {
+  wrap.querySelector(".img-fav")?.addEventListener("click", async () => {
     const favBtn = wrap.querySelector(".img-fav");
     const isFav = favBtn.classList.toggle("is-fav");
     setFavFilled(favBtn, isFav);
@@ -2319,7 +2355,7 @@ function _appendImageToGrid(grid, result, data, idx, id, rawPrompt, body, allRes
     }
     refreshFavoritesPanel();
   });
-  wrap.querySelector(".img-vary").addEventListener("click", () => {
+  wrap.querySelector(".img-vary")?.addEventListener("click", () => {
     studioPrompt.value = rawPrompt;
     studioNegative.value = body.negative_prompt || "";
     studioSteps.value = body.steps;
@@ -2333,16 +2369,16 @@ function _appendImageToGrid(grid, result, data, idx, id, rawPrompt, body, allRes
     if (body.width && body.height) studioResolution.value = `${body.width}x${body.height}`;
     studioGenerate();
   });
-  wrap.querySelector(".img-dl").addEventListener("click", () => _downloadImg(img));
-  wrap.querySelector(".img-enhance").addEventListener("click", async () => {
+  wrap.querySelector(".img-dl")?.addEventListener("click", () => _downloadImg(img));
+  wrap.querySelector(".img-enhance")?.addEventListener("click", async () => {
     const currentB64 = await _imgElBase64(img);
     _upscaleImage(currentB64, id, idx, wrap, img);
   });
-  wrap.querySelector(".img-edit").addEventListener("click", async () => {
+  wrap.querySelector(".img-edit")?.addEventListener("click", async () => {
     const b64 = await _imgElBase64(img);
     openInpaintEditor(img.src, b64, id, idx, rawPrompt, body);
   });
-  wrap.querySelector(".img-del").addEventListener("click", async () => {
+  wrap.querySelector(".img-del")?.addEventListener("click", async () => {
     wrap.remove();
     try {
       const imgIdx = parseInt(wrap.dataset.idx);
@@ -2418,25 +2454,7 @@ function appendStudioResult(dataArr, rawPrompt, body, recordId, timestamp) {
     <div class="studio-img-wrap" data-idx="${i}">
       <img src="${_imgSrc(d, id)}" alt="${esc(rawPrompt)}" />
       <span class="img-res-label"></span>
-      <div class="studio-img-actions">
-        <button class="action-btn img-fav" title="Add to favorites">
-          ${icon("heart", 12)}
-        </button>
-        <button class="action-btn img-vary" title="Generate variation">
-          ${icon("bolt", 12)}
-        </button>
-        <button class="action-btn img-enhance" title="Enhance (upscale)">
-          ${icon("sparkles", 12)}
-        </button>
-        <button class="action-btn img-edit" title="Edit (inpaint)">
-          ${icon("edit", 12)}
-        </button>
-        <button class="action-btn img-dl" title="Download">
-          ${icon("download", 12)}
-        </button>
-        <button class="action-btn img-del" title="Delete this image">
-          ${icon("trash-simple", 12)}
-        </button>
+      <div class="studio-img-actions">${_imgActionsHtml()}
       </div>
     </div>
   `).join("");
@@ -2495,7 +2513,7 @@ function appendStudioResult(dataArr, rawPrompt, body, recordId, timestamp) {
       const { list, clickIndex } = _buildSessionLightboxList(id, idx);
       openLightbox(img.src, list, clickIndex);
     });
-    wrap.querySelector(".img-fav").addEventListener("click", async () => {
+    wrap.querySelector(".img-fav")?.addEventListener("click", async () => {
       const favBtn = wrap.querySelector(".img-fav");
       const isFav = favBtn.classList.toggle("is-fav");
       setFavFilled(favBtn, isFav);
@@ -2510,7 +2528,7 @@ function appendStudioResult(dataArr, rawPrompt, body, recordId, timestamp) {
       }
       refreshFavoritesPanel();
     });
-    wrap.querySelector(".img-vary").addEventListener("click", () => {
+    wrap.querySelector(".img-vary")?.addEventListener("click", () => {
       studioPrompt.value = rawPrompt;
       studioNegative.value = body.negative_prompt || "";
       studioSteps.value = body.steps;
@@ -2524,16 +2542,16 @@ function appendStudioResult(dataArr, rawPrompt, body, recordId, timestamp) {
       if (body.width && body.height) studioResolution.value = `${body.width}x${body.height}`;
       studioGenerate();
     });
-    wrap.querySelector(".img-dl").addEventListener("click", () => _downloadImg(img));
-    wrap.querySelector(".img-enhance").addEventListener("click", async () => {
+    wrap.querySelector(".img-dl")?.addEventListener("click", () => _downloadImg(img));
+    wrap.querySelector(".img-enhance")?.addEventListener("click", async () => {
       const currentB64 = await _imgElBase64(img);
       _upscaleImage(currentB64, id, idx, wrap, img);
     });
-    wrap.querySelector(".img-edit").addEventListener("click", async () => {
+    wrap.querySelector(".img-edit")?.addEventListener("click", async () => {
       const b64 = await _imgElBase64(img);
       openInpaintEditor(img.src, b64, id, idx, rawPrompt, body);
     });
-    wrap.querySelector(".img-del").addEventListener("click", async () => {
+    wrap.querySelector(".img-del")?.addEventListener("click", async () => {
       wrap.remove();
       try {
         const imgData = dataArr[idx];
