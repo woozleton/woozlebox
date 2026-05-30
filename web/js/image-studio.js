@@ -51,6 +51,27 @@ document.querySelectorAll(".studio-count-btn").forEach(btn => {
 const _imageAPI = createStudioAPI("image");
 const STUDIO_DB_STORE = "images";
 
+// ── Image incognito mode ──
+// When on, generated images are shown (and can be downloaded) but never written
+// to the studio DB or disk - _persistStudioRecord and the other auto-save paths
+// are gated on this flag. Per-studio, independent of chat incognito.
+window.imageIncognito = false;
+function setImageIncognito(on) {
+  window.imageIncognito = !!on;
+  const btn = document.getElementById("studio-incognito-btn");
+  if (btn) {
+    btn.classList.toggle("active", window.imageIncognito);
+    btn.title = window.imageIncognito
+      ? "Incognito ON - generated images are not saved. Click to turn off."
+      : "Incognito mode - generated images are not saved to your library";
+  }
+  document.body.classList.toggle("image-incognito-active", window.imageIncognito);
+}
+(function _wireImageIncognito() {
+  const btn = document.getElementById("studio-incognito-btn");
+  if (btn) btn.addEventListener("click", () => setImageIncognito(!window.imageIncognito));
+})();
+
 // Helper: get the right image src for rendering (base64 or server URL)
 function _imgSrc(d, recordId) {
   if (d.image) return `data:image/png;base64,${d.image}`;
@@ -780,8 +801,10 @@ _inpaint.saveBtn.addEventListener("click", async () => {
     folder_id: activeImageFolderId,
     session_id: activeStudioSessionId,
   };
-  await saveStudioImage(newRecord);
-  _inpaint.lastSavedId = newId;
+  if (!window.imageIncognito) {
+    await saveStudioImage(newRecord);
+    _inpaint.lastSavedId = newId;
+  }
   appendStudioResult(
     [{ image: _inpaint.imageBase64, model: "sd-inpaint", width: _inpaint.lastWidth, height: _inpaint.lastHeight }],
     prompt,
@@ -984,12 +1007,15 @@ async function _upscaleImage(base64, recordId, imgIdx, wrap, imgEl, onDone) {
     const newSrc = `data:image/png;base64,${data.image}`;
     if (imgEl) imgEl.src = newSrc;
 
-    // Update server record with upscaled image
-    try {
-      const fd = new FormData();
-      fd.append("files", _b64toBlob(data.image, "image/png"), `img_${imgIdx}.png`);
-      await apiFetch(`/studio/image/items/${recordId}/media`, { method: "POST", body: fd });
-    } catch (e) { console.warn("Failed to update upscaled image on server:", e); }
+    // Update server record with upscaled image (skip in incognito or when the
+    // image has no saved record - the upscaled result just updates on screen).
+    if (recordId && !window.imageIncognito) {
+      try {
+        const fd = new FormData();
+        fd.append("files", _b64toBlob(data.image, "image/png"), `img_${imgIdx}.png`);
+        await apiFetch(`/studio/image/items/${recordId}/media`, { method: "POST", body: fd });
+      } catch (e) { console.warn("Failed to update upscaled image on server:", e); }
+    }
 
     if (onDone) onDone(data.image);
     showToast(`Enhanced to ${data.width}x${data.height} (${data.elapsed_s}s)`);
@@ -2352,8 +2378,10 @@ function _appendImageToGrid(grid, result, data, idx, id, rawPrompt, body, allRes
   }
 }
 
-// Persist a studio record to server
+// Persist a studio record to server. Skipped entirely in incognito - the image
+// is shown (and can be downloaded) but never written to the studio DB or disk.
 function _persistStudioRecord(id, results, rawPrompt, body) {
+  if (window.imageIncognito) return;
   const preset = body._preset || studioActivePreset || null;
   // Auto-create a session if none active
   if (!activeStudioSessionId) {
@@ -2546,8 +2574,10 @@ function appendStudioResult(dataArr, rawPrompt, body, recordId, timestamp) {
       folder_id: activeImageFolderId,
       session_id: activeStudioSessionId,
     };
-    saveStudioImage(record).catch(e => console.warn("Failed to save studio image:", e));
-    renderStudioSessionsList();
+    if (!window.imageIncognito) {
+      saveStudioImage(record).catch(e => console.warn("Failed to save studio image:", e));
+      renderStudioSessionsList();
+    }
   }
 }
 

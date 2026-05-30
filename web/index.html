@@ -17,7 +17,7 @@
   <link rel="preload" href="fonts/InterVariable.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/1-variables.css?v=3">
   <link rel="stylesheet" href="css/2-base.css?v=19">
-  <link rel="stylesheet" href="css/3-studios.css?v=17">
+  <link rel="stylesheet" href="css/3-studios.css?v=18">
   <link rel="stylesheet" href="css/4-chat.css?v=17">
   <link rel="stylesheet" href="css/5-ui.css?v=26">
   <link rel="stylesheet" href="css/6-responsive.css?v=3">
@@ -787,6 +787,9 @@
           <textarea id="studio-prompt" placeholder="Describe the image you want to create..." rows="1"></textarea>
           <button id="studio-suggest-btn" class="prompt-action-btn" title="Suggest a prompt">
             <svg width="16" height="16"><use href="#i-bulb"/></svg>
+          </button>
+          <button id="studio-incognito-btn" class="prompt-action-btn" title="Incognito mode - generated images are not saved to your library">
+            <svg width="14" height="14"><use href="#i-incognito"/></svg>
           </button>
           <button id="studio-generate-btn" class="generate-btn" title="Generate (Enter)">
             <svg width="16" height="16"><use href="#i-bolt"/></svg>
@@ -2575,7 +2578,7 @@
 <script src="js/db-helpers.js"></script>
 <script src="js/studio-api.js"></script>
 <script src="js/studio-helpers.js"></script>
-<script src="js/image-studio.js?v=2"></script>
+<script src="js/image-studio.js?v=3"></script>
 <script src="lib/lamejs.min.js"></script>
 <script src="js/music-studio.js?v=2"></script>
 <script src="js/video-studio.js"></script>

@@ -5,7 +5,7 @@ A self-hosted AI toolbox that runs entirely on your own hardware. One web UI for
 ## What's Inside
 
 - **Chat** - Local LLMs via [Ollama](https://ollama.com) with RAG over your own documents, optional web search, per-user memory, conversation folders, an adjustable context window that auto-fits the model and your VRAM, and an incognito mode for unsaved, private chats.
-- **Image Studio** - Stable Diffusion 3.5, Playground v2.5, SDXL Turbo, inpainting, Real-ESRGAN upscaling, style presets, folders, trash.
+- **Image Studio** - Stable Diffusion 3.5, Playground v2.5, SDXL Turbo, inpainting, Real-ESRGAN upscaling, style presets, folders, trash, and an incognito mode that generates without saving to your library.
 - **Music Studio** - ACE-Step 1.5 text-to-music with AI songwriting and SDXL Turbo cover art.
 - **Video Studio** - Wan 2.1 text-to-video.
 - **Code Studio** - Code generation, refactor, explain, debug with a pair-programmer editor, plan mode, and sandboxed execution for Python / JS / Bash.

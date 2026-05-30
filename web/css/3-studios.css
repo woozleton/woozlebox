@@ -42,6 +42,21 @@
     /* 3. .studio-main-area */
     .studio-main-area {
       flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden;
+      position: relative; /* anchor for the image-incognito border/label overlay */
+    }
+    /* Image incognito: alert border + label around the studio area (same look as
+     * chat incognito). pointer-events:none overlays, never disturb layout. */
+    #studio-incognito-btn.active { color: var(--accent); background: var(--accent-glow); }
+    body.image-incognito-active .studio-main-area::after {
+      content: ""; position: absolute; inset: 0;
+      border: 5px solid color-mix(in srgb, var(--danger) 70%, transparent);
+      pointer-events: none; z-index: 40;
+    }
+    body.image-incognito-active .studio-main-area::before {
+      content: "INCOGNITO MODE"; position: absolute; top: 5px; left: 5px;
+      padding: 3px 10px; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.06em;
+      color: #fff; background: color-mix(in srgb, var(--danger) 70%, transparent);
+      border-bottom-right-radius: 6px; pointer-events: none; z-index: 41;
     }
 
     /* 4. .studio-controls */
